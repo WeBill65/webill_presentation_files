@@ -1,0 +1,999 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Consumer Utility Spend Dashboard</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+            body {
+                font-family: "Inter", sans-serif;
+                background-color: #f8fafc;
+            }
+            .chart-container {
+                min-height: 400px;
+                width: 100%;
+            }
+
+            /* Container for the trend chart */
+            .chart-scroll-wrapper {
+                width: 100%;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Scroll logic */
+            .scroll-enabled {
+                overflow-x: auto !important;
+                cursor: grab;
+            }
+            .scroll-enabled:active {
+                cursor: grabbing;
+            }
+            .scroll-disabled {
+                overflow-x: hidden !important;
+                cursor: default;
+            }
+
+            .chart-scroll-content {
+                min-width: 100%;
+                transition: width 0.2s ease-out;
+            }
+
+            .glass-card {
+                background: rgba(255, 255, 255, 0.9);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(226, 232, 240, 0.8);
+            }
+            .clickable-chart canvas {
+                cursor: pointer !important;
+            }
+
+            /* Custom Scrollbar Styling */
+            .chart-scroll-wrapper::-webkit-scrollbar {
+                height: 8px;
+            }
+            .chart-scroll-wrapper::-webkit-scrollbar-track {
+                background: #f1f5f9;
+                border-radius: 10px;
+            }
+            .chart-scroll-wrapper::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 10px;
+                border: 2px solid #f1f5f9;
+            }
+            .chart-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+                background: #94a3b8;
+            }
+
+            /* Custom Sticky Legend Styles */
+            .legend-dot {
+                width: 12px;
+                height: 12px;
+                border-radius: 3px;
+                display: inline-block;
+            }
+        </style>
+    </head>
+    <body class="text-slate-800 pb-12">
+        <!-- Updated Header: Changed Name to Charles Dickens -->
+        <header
+            class="border-b border-slate-700 px-6 py-4 rounded-t-2xl mt-2 mx-2 md:mx-4"
+            style="background-color: #404068"
+        >
+            <div
+                class="max-w-[1600px] mx-auto flex justify-between items-center"
+            >
+                <div class="flex items-center gap-4">
+                    <div
+                        class="p-2.5 rounded-xl text-white shadow-lg"
+                        style="background-color: #faa919; color: #404068"
+                    >
+                        <i data-lucide="layout-dashboard"></i>
+                    </div>
+                    <div>
+                        <h1
+                            class="text-xl font-bold tracking-tight leading-tight"
+                            style="color: #ffffff"
+                        >
+                            Consumer Charge Analytics:
+                            <span style="color: #faa919">Charles Dickens</span>
+                        </h1>
+                        <p
+                            class="text-sm font-medium opacity-80"
+                            style="color: #faa919"
+                        >
+                            Gray Player Views
+                        </p>
+                    </div>
+                </div>
+                <div></div>
+            </div>
+        </header>
+
+        <!-- Sub-Navigation: Reordered to Monthly, Daily, Hourly -->
+        <nav
+            class="bg-white/60 backdrop-blur-md border-b border-slate-200 px-6 py-3 sticky top-0 z-50 mx-2 md:mx-4"
+        >
+            <div
+                class="max-w-[1600px] mx-auto flex justify-between items-center"
+            >
+                <div class="flex items-center gap-4">
+                    <div
+                        class="flex bg-slate-100 p-1 rounded-lg border border-slate-200/60"
+                    >
+                        <button
+                            onclick="updateView('monthly')"
+                            class="view-btn px-4 py-1.5 rounded-md text-sm font-medium transition-all"
+                            id="btn-monthly"
+                        >
+                            Monthly
+                        </button>
+                        <button
+                            onclick="updateView('daily')"
+                            class="view-btn px-4 py-1.5 rounded-md text-sm font-medium transition-all"
+                            id="btn-daily"
+                        >
+                            Daily
+                        </button>
+                        <button
+                            onclick="updateView('hourly')"
+                            class="view-btn px-4 py-1.5 rounded-md text-sm font-medium transition-all"
+                            id="btn-hourly"
+                        >
+                            Hourly
+                        </button>
+                    </div>
+                </div>
+                <div
+                    class="flex items-center gap-2 text-sm font-semibold text-slate-600 bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm"
+                >
+                    <i
+                        data-lucide="calendar"
+                        class="w-4 h-4"
+                        style="color: #404068"
+                    ></i>
+                    <span id="date-display">Historical Data</span>
+                </div>
+            </div>
+        </nav>
+
+        <main class="max-w-[1600px] mx-auto p-4 md:p-6 space-y-6">
+            <!-- Summary Section -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass-card p-6 rounded-2xl shadow-sm">
+                    <div class="flex justify-between items-start mb-4">
+                        <p
+                            class="text-sm font-semibold text-slate-500 uppercase tracking-wider"
+                        >
+                            Meter Portfolio
+                        </p>
+                        <span
+                            class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold"
+                            >Active</span
+                        >
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <h2 class="text-3xl font-bold">12</h2>
+                        <span class="text-slate-400 text-sm">Total Meters</span>
+                    </div>
+                    <div class="mt-4 flex gap-2">
+                        <div
+                            class="flex-1 h-2 bg-blue-500 rounded-full"
+                            style="width: 50%"
+                        ></div>
+                        <div
+                            class="flex-1 h-2 bg-cyan-500 rounded-full"
+                            style="width: 33%"
+                        ></div>
+                        <div
+                            class="flex-1 h-2 bg-orange-500 rounded-full"
+                            style="width: 17%"
+                        ></div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 rounded-2xl shadow-sm">
+                    <p
+                        class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4"
+                    >
+                        Payment Breakdown
+                    </p>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="flex items-center gap-2"
+                                ><div
+                                    class="w-2 h-2 rounded-full bg-indigo-500"
+                                ></div>
+                                Postpaid</span
+                            >
+                            <span class="font-bold" id="stat-postpaid"
+                                >R 0.00</span
+                            >
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="flex items-center gap-2"
+                                ><div
+                                    class="w-2 h-2 rounded-full bg-emerald-500"
+                                ></div>
+                                Prepaid</span
+                            >
+                            <span class="font-bold" id="stat-prepaid"
+                                >R 0.00</span
+                            >
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="flex items-center gap-2"
+                                ><div
+                                    class="w-2 h-2 rounded-full bg-amber-500"
+                                ></div>
+                                Wallet</span
+                            >
+                            <span class="font-bold" id="stat-wallet"
+                                >R 0.00</span
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    class="glass-card p-6 rounded-2xl shadow-sm border-l-4"
+                    style="border-left-color: #404068"
+                >
+                    <div class="flex justify-between items-start mb-2">
+                        <p
+                            class="text-sm font-semibold text-slate-500 uppercase tracking-wider"
+                        >
+                            Total Period Spend
+                        </p>
+                        <i
+                            data-lucide="info"
+                            class="w-4 h-4 text-slate-300"
+                        ></i>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <span class="text-xl font-medium text-slate-400"
+                            >R</span
+                        >
+                        <h2
+                            class="text-4xl font-black text-slate-900"
+                            id="stat-total-spend"
+                        >
+                            0.00
+                        </h2>
+                    </div>
+                    <!-- Updated Section: Removed Efficiency and added Monthly Average Spend -->
+                    <div
+                        class="mt-4 flex items-center gap-2 text-slate-600 text-sm font-bold"
+                    >
+                        <div class="bg-slate-100 p-1 rounded">
+                            <i
+                                data-lucide="calculator"
+                                class="w-4 h-4"
+                                style="color: #404068"
+                            ></i>
+                        </div>
+                        <span
+                            >Avg. Monthly Spend:
+                            <span id="stat-avg-spend" class="text-slate-900"
+                                >R 0.00</span
+                            ></span
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Trend -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div
+                    class="lg:col-span-2 glass-card p-6 rounded-2xl shadow-sm overflow-hidden flex flex-col"
+                >
+                    <div
+                        class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4"
+                    >
+                        <div>
+                            <h3
+                                class="text-lg font-bold flex items-center gap-2"
+                            >
+                                Utility Spend Trend
+                                <span
+                                    class="text-xs font-normal px-2 py-0.5 rounded-full border"
+                                    id="drill-hint"
+                                    style="
+                                        background-color: #fef3c7;
+                                        color: #92400e;
+                                        border-color: #fde68a;
+                                    "
+                                    >Drill down enabled</span
+                                >
+                            </h3>
+                            <p
+                                class="text-sm text-slate-500"
+                                id="trend-subtitle"
+                            >
+                                Loading data...
+                            </p>
+                        </div>
+
+                        <!-- Sticky Legend Container -->
+                        <div
+                            class="flex flex-wrap items-center gap-4 bg-slate-50/80 px-3 py-1.5 rounded-lg border border-slate-100 shadow-sm"
+                        >
+                            <div
+                                class="flex items-center gap-1.5 text-xs font-bold text-slate-600"
+                            >
+                                <span class="legend-dot bg-blue-500"></span>
+                                Electricity
+                            </div>
+                            <div
+                                class="flex items-center gap-1.5 text-xs font-bold text-slate-600"
+                            >
+                                <span class="legend-dot bg-cyan-500"></span>
+                                Water
+                            </div>
+                            <div
+                                class="flex items-center gap-1.5 text-xs font-bold text-slate-600"
+                            >
+                                <span class="legend-dot bg-orange-500"></span>
+                                Gas
+                            </div>
+                            <div
+                                class="flex items-center gap-1.5 text-xs font-bold text-slate-600"
+                            >
+                                <span
+                                    class="h-[2px] w-4 bg-red-500 border-t border-dashed border-red-500"
+                                ></span>
+                                Average
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end mb-2">
+                        <div
+                            id="scroll-indicator"
+                            class="hidden flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full border animate-pulse"
+                            style="
+                                background-color: #f3f4f6;
+                                color: #404068;
+                                border-color: #e5e7eb;
+                            "
+                        >
+                            <i
+                                data-lucide="move-horizontal"
+                                class="w-3 h-3"
+                            ></i>
+                            Scroll for more data
+                        </div>
+                    </div>
+
+                    <div
+                        class="chart-scroll-wrapper scroll-disabled flex-grow"
+                        id="trend-scroll-container"
+                    >
+                        <div
+                            id="main-trend-chart-container"
+                            class="chart-scroll-content"
+                        >
+                            <div
+                                id="main-trend-chart"
+                                class="chart-container clickable-chart"
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 rounded-2xl shadow-sm">
+                    <h3 class="text-lg font-bold mb-1">Energy Mix</h3>
+                    <p class="text-sm text-slate-500 mb-6">
+                        Generation Sources
+                    </p>
+                    <div
+                        id="elec-source-chart"
+                        class="chart-container"
+                        style="min-height: 350px"
+                    ></div>
+                    <div class="mt-4 pt-4 border-t border-slate-100 space-y-3">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-slate-600">Reactive Energy</span>
+                            <span
+                                class="font-semibold text-orange-600"
+                                id="stat-reactive"
+                                >R 0.00</span
+                            >
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-slate-600">Fixed Charges</span>
+                            <span
+                                class="font-semibold text-slate-800"
+                                id="stat-fixed"
+                                >R 0.00</span
+                            >
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Details -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="glass-card p-6 rounded-2xl shadow-sm">
+                    <h3 class="text-lg font-bold mb-4">
+                        Electricity Tariff Spend
+                    </h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div
+                            id="tariff-split-chart"
+                            class="chart-container"
+                            style="min-height: 300px"
+                        ></div>
+                        <div class="flex flex-col justify-center space-y-4">
+                            <div class="p-4 bg-slate-50 rounded-xl">
+                                <p
+                                    class="text-xs font-bold text-slate-400 uppercase"
+                                >
+                                    Peak Spend
+                                </p>
+                                <p
+                                    class="text-xl font-bold"
+                                    id="detail-peak-spend"
+                                >
+                                    R 0.00
+                                </p>
+                            </div>
+                            <div class="p-4 bg-slate-50 rounded-xl">
+                                <p
+                                    class="text-xs font-bold text-slate-400 uppercase"
+                                >
+                                    Off-Peak Spend
+                                </p>
+                                <p
+                                    class="text-xl font-bold"
+                                    id="detail-offpeak-spend"
+                                >
+                                    R 0.00
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 rounded-2xl shadow-sm">
+                    <h3 class="text-lg font-bold mb-4">
+                        Water & Sewage Breakdown
+                    </h3>
+                    <div
+                        id="water-breakdown-chart"
+                        class="chart-container"
+                        style="min-height: 300px"
+                    ></div>
+                </div>
+            </div>
+        </main>
+
+        <script>
+            function getExtendedHistory() {
+                const months = [
+                    "Jan",
+                    "Feb",
+                    "Mar",
+                    "Apr",
+                    "May",
+                    "Jun",
+                    "Jul",
+                    "Aug",
+                    "Sep",
+                    "Oct",
+                    "Nov",
+                    "Dec",
+                ];
+                const labels = [];
+                const now = new Date();
+                for (let i = 35; i >= 0; i--) {
+                    const d = new Date(
+                        now.getFullYear(),
+                        now.getMonth() - i,
+                        1,
+                    );
+                    labels.push(
+                        `${months[d.getMonth()]} ${d.getFullYear().toString().slice(-2)}`,
+                    );
+                }
+                return labels;
+            }
+
+            function getDaysInCurrentMonth() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = now.getMonth();
+                const lastDay = new Date(year, month + 1, 0).getDate();
+                const monthName = now.toLocaleString("default", {
+                    month: "short",
+                });
+
+                const labels = [];
+                for (let i = 1; i <= lastDay; i++) {
+                    labels.push(`${i} ${monthName}`);
+                }
+                return labels;
+            }
+
+            const historicalLabels = getExtendedHistory();
+            const fullMonthLabels = getDaysInCurrentMonth();
+            const fullDayHours = Array.from(
+                { length: 24 },
+                (_, i) => `${i}:00`,
+            );
+
+            const data = {
+                hourly: {
+                    subtitle: "Hourly View (Full 24-Hour Day)",
+                    labels: fullDayHours,
+                    elec: fullDayHours.map(() => Math.random() * 20 + 10),
+                    water: fullDayHours.map(() => Math.random() * 5 + 2),
+                    gas: fullDayHours.map(() => Math.random() * 3 + 1),
+                    mix: [
+                        { value: 80, name: "Grid" },
+                        { value: 15, name: "Solar" },
+                        { value: 5, name: "Generator" },
+                    ],
+                    tariff: [120, 80, 50, 20, 100],
+                    waterBreakdown: [45, 60, 20],
+                    stats: {
+                        total: "185.20",
+                        avg: "7.72",
+                        peak: "45.10",
+                        offpeak: "12.40",
+                        reactive: "2.10",
+                        fixed: "5.00",
+                        postpaid: "120.00",
+                        prepaid: "45.00",
+                        wallet: "20.20",
+                    },
+                },
+                daily: {
+                    subtitle: `Daily View (${new Date().toLocaleString("default", { month: "long", year: "numeric" })})`,
+                    labels: fullMonthLabels,
+                    elec: fullMonthLabels.map(() =>
+                        Math.floor(Math.random() * 100 + 100),
+                    ),
+                    water: fullMonthLabels.map(() =>
+                        Math.floor(Math.random() * 30 + 40),
+                    ),
+                    gas: fullMonthLabels.map(() =>
+                        Math.floor(Math.random() * 15 + 20),
+                    ),
+                    mix: [
+                        { value: 65, name: "Grid" },
+                        { value: 25, name: "Solar" },
+                        { value: 10, name: "Generator" },
+                    ],
+                    tariff: [420, 300, 190, 80, 350],
+                    waterBreakdown: [320, 480, 150],
+                    stats: {
+                        total: "5,840.50",
+                        avg: "188.40",
+                        peak: "1,280.50",
+                        offpeak: "840.20",
+                        reactive: "142.10",
+                        fixed: "215.00",
+                        postpaid: "4,240.00",
+                        prepaid: "950.00",
+                        wallet: "650.50",
+                    },
+                },
+                monthly: {
+                    subtitle: `Trailing 36 Months (Ending ${historicalLabels[historicalLabels.length - 1]})`,
+                    labels: historicalLabels,
+                    elec: historicalLabels.map(() =>
+                        Math.floor(Math.random() * 800 + 2800),
+                    ),
+                    water: historicalLabels.map(() =>
+                        Math.floor(Math.random() * 200 + 750),
+                    ),
+                    gas: historicalLabels.map(() =>
+                        Math.floor(Math.random() * 150 + 350),
+                    ),
+                    mix: [
+                        { value: 55, name: "Grid" },
+                        { value: 40, name: "Solar" },
+                        { value: 5, name: "Generator" },
+                    ],
+                    tariff: [4500, 3200, 2100, 1200, 3800],
+                    waterBreakdown: [2800, 4200, 1800],
+                    stats: {
+                        total: "148,200.00",
+                        avg: "4,116.67",
+                        peak: "42,840.10",
+                        offpeak: "12,520.40",
+                        reactive: "1,380.00",
+                        fixed: "8,690.00",
+                        postpaid: "95,400.00",
+                        prepaid: "32,850.00",
+                        wallet: "19,950.00",
+                    },
+                },
+            };
+
+            let currentMode = "monthly";
+            let charts = {};
+
+            function initCharts() {
+                const getEl = (id) => document.getElementById(id);
+                charts.main = echarts.init(getEl("main-trend-chart"));
+                charts.source = echarts.init(getEl("elec-source-chart"));
+                charts.tariff = echarts.init(getEl("tariff-split-chart"));
+                charts.water = echarts.init(getEl("water-breakdown-chart"));
+
+                charts.main.on("click", (params) => {
+                    if (params.componentType === "series") {
+                        if (currentMode === "monthly")
+                            updateView("daily", params.name);
+                        else if (currentMode === "daily")
+                            updateView("hourly", params.name);
+                    }
+                });
+
+                renderAll();
+                window.addEventListener("resize", () => {
+                    adjustChartWidth();
+                    Object.values(charts).forEach((c) => c.resize());
+                });
+
+                setupDragToScroll();
+            }
+
+            function setupDragToScroll() {
+                const slider = document.getElementById(
+                    "trend-scroll-container",
+                );
+                let isDown = false;
+                let startX;
+                let scrollLeft;
+
+                slider.addEventListener("mousedown", (e) => {
+                    isDown = true;
+                    startX = e.pageX - slider.offsetLeft;
+                    scrollLeft = slider.scrollLeft;
+                });
+                slider.addEventListener("mouseleave", () => (isDown = false));
+                slider.addEventListener("mouseup", () => (isDown = false));
+                slider.addEventListener("mousemove", (e) => {
+                    if (!isDown) return;
+                    e.preventDefault();
+                    const x = e.pageX - slider.offsetLeft;
+                    const walk = (x - startX) * 1.5;
+                    slider.scrollLeft = scrollLeft - walk;
+                });
+            }
+
+            function adjustChartWidth() {
+                const container = document.getElementById(
+                    "main-trend-chart-container",
+                );
+                const scrollWrapper = document.getElementById(
+                    "trend-scroll-container",
+                );
+                const scrollIndicator =
+                    document.getElementById("scroll-indicator");
+
+                let calculatedWidth = "100%";
+                let showIndicator = false;
+                let canScroll = false;
+
+                if (currentMode === "monthly") {
+                    calculatedWidth = `${historicalLabels.length * 85}px`;
+                    showIndicator = true;
+                    canScroll = true;
+                } else if (currentMode === "daily") {
+                    calculatedWidth = `${fullMonthLabels.length * 55}px`;
+                    showIndicator = true;
+                    canScroll = true;
+                } else if (currentMode === "hourly") {
+                    calculatedWidth = `${24 * 60}px`;
+                    showIndicator = true;
+                    canScroll = true;
+                }
+
+                container.style.width = calculatedWidth;
+                if (showIndicator) scrollIndicator.classList.remove("hidden");
+                else scrollIndicator.classList.add("hidden");
+
+                if (canScroll) {
+                    scrollWrapper.classList.remove("scroll-disabled");
+                    scrollWrapper.classList.add("scroll-enabled");
+                } else {
+                    scrollWrapper.classList.remove("scroll-enabled");
+                    scrollWrapper.classList.add("scroll-disabled");
+                    scrollWrapper.scrollLeft = 0;
+                }
+
+                charts.main.resize();
+            }
+
+            function renderAll() {
+                const modeData = data[currentMode];
+                if (!modeData) return;
+
+                adjustChartWidth();
+
+                const setText = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) el.innerText = val;
+                };
+
+                setText("trend-subtitle", modeData.subtitle);
+                setText("stat-total-spend", modeData.stats.total);
+                setText("stat-avg-spend", `R ${modeData.stats.avg}`);
+                setText("detail-peak-spend", `R ${modeData.stats.peak}`);
+                setText("detail-offpeak-spend", `R ${modeData.stats.offpeak}`);
+                setText("stat-reactive", `R ${modeData.stats.reactive}`);
+                setText("stat-fixed", `R ${modeData.stats.fixed}`);
+                setText("stat-postpaid", `R ${modeData.stats.postpaid}`);
+                setText("stat-prepaid", `R ${modeData.stats.prepaid}`);
+                setText("stat-wallet", `R ${modeData.stats.wallet}`);
+
+                const hint = document.getElementById("drill-hint");
+                if (hint) {
+                    hint.innerText =
+                        currentMode === "hourly"
+                            ? "End of history"
+                            : `Click bar for ${currentMode === "monthly" ? "daily" : "hourly"} details`;
+                }
+
+                if (charts.main) {
+                    const totals = modeData.elec.map(
+                        (val, idx) =>
+                            val + modeData.water[idx] + modeData.gas[idx],
+                    );
+                    const avgTotal =
+                        totals.reduce((a, b) => a + b, 0) / totals.length;
+
+                    charts.main.setOption(
+                        {
+                            tooltip: {
+                                trigger: "axis",
+                                backgroundColor: "#1e293b",
+                                textStyle: { color: "#fff" },
+                                confine: true,
+                                axisPointer: { type: "shadow" },
+                                formatter: function (params) {
+                                    let res = `<strong>${params[0].name}</strong><br/>`;
+                                    params.forEach((item) => {
+                                        if (item.seriesName !== "Average") {
+                                            res += `${item.marker} ${item.seriesName}: R ${item.value.toLocaleString()}<br/>`;
+                                        }
+                                    });
+                                    return res;
+                                },
+                            },
+                            legend: { show: false },
+                            grid: {
+                                left: "10",
+                                right: "10",
+                                bottom: "20",
+                                top: "20",
+                                containLabel: true,
+                            },
+                            xAxis: {
+                                type: "category",
+                                data: modeData.labels,
+                                axisLine: {
+                                    lineStyle: { color: "#cbd5e1", width: 1 },
+                                },
+                                axisLabel: {
+                                    interval: 0,
+                                    rotate: currentMode === "daily" ? 45 : 0,
+                                    color: "#475569",
+                                    fontWeight: 600,
+                                    fontSize: 11,
+                                    margin: 15,
+                                },
+                                axisTick: { alignWithLabel: true },
+                                boundaryGap: true,
+                            },
+                            yAxis: {
+                                type: "value",
+                                splitLine: { lineStyle: { color: "#f1f5f9" } },
+                                axisLabel: {
+                                    color: "#64748b",
+                                    fontWeight: 600,
+                                    formatter: (v) =>
+                                        v >= 1000
+                                            ? `R${(v / 1000).toFixed(0)}k`
+                                            : `R${v}`,
+                                },
+                            },
+                            series: [
+                                {
+                                    name: "Electricity",
+                                    type: "bar",
+                                    stack: "total",
+                                    data: modeData.elec,
+                                    color: "#3b82f6",
+                                    barMaxWidth: 40,
+                                },
+                                {
+                                    name: "Water",
+                                    type: "bar",
+                                    stack: "total",
+                                    data: modeData.water,
+                                    color: "#06b6d4",
+                                    barMaxWidth: 40,
+                                },
+                                {
+                                    name: "Gas",
+                                    type: "bar",
+                                    stack: "total",
+                                    data: modeData.gas,
+                                    color: "#f97316",
+                                    barMaxWidth: 40,
+                                },
+                                {
+                                    name: "Average",
+                                    type: "line",
+                                    data: Array(modeData.labels.length).fill(
+                                        avgTotal,
+                                    ),
+                                    color: "#ef4444",
+                                    symbol: "none",
+                                    lineStyle: { width: 2, type: "dashed" },
+                                    z: 10,
+                                },
+                            ],
+                        },
+                        true,
+                    );
+
+                    setTimeout(() => {
+                        const scrollContainer = document.getElementById(
+                            "trend-scroll-container",
+                        );
+                        if (scrollContainer) {
+                            scrollContainer.scrollLeft =
+                                currentMode === "hourly"
+                                    ? 0
+                                    : scrollContainer.scrollWidth;
+                        }
+                    }, 150);
+                }
+
+                charts.source.setOption(
+                    {
+                        tooltip: {
+                            trigger: "item",
+                            formatter: "{a} <br/>{b}: {d}%",
+                        },
+                        legend: {
+                            bottom: "0%",
+                            left: "center",
+                            textStyle: { color: "#1e293b", fontWeight: 600 },
+                        },
+                        series: [
+                            {
+                                type: "pie",
+                                radius: ["50%", "80%"],
+                                itemStyle: {
+                                    borderRadius: 10,
+                                    borderColor: "#fff",
+                                    borderWidth: 2,
+                                },
+                                label: { show: false },
+                                data: modeData.mix.map((item, idx) => ({
+                                    ...item,
+                                    itemStyle: {
+                                        color: [
+                                            "#3b82f6",
+                                            "#fbbf24",
+                                            "#ef4444",
+                                        ][idx],
+                                    },
+                                })),
+                            },
+                        ],
+                    },
+                    true,
+                );
+
+                const maxV = currentMode === "monthly" ? 5000 : 500;
+                charts.tariff.setOption({
+                    radar: {
+                        indicator: [
+                            { name: "Peak", max: maxV },
+                            { name: "Std", max: maxV },
+                            { name: "Off-P", max: maxV },
+                            { name: "React", max: maxV },
+                            { name: "KWG", max: maxV },
+                        ],
+                        axisName: { color: "#1e293b", fontWeight: 700 },
+                    },
+                    series: [
+                        {
+                            type: "radar",
+                            data: [
+                                {
+                                    value: modeData.tariff,
+                                    areaStyle: {
+                                        color: "rgba(59, 130, 246, 0.2)",
+                                    },
+                                    lineStyle: { color: "#3b82f6" },
+                                },
+                            ],
+                        },
+                    ],
+                });
+
+                charts.water.setOption({
+                    tooltip: { trigger: "axis", formatter: "R {c}" },
+                    xAxis: {
+                        type: "category",
+                        data: ["Hot", "Cold", "Sewage"],
+                        axisLabel: { fontWeight: 700, color: "#1e293b" },
+                    },
+                    yAxis: {
+                        type: "value",
+                        axisLabel: { formatter: "R {value}" },
+                    },
+                    series: [
+                        {
+                            type: "bar",
+                            data: modeData.waterBreakdown.map((v, i) => ({
+                                value: v,
+                                itemStyle: {
+                                    color: ["#f43f5e", "#3b82f6", "#64748b"][i],
+                                },
+                            })),
+                            barWidth: "50%",
+                            label: {
+                                show: true,
+                                position: "top",
+                                formatter: "R {c}",
+                                fontWeight: 800,
+                            },
+                        },
+                    ],
+                });
+            }
+
+            function updateView(mode, context = null) {
+                currentMode = mode;
+                document
+                    .querySelectorAll(".view-btn")
+                    .forEach((btn) =>
+                        btn.classList.remove(
+                            "bg-white",
+                            "shadow-sm",
+                            "text-blue-600",
+                            "border-slate-200",
+                        ),
+                    );
+                const activeBtn = document.getElementById(`btn-${mode}`);
+                if (activeBtn) {
+                    activeBtn.classList.add(
+                        "bg-white",
+                        "shadow-sm",
+                        "text-blue-600",
+                        "border",
+                        "border-slate-200",
+                    );
+                }
+
+                const dateEl = document.getElementById("date-display");
+                if (dateEl)
+                    dateEl.innerText =
+                        mode === "monthly"
+                            ? "Full History (36m)"
+                            : context || "Detailed View";
+
+                renderAll();
+            }
+
+            window.onload = () => {
+                if (typeof lucide !== "undefined") lucide.createIcons();
+                initCharts();
+                updateView("monthly");
+            };
+        </script>
+    </body>
+</html>

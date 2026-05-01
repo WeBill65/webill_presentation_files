@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Tariff Impact Dashboard</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+
+        <!-- PDF Generation Libraries as seen in comparison.html -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+            body {
+                font-family: "Inter", sans-serif;
+            }
+
+            :root {
+                --p: 221.2 83.2% 28%;
+                --pc: 0 0% 100%;
+            }
+
+            .range-primary::-webkit-slider-runnable-track {
+                background-color: #f1f5f9 !important;
+                border-radius: 1rem;
+            }
+            .range-primary::-webkit-slider-thumb {
+                background-color: #404068 !important;
+                border: 2px solid white !important;
+                box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            }
+
+            #main-chart {
+                min-height: 450px;
+                width: 100%;
+            }
+
+            .branded-header {
+                background-color: #404068;
+                color: #faa919;
+            }
+
+            .custom-table-header {
+                background-color: #404068 !important;
+                color: white !important;
+            }
+
+            .echarts-dataview {
+                font-family: "Inter", sans-serif !important;
+                font-size: 12px !important;
+                padding: 20px !important;
+                background-color: white !important;
+                border-radius: 12px !important;
+            }
+        </style>
+    </head>
+    <body class="bg-slate-50 min-h-screen text-slate-900 font-medium">
+        <div id="dashboard-content" class="max-w-7xl mx-auto p-4 md:p-8">
+            <!-- Branded Header -->
+            <div
+                class="branded-header p-6 md:p-8 rounded-2xl shadow-lg mb-6 border border-slate-700/30 relative overflow-hidden"
+            >
+                <div
+                    class="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10"
+                >
+                    <div class="flex items-start md:items-center gap-5">
+                        <div
+                            class="p-4 bg-[#faa919] rounded-xl text-[#404068] shadow-md shrink-0"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="28"
+                                height="28"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2.5"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h1
+                                class="text-xl md:text-2xl font-bold tracking-tight text-white leading-tight"
+                            >
+                                Tariff Impact Dashboard
+                            </h1>
+                            <div
+                                class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-[11px] md:text-xs font-semibold text-[#faa919] uppercase tracking-wider"
+                            >
+                                <span
+                                    class="flex items-center gap-1.5 opacity-90"
+                                >
+                                    Meter: 0422 1856 991
+                                </span>
+                                <span class="hidden md:inline text-[#faa919]/30"
+                                    >|</span
+                                >
+                                <span
+                                    class="flex items-center gap-1.5 opacity-90"
+                                >
+                                    Provider: Eskom
+                                </span>
+                                <div
+                                    class="w-full lg:w-auto flex gap-3 mt-1 lg:mt-0"
+                                >
+                                    <span
+                                        class="px-2 py-0.5 rounded-md bg-white/10 text-white border border-white/5 lowercase"
+                                    >
+                                        Base Load:
+                                        <span
+                                            class="text-[#faa919]"
+                                            id="header-total-kwh"
+                                            >12.4M kWh/pa</span
+                                        >
+                                    </span>
+                                    <span
+                                        class="px-2 py-0.5 rounded-md bg-white/10 text-white border border-white/5 lowercase"
+                                    >
+                                        Peak:
+                                        <span
+                                            class="text-[#faa919]"
+                                            id="header-peak-kva"
+                                            >2,450 kVA</span
+                                        >
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button
+                            id="pdf-btn"
+                            class="btn bg-white/10 hover:bg-white/20 border-white/20 text-white btn-sm gap-2 normal-case"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <path
+                                    d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                                />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" x2="12" y1="15" y2="3" />
+                            </svg>
+                            Export PDF Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Simulation Settings -->
+            <div
+                class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8 flex flex-col md:flex-row items-center justify-between gap-8 no-print"
+            >
+                <div
+                    class="flex flex-col sm:flex-row items-center gap-8 w-full md:w-auto flex-1 max-w-2xl"
+                >
+                    <div class="flex flex-col gap-2 w-full">
+                        <div class="flex justify-between items-center px-1">
+                            <label
+                                class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
+                                >Projected Annual Increase</label
+                            >
+                            <span
+                                id="percentage-badge"
+                                class="badge badge-neutral border-none font-bold text-white px-3 py-2 bg-[#404068]"
+                                >23%</span
+                            >
+                        </div>
+                        <input
+                            id="percentage-slider"
+                            type="range"
+                            min="0"
+                            max="100"
+                            value="23"
+                            class="range range-xs range-primary"
+                        />
+                    </div>
+                    <div
+                        class="flex items-center gap-2 border-t sm:border-t-0 sm:border-l border-slate-100 pt-4 sm:pt-0 sm:pl-6 w-full sm:w-auto justify-center"
+                    >
+                        <input
+                            id="percentage-input"
+                            type="number"
+                            value="23"
+                            class="input input-bordered input-sm w-20 font-bold text-center border-slate-200 focus:border-[#404068] focus:ring-4 focus:ring-[#404068]/5"
+                        />
+                        <span class="text-sm font-bold text-slate-400">%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI Grid -->
+            <div
+                id="kpi-section"
+                class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+            >
+                <div
+                    class="card bg-white shadow-sm border border-slate-200 p-6"
+                >
+                    <p
+                        class="text-[10px] font-bold text-slate-500 uppercase tracking-widest"
+                    >
+                        12-Month Projected Cost
+                    </p>
+                    <h2
+                        id="kpi-total-cost"
+                        class="text-xl font-bold mt-1 text-slate-900 tracking-tight"
+                    >
+                        R0
+                    </h2>
+                    <p
+                        id="kpi-current-sublabel"
+                        class="text-[10px] text-slate-400 mt-1 font-medium italic"
+                    >
+                        Baseline: R0
+                    </p>
+                </div>
+                <div
+                    class="card bg-white shadow-sm border border-slate-200 p-6"
+                >
+                    <p
+                        class="text-[10px] font-bold text-slate-500 uppercase tracking-widest"
+                    >
+                        Total Projected Variance
+                    </p>
+                    <h2
+                        id="kpi-variance"
+                        class="text-xl font-bold mt-1 text-slate-900 tracking-tight"
+                    >
+                        R0
+                    </h2>
+                    <p
+                        class="text-[10px] text-slate-400 mt-1 font-medium italic"
+                    >
+                        Net annual increase impact
+                    </p>
+                </div>
+                <div
+                    class="card bg-white shadow-sm border border-slate-200 p-6"
+                >
+                    <p
+                        class="text-[10px] font-bold text-slate-500 uppercase tracking-widest"
+                    >
+                        Avg. Monthly Consumption
+                    </p>
+                    <h2
+                        id="kpi-avg-kwh"
+                        class="text-xl font-bold mt-1 text-slate-900 tracking-tight"
+                    >
+                        0 kWh
+                    </h2>
+                    <p
+                        class="text-[10px] text-slate-400 mt-1 font-medium italic"
+                    >
+                        Estimated based on history
+                    </p>
+                </div>
+            </div>
+
+            <!-- Main Chart Area -->
+            <div
+                id="chart-section"
+                class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 mb-8"
+            >
+                <div
+                    class="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-6"
+                >
+                    <div>
+                        <h3
+                            class="font-bold text-lg text-slate-800 tracking-tight"
+                        >
+                            Projected Expenditure Trend
+                        </h3>
+                        <p
+                            class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1"
+                        >
+                            April 2026 - March 2027 cycle
+                        </p>
+                    </div>
+                    <div
+                        id="chart-legend"
+                        class="flex flex-wrap gap-5 text-[9px] font-bold text-slate-400 uppercase tracking-widest"
+                    >
+                        <div class="flex items-center gap-2">
+                            <span
+                                id="legend-baseline-dot"
+                                class="w-3 h-1 rounded-full"
+                            ></span
+                            >Baseline
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span
+                                id="legend-projected-dot"
+                                class="w-3 h-1 rounded-full"
+                            ></span
+                            >Projected
+                        </div>
+                    </div>
+                </div>
+                <div id="main-chart"></div>
+            </div>
+
+            <!-- Monthly Breakdown -->
+            <div
+                id="table-section"
+                class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"
+            >
+                <div
+                    class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50"
+                >
+                    <h4
+                        class="font-bold text-slate-800 uppercase tracking-tight text-xs"
+                    >
+                        Monthly Projection Data
+                    </h4>
+                    <button
+                        id="export-btn"
+                        class="btn btn-xs btn-outline border-slate-200 text-slate-500 font-bold px-4"
+                    >
+                        CSV
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table
+                        id="projection-table"
+                        class="table table-zebra w-full"
+                    >
+                        <thead class="custom-table-header">
+                            <tr class="text-[10px] font-bold uppercase">
+                                <th class="py-4 px-6 text-white">Month</th>
+                                <th class="py-4 px-6 text-white">kWh</th>
+                                <th class="py-4 px-6 text-white">kVA</th>
+                                <th class="py-4 px-6 text-white text-right">
+                                    Baseline Cost
+                                </th>
+                                <th class="py-4 px-6 text-white text-right">
+                                    Projected Cost
+                                </th>
+                                <th class="py-4 px-6 text-right text-white">
+                                    Variance
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="monthly-list-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const APP_STATE = {
+                chart: null,
+                data: [],
+                currentIncrease: 23,
+                baseKWh: 12400000,
+                basePeakKVA: 2450,
+                colors: {
+                    baseline: "#94a3b8",
+                    projected: "#2563eb",
+                },
+            };
+
+            document.getElementById(
+                "legend-baseline-dot",
+            ).style.backgroundColor = APP_STATE.colors.baseline;
+            document.getElementById(
+                "legend-projected-dot",
+            ).style.backgroundColor = APP_STATE.colors.projected;
+
+            function generateDataset(increasePct) {
+                const factor = 1 + increasePct / 100;
+                const months = [
+                    "Apr 2026",
+                    "May 2026",
+                    "Jun 2026",
+                    "Jul 2026",
+                    "Aug 2026",
+                    "Sep 2026",
+                    "Oct 2026",
+                    "Nov 2026",
+                    "Dec 2026",
+                    "Jan 2027",
+                    "Feb 2027",
+                    "Mar 2027",
+                ];
+                const avgCostPerKWh = 5.25;
+
+                return months.map((monthName, index) => {
+                    const seasonality = 1 + Math.sin((index + 2) * 0.5) * 0.15;
+                    const monthlyKWh = Math.round(
+                        (APP_STATE.baseKWh / 12) * seasonality,
+                    );
+                    const monthlyPeakKVA = Math.round(
+                        APP_STATE.basePeakKVA * seasonality,
+                    );
+                    const current = monthlyKWh * avgCostPerKWh;
+                    const projected = Math.round(current * factor);
+
+                    return {
+                        month: monthName,
+                        kwh: monthlyKWh,
+                        kva: monthlyPeakKVA,
+                        current,
+                        projected,
+                        variance: projected - current,
+                    };
+                });
+            }
+
+            const formatCurrency = (val) =>
+                new Intl.NumberFormat("en-ZA", {
+                    style: "currency",
+                    currency: "ZAR",
+                    maximumFractionDigits: 0,
+                }).format(val);
+            const formatNumber = (val) =>
+                new Intl.NumberFormat("en-ZA").format(val);
+
+            function updateUI() {
+                APP_STATE.data = generateDataset(APP_STATE.currentIncrease);
+
+                const totalProj = APP_STATE.data.reduce(
+                    (s, i) => s + i.projected,
+                    0,
+                );
+                const totalCurr = APP_STATE.data.reduce(
+                    (s, i) => s + i.current,
+                    0,
+                );
+                const totalKWh = APP_STATE.data.reduce((s, i) => s + i.kwh, 0);
+                const maxKVA = Math.max(...APP_STATE.data.map((i) => i.kva));
+
+                document.getElementById("header-total-kwh").textContent =
+                    `${(totalKWh / 1000000).toFixed(1)}M kWh/pa`;
+                document.getElementById("header-peak-kva").textContent =
+                    `${formatNumber(maxKVA)} kVA`;
+                document.getElementById("kpi-total-cost").textContent =
+                    formatCurrency(totalProj);
+                document.getElementById("kpi-current-sublabel").textContent =
+                    `Baseline: ${formatCurrency(totalCurr)}`;
+                document.getElementById("kpi-variance").textContent =
+                    formatCurrency(totalProj - totalCurr);
+                document.getElementById("kpi-avg-kwh").textContent =
+                    `${formatNumber(Math.round(totalKWh / 12))} kWh`;
+
+                document.getElementById("monthly-list-body").innerHTML =
+                    APP_STATE.data
+                        .map(
+                            (item) => `
+                        <tr>
+                            <td class="px-6 py-3 font-bold text-xs">${item.month}</td>
+                            <td class="px-6 py-3 text-xs text-slate-500">${formatNumber(item.kwh)}</td>
+                            <td class="px-6 py-3 text-xs text-slate-500">${formatNumber(item.kva)}</td>
+                            <td class="px-6 py-3 text-xs text-right text-slate-500">${formatCurrency(item.current)}</td>
+                            <td class="px-6 py-3 text-xs text-right font-bold">${formatCurrency(item.projected)}</td>
+                            <td class="px-6 py-3 text-xs text-right font-bold text-blue-700">+${formatCurrency(item.variance)}</td>
+                        </tr>
+                    `,
+                        )
+                        .join("");
+
+                if (APP_STATE.chart) {
+                    APP_STATE.chart.setOption({
+                        xAxis: { data: APP_STATE.data.map((d) => d.month) },
+                        series: [
+                            { data: APP_STATE.data.map((d) => d.current) },
+                            { data: APP_STATE.data.map((d) => d.projected) },
+                        ],
+                    });
+                }
+            }
+
+            function initChart() {
+                const chartDom = document.getElementById("main-chart");
+                APP_STATE.chart = echarts.init(chartDom);
+                APP_STATE.chart.setOption({
+                    toolbox: {
+                        show: true,
+                        feature: {
+                            dataView: { show: true, readOnly: true },
+                            magicType: { show: true, type: ["line", "bar"] },
+                            restore: { show: true },
+                        },
+                    },
+                    tooltip: { trigger: "axis" },
+                    grid: {
+                        left: "2%",
+                        right: "2%",
+                        bottom: "5%",
+                        containLabel: true,
+                    },
+                    xAxis: {
+                        type: "category",
+                        data: [],
+                        axisLabel: { fontSize: 10, rotate: 30 },
+                    },
+                    yAxis: {
+                        type: "value",
+                        axisLabel: {
+                            fontSize: 10,
+                            formatter: (v) => `R${(v / 1000000).toFixed(1)}M`,
+                        },
+                    },
+                    series: [
+                        {
+                            name: "Baseline",
+                            type: "bar",
+                            data: [],
+                            itemStyle: {
+                                color: APP_STATE.colors.baseline,
+                                opacity: 0.5,
+                            },
+                            barMaxWidth: 20,
+                        },
+                        {
+                            name: "Projected",
+                            type: "line",
+                            data: [],
+                            symbolSize: 8,
+                            lineStyle: { width: 4 },
+                            itemStyle: { color: APP_STATE.colors.projected },
+                        },
+                    ],
+                });
+            }
+
+            // PDF EXPORT LOGIC FROM COMPARISON.HTML
+            async function exportToPDF() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF("p", "mm", "a4");
+                const accentColor = [64, 64, 104]; // Dark Blue
+                const highlightColor = [250, 169, 25]; // Gold
+
+                // 1. Header Box
+                doc.setFillColor(...accentColor);
+                doc.rect(0, 0, 210, 40, "F");
+
+                doc.setTextColor(...highlightColor);
+                doc.setFontSize(22);
+                doc.setFont("helvetica", "bold");
+                doc.text("Tariff Impact Report", 15, 20);
+
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(10);
+                doc.text(`Meter: 0422 1856 991  |  Provider: Eskom`, 15, 28);
+                doc.text(
+                    `Simulation: +${APP_STATE.currentIncrease}% Annual Increase`,
+                    15,
+                    34,
+                );
+
+                // 2. Summary Row
+                const totalProj = APP_STATE.data.reduce(
+                    (s, i) => s + i.projected,
+                    0,
+                );
+                const totalKWh = APP_STATE.data.reduce((s, i) => s + i.kwh, 0);
+
+                doc.setTextColor(50, 50, 50);
+                doc.setFontSize(12);
+                doc.text("Executive Summary", 15, 55);
+
+                doc.autoTable({
+                    startY: 60,
+                    head: [["Metric", "Value"]],
+                    body: [
+                        [
+                            "Total Projected Annual Cost",
+                            formatCurrency(totalProj),
+                        ],
+                        [
+                            "Total Annual Consumption",
+                            `${formatNumber(totalKWh)} kWh`,
+                        ],
+                        [
+                            "Avg Monthly Consumption",
+                            `${formatNumber(Math.round(totalKWh / 12))} kWh`,
+                        ],
+                        [
+                            "Projected Variance Impact",
+                            formatCurrency(
+                                totalProj -
+                                    APP_STATE.data.reduce(
+                                        (s, i) => s + i.current,
+                                        0,
+                                    ),
+                            ),
+                        ],
+                    ],
+                    theme: "striped",
+                    headStyles: { fillColor: accentColor },
+                });
+
+                // 3. Chart as Image
+                const chartImg = APP_STATE.chart.getDataURL({
+                    type: "png",
+                    pixelRatio: 2,
+                    backgroundColor: "#fff",
+                });
+                doc.addImage(chartImg, "PNG", 15, 105, 180, 80);
+
+                // 4. Monthly Breakdown Table
+                doc.addPage();
+                doc.text("Monthly Projection Breakdown", 15, 20);
+
+                const tableData = APP_STATE.data.map((item) => [
+                    item.month,
+                    formatNumber(item.kwh),
+                    formatNumber(item.kva),
+                    formatCurrency(item.current),
+                    formatCurrency(item.projected),
+                    `+${formatCurrency(item.variance)}`,
+                ]);
+
+                doc.autoTable({
+                    startY: 25,
+                    head: [
+                        [
+                            "Month",
+                            "kWh",
+                            "kVA",
+                            "Baseline",
+                            "Projected",
+                            "Variance",
+                        ],
+                    ],
+                    body: tableData,
+                    headStyles: { fillColor: accentColor },
+                    columnStyles: {
+                        3: { halign: "right" },
+                        4: { halign: "right" },
+                        5: { halign: "right", fontStyle: "bold" },
+                    },
+                });
+
+                doc.save(
+                    `Tariff_Impact_Report_${APP_STATE.currentIncrease}pct.pdf`,
+                );
+            }
+
+            function setupControls() {
+                const slider = document.getElementById("percentage-slider");
+                const input = document.getElementById("percentage-input");
+                const badge = document.getElementById("percentage-badge");
+
+                const updateValue = (val) => {
+                    val = Math.max(0, Math.min(100, val));
+                    APP_STATE.currentIncrease = val;
+                    slider.value = val;
+                    input.value = val;
+                    badge.textContent = `${val}%`;
+                    updateUI();
+                };
+
+                slider.addEventListener("input", (e) =>
+                    updateValue(parseInt(e.target.value)),
+                );
+                input.addEventListener("change", (e) =>
+                    updateValue(parseInt(e.target.value) || 0),
+                );
+
+                document
+                    .getElementById("pdf-btn")
+                    .addEventListener("click", exportToPDF);
+
+                document
+                    .getElementById("export-btn")
+                    .addEventListener("click", () => {
+                        const csv = [
+                            "Month,kWh,kVA,Baseline,Projected,Variance",
+                            ...APP_STATE.data.map(
+                                (d) =>
+                                    `${d.month},${d.kwh},${d.kva},${d.current},${d.projected},${d.variance}`,
+                            ),
+                        ].join("\n");
+                        const blob = new Blob([csv], { type: "text/csv" });
+                        const a = document.createElement("a");
+                        a.href = window.URL.createObjectURL(blob);
+                        a.download = "projection_data.csv";
+                        a.click();
+                    });
+            }
+
+            window.onload = () => {
+                initChart();
+                setupControls();
+                updateUI();
+            };
+            window.onresize = () => APP_STATE.chart && APP_STATE.chart.resize();
+        </script>
+    </body>
+</html>

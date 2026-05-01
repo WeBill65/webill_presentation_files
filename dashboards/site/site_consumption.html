@@ -1,0 +1,981 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>WeBill Golf Estate - Utility Consumption Dashboard</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+        <style>
+            :root {
+                --brand-bg: #404068;
+                --brand-accent: #faa919;
+            }
+            .bg-brand {
+                background-color: var(--brand-bg);
+            }
+            .text-brand-accent {
+                color: var(--brand-accent);
+            }
+            .border-brand-accent {
+                border-color: var(--brand-accent);
+            }
+
+            /* Custom scrollbar */
+            ::-webkit-scrollbar {
+                width: 8px;
+            }
+            ::-webkit-scrollbar-track {
+                background: #f1f1f1;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #404068;
+                border-radius: 4px;
+            }
+
+            .tab-active {
+                background-color: white !important;
+                box-shadow:
+                    0 1px 3px 0 rgba(0, 0, 0, 0.1),
+                    0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+                color: var(--brand-bg) !important;
+            }
+
+            .utility-pill {
+                transition: all 0.2s ease;
+            }
+            .utility-pill.active {
+                background-color: var(--brand-bg);
+                color: white;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }
+
+            .perc-label {
+                font-size: 0.65rem;
+                font-weight: 700;
+                color: #6b7280;
+                display: block;
+                margin-top: 2px;
+            }
+
+            .deviation-badge {
+                font-size: 0.7rem;
+                font-weight: 700;
+                padding: 2px 6px;
+                border-radius: 4px;
+                display: inline-flex;
+                align-items: center;
+                gap: 2px;
+            }
+
+            /* Sticky Header Logic */
+            .table-container {
+                max-height: 600px;
+                overflow-y: auto;
+            }
+
+            thead th {
+                position: sticky;
+                top: 0;
+                z-index: 10;
+                background-color: var(--brand-bg);
+                color: white;
+                box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+            }
+        </style>
+    </head>
+    <body class="bg-gray-50 min-h-screen font-sans">
+        <!-- Header -->
+        <header class="bg-brand text-white p-4 shadow-lg sticky top-0 z-50">
+            <div
+                class="container mx-auto flex flex-col md:flex-row justify-between items-center"
+            >
+                <div class="flex items-center space-x-4">
+                    <div
+                        class="w-10 h-10 bg-white rounded-full flex items-center justify-center"
+                    >
+                        <span class="text-brand-bg font-bold text-xl">W</span>
+                    </div>
+                    <h1 class="text-2xl font-bold text-brand-accent">
+                        WeBill Golf Estate
+                    </h1>
+                </div>
+                <div class="mt-2 md:mt-0 text-sm text-gray-300">
+                    Utility Management Dashboard •
+                    <span id="current-timestamp"></span>
+                </div>
+            </div>
+        </header>
+
+        <main class="container mx-auto p-4 md:p-6 space-y-6">
+            <!-- Totals Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Electricity -->
+                <div
+                    class="bg-white rounded-xl shadow-md overflow-hidden border-t-4 border-yellow-500 transition-transform hover:scale-[1.01]"
+                >
+                    <div class="p-5">
+                        <div class="flex justify-between items-center mb-2">
+                            <span
+                                class="text-gray-500 font-medium uppercase text-xs tracking-wider"
+                                >Electricity Consumption</span
+                            >
+                            <div id="dev-elec" class="deviation-badge"></div>
+                        </div>
+                        <div class="flex items-baseline space-x-2">
+                            <h2
+                                class="text-3xl font-bold text-gray-800"
+                                id="card-total-elec"
+                            >
+                                0
+                            </h2>
+                            <span class="text-gray-400 font-semibold text-sm"
+                                >kWh</span
+                            >
+                        </div>
+
+                        <!-- Breakdown -->
+                        <div
+                            class="mt-4 pt-4 border-t border-gray-100 grid grid-cols-3 gap-2"
+                        >
+                            <div>
+                                <p
+                                    class="text-[10px] uppercase font-bold text-gray-400"
+                                >
+                                    Import
+                                </p>
+                                <p
+                                    class="text-xs font-bold text-gray-700"
+                                    id="break-elec-import"
+                                >
+                                    0
+                                </p>
+                                <p
+                                    class="text-[10px] text-gray-500"
+                                    id="perc-elec-import"
+                                >
+                                    0%
+                                </p>
+                            </div>
+                            <div>
+                                <p
+                                    class="text-[10px] uppercase font-bold text-gray-400"
+                                >
+                                    Solar
+                                </p>
+                                <p
+                                    class="text-xs font-bold text-yellow-600"
+                                    id="break-elec-solar"
+                                >
+                                    0
+                                </p>
+                                <p
+                                    class="text-[10px] text-gray-500"
+                                    id="perc-elec-solar"
+                                >
+                                    0%
+                                </p>
+                            </div>
+                            <div>
+                                <p
+                                    class="text-[10px] uppercase font-bold text-gray-400"
+                                >
+                                    Gen
+                                </p>
+                                <p
+                                    class="text-xs font-bold text-red-600"
+                                    id="break-elec-gen"
+                                >
+                                    0
+                                </p>
+                                <p
+                                    class="text-[10px] text-gray-500"
+                                    id="perc-elec-gen"
+                                >
+                                    0%
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Water -->
+                <div
+                    class="bg-white rounded-xl shadow-md overflow-hidden border-t-4 border-blue-500 transition-transform hover:scale-[1.01]"
+                >
+                    <div class="p-5">
+                        <div class="flex justify-between items-center mb-2">
+                            <span
+                                class="text-gray-500 font-medium uppercase text-xs tracking-wider"
+                                >Water Consumption</span
+                            >
+                            <div id="dev-water" class="deviation-badge"></div>
+                        </div>
+                        <div class="flex items-baseline space-x-2">
+                            <h2
+                                class="text-3xl font-bold text-gray-800"
+                                id="card-total-water"
+                            >
+                                0
+                            </h2>
+                            <span class="text-gray-400 font-semibold text-sm"
+                                >kL</span
+                            >
+                        </div>
+
+                        <!-- Breakdown -->
+                        <div
+                            class="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 gap-4"
+                        >
+                            <div>
+                                <p
+                                    class="text-[10px] uppercase font-bold text-gray-400"
+                                >
+                                    Import
+                                </p>
+                                <p
+                                    class="text-xs font-bold text-gray-700"
+                                    id="break-water-import"
+                                >
+                                    0
+                                </p>
+                                <p
+                                    class="text-[10px] text-gray-500"
+                                    id="perc-water-import"
+                                >
+                                    0%
+                                </p>
+                            </div>
+                            <div>
+                                <p
+                                    class="text-[10px] uppercase font-bold text-gray-400"
+                                >
+                                    Borehole
+                                </p>
+                                <p
+                                    class="text-xs font-bold text-blue-600"
+                                    id="break-water-bore"
+                                >
+                                    0
+                                </p>
+                                <p
+                                    class="text-[10px] text-gray-500"
+                                    id="perc-water-bore"
+                                >
+                                    0%
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gas -->
+                <div
+                    class="bg-white rounded-xl shadow-md overflow-hidden border-t-4 border-orange-600 transition-transform hover:scale-[1.01]"
+                >
+                    <div class="p-5">
+                        <div class="flex justify-between items-center mb-2">
+                            <span
+                                class="text-gray-500 font-medium uppercase text-xs tracking-wider"
+                                >Gas Consumption</span
+                            >
+                            <div id="dev-gas" class="deviation-badge"></div>
+                        </div>
+                        <div class="flex items-baseline space-x-2">
+                            <h2
+                                class="text-3xl font-bold text-gray-800"
+                                id="card-total-gas"
+                            >
+                                0
+                            </h2>
+                            <span class="text-gray-400 font-semibold text-sm"
+                                >kg</span
+                            >
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <p class="text-xs text-gray-500 italic">
+                                Total LP Gas usage across estate
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Dashboard Section -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div
+                    class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4"
+                >
+                    <div
+                        class="flex flex-wrap gap-2 p-1 bg-gray-50 rounded-xl border border-gray-200"
+                    >
+                        <button
+                            onclick="setUtility('electricity')"
+                            id="util-electricity"
+                            class="utility-pill active px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"
+                        >
+                            <svg
+                                class="w-4 h-4"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path
+                                    d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.75a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.457a1 1 0 00-1.414-1.414l-.707.707a1 1 0 101.414 1.414l.707-.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16a1 1 0 01-1 1H6a1 1 0 110-2h1a1 1 0 011 1zM13 16a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM14.503 16.103a1 1 0 01-1.414 0l-.707-.707a1 1 0 011.414-1.414l.707.707a1 1 0 010 1.414z"
+                                ></path>
+                            </svg>
+                            Electricity
+                        </button>
+                        <button
+                            onclick="setUtility('water')"
+                            id="util-water"
+                            class="utility-pill px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 text-gray-500 hover:bg-gray-200"
+                        >
+                            <svg
+                                class="w-4 h-4"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path
+                                    d="M10 2a1 1 0 011 1v1.323l.395.17a7.5 7.5 0 014.033 8.356l-.105.51a.5.5 0 01-.485.4h-9.676a.5.5 0 01-.485-.4l-.105-.51a7.5 7.5 0 014.033-8.356l.395-.17V3a1 1 0 011-1z"
+                                ></path>
+                            </svg>
+                            Water
+                        </button>
+                        <button
+                            onclick="setUtility('gas')"
+                            id="util-gas"
+                            class="utility-pill px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 text-gray-500 hover:bg-gray-200"
+                        >
+                            <svg
+                                class="w-4 h-4"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.435 0-.308-.014-.616-.041-.92a1 1 0 00-1.923-.27c-.244.636-.37 1.353-.37 2.115 0 1.416.24 2.766.746 3.86a6.974 6.974 0 002.583 3.011c1.233.784 2.72 1.24 4.316 1.24a6.98 6.98 0 004.95-2.05 6.979 6.979 0 002.05-4.95c0-1.597-.456-3.084-1.241-4.316a6.975 6.975 0 00-3.01-2.582c-1.096-.506-2.446-.747-3.861-.747z"
+                                    clip-rule="evenodd"
+                                ></path>
+                            </svg>
+                            Gas
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-4 ml-auto">
+                        <span
+                            id="drill-down-indicator"
+                            class="text-xs text-gray-400 italic hidden lg:block"
+                            >Tip: Click a bar to drill down</span
+                        >
+                        <div class="flex bg-gray-100 rounded-lg p-1">
+                            <button
+                                onclick="updateView('monthly')"
+                                id="btn-monthly"
+                                class="px-5 py-2 rounded-md text-sm font-semibold transition-all tab-active"
+                            >
+                                Monthly
+                            </button>
+                            <button
+                                onclick="updateView('daily')"
+                                id="btn-daily"
+                                class="px-5 py-2 rounded-md text-sm font-semibold transition-all text-gray-600"
+                            >
+                                Daily
+                            </button>
+                            <button
+                                onclick="updateView('hourly')"
+                                id="btn-hourly"
+                                class="px-5 py-2 rounded-md text-sm font-semibold transition-all text-gray-600"
+                            >
+                                Hourly
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="main-chart" class="w-full h-[500px]"></div>
+            </div>
+
+            <!-- Consumer List Section -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <div
+                    class="bg-brand px-6 py-4 flex justify-between items-center border-b border-gray-700"
+                >
+                    <div class="flex items-center gap-3">
+                        <h3 class="text-brand-accent font-bold text-lg">
+                            Unit Consumption Breakdown
+                        </h3>
+                        <span
+                            id="unit-count"
+                            class="bg-brand-accent/20 text-brand-accent px-2 py-0.5 rounded text-xs font-bold"
+                            >0 Units</span
+                        >
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="bg-white/10 text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
+                            id="table-period-label"
+                            >Monthly View</span
+                        >
+                        <span
+                            class="text-gray-300 text-xs font-medium border-l border-white/20 pl-3"
+                            id="table-date-context"
+                        ></span>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr>
+                                <th
+                                    class="px-6 py-4 text-xs font-bold uppercase border-b border-white/10"
+                                >
+                                    Unit & Consumer
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-xs font-bold uppercase border-b border-white/10"
+                                >
+                                    Water (kL)
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-xs font-bold uppercase border-b border-white/10"
+                                >
+                                    Electricity (kWh)
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-xs font-bold uppercase border-b border-white/10"
+                                >
+                                    Gas (kg)
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody
+                            id="unit-table-body"
+                            class="divide-y divide-gray-100"
+                        ></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <footer class="mt-12 py-8 bg-gray-100 border-t border-gray-200">
+            <div
+                class="container mx-auto px-6 text-center text-gray-500 text-sm"
+            >
+                &copy; 2024 WeBill Golf Estate Management. All rights reserved.
+                Utility data refreshed every 15 minutes.
+            </div>
+        </footer>
+
+        <script>
+            // --- State Management ---
+            let currentView = "monthly";
+            let currentUtility = "electricity";
+            let mainChart;
+
+            // --- Data Definitions ---
+            const labels = {
+                monthly: [
+                    "Apr '23",
+                    "May '23",
+                    "Jun '23",
+                    "Jul '23",
+                    "Aug '23",
+                    "Sep '23",
+                    "Oct '23",
+                    "Nov '23",
+                    "Dec '23",
+                    "Jan '24",
+                    "Feb '24",
+                    "Mar '24",
+                ],
+                daily: Array.from({ length: 30 }, (_, i) => `Day ${i + 1}`),
+                hourly: Array.from({ length: 24 }, (_, i) => `${i}:00`),
+            };
+
+            const scaleFactors = { monthly: 1, daily: 1 / 30, hourly: 1 / 720 };
+
+            const rawMonthlyData = {
+                electricity: {
+                    import: [
+                        12000, 13000, 15000, 16000, 14500, 13000, 12000, 11500,
+                        12500, 13500, 14000, 14200,
+                    ],
+                    solar: [
+                        5000, 6000, 4000, 3500, 4500, 5500, 6000, 6500, 7000,
+                        6800, 6200, 6000,
+                    ],
+                    generator: [
+                        500, 800, 1200, 1500, 1000, 600, 400, 300, 900, 1100,
+                        700, 600,
+                    ],
+                },
+                water: {
+                    import: [
+                        8000, 8500, 9000, 9500, 9200, 8800, 8400, 8100, 8300,
+                        8700, 8900, 9000,
+                    ],
+                    borehole: [
+                        3000, 3200, 2800, 2500, 2700, 3000, 3300, 3500, 3400,
+                        3200, 3100, 3300,
+                    ],
+                },
+                gas: {
+                    consumption: [
+                        250, 280, 350, 420, 400, 360, 310, 290, 300, 320, 340,
+                        350,
+                    ],
+                },
+            };
+
+            const units = [
+                {
+                    id: "101",
+                    name: "Fairway 1",
+                    consumer: "John Smith",
+                    water: 45.2,
+                    elec: 850.5,
+                    gas: 12.4,
+                },
+                {
+                    id: "102",
+                    name: "Fairway 2",
+                    consumer: "Sarah Jenkins",
+                    water: 38.1,
+                    elec: 1240.2,
+                    gas: 15.1,
+                },
+                {
+                    id: "103",
+                    name: "Greenview 5",
+                    consumer: "Michael Chen",
+                    water: 52.8,
+                    elec: 920.1,
+                    gas: 8.4,
+                },
+                {
+                    id: "104",
+                    name: "Greenview 6",
+                    consumer: "Esther Mokoena",
+                    water: 61.4,
+                    elec: 1560.4,
+                    gas: 22.1,
+                },
+                {
+                    id: "105",
+                    name: "Lakeside 12",
+                    consumer: "Robert Wilson",
+                    water: 29.5,
+                    elec: 740.8,
+                    gas: 10.2,
+                },
+                {
+                    id: "106",
+                    name: "Lakeside 14",
+                    consumer: "David Nkosi",
+                    water: 44.0,
+                    elec: 1100.3,
+                    gas: 14.5,
+                },
+                {
+                    id: "107",
+                    name: "Hilltop 3",
+                    consumer: "Linda van Wyk",
+                    water: 33.7,
+                    elec: 1320.9,
+                    gas: 11.8,
+                },
+                {
+                    id: "108",
+                    name: "Hilltop 4",
+                    consumer: "Ahmed Khan",
+                    water: 55.2,
+                    elec: 1840.5,
+                    gas: 19.3,
+                },
+                {
+                    id: "109",
+                    name: "Fairway 3",
+                    consumer: "George Miller",
+                    water: 42.1,
+                    elec: 950.2,
+                    gas: 11.0,
+                },
+                {
+                    id: "110",
+                    name: "Greenview 7",
+                    consumer: "Patricia Brown",
+                    water: 48.4,
+                    elec: 1020.5,
+                    gas: 9.2,
+                },
+                {
+                    id: "111",
+                    name: "Lakeside 15",
+                    consumer: "Kevin Davis",
+                    water: 31.2,
+                    elec: 680.4,
+                    gas: 8.5,
+                },
+                {
+                    id: "112",
+                    name: "Hilltop 5",
+                    consumer: "Susan White",
+                    water: 39.5,
+                    elec: 1150.1,
+                    gas: 13.2,
+                },
+            ];
+
+            // --- Initialization ---
+            window.onload = function () {
+                document.getElementById("current-timestamp").innerText =
+                    new Date().toLocaleString();
+                initCharts();
+                syncDashboard();
+                window.addEventListener(
+                    "resize",
+                    () => mainChart && mainChart.resize(),
+                );
+            };
+
+            function initCharts() {
+                mainChart = echarts.init(document.getElementById("main-chart"));
+                mainChart.on("click", (params) => {
+                    if (currentView === "monthly") updateView("daily");
+                    else if (currentView === "daily") updateView("hourly");
+                });
+            }
+
+            function setUtility(type) {
+                currentUtility = type;
+                document.querySelectorAll(".utility-pill").forEach((btn) => {
+                    btn.classList.remove("active");
+                    btn.classList.add("text-gray-500", "hover:bg-gray-200");
+                });
+                document.getElementById(`util-${type}`).classList.add("active");
+                document
+                    .getElementById(`util-${type}`)
+                    .classList.remove("text-gray-500", "hover:bg-gray-200");
+                renderCharts();
+            }
+
+            function updateView(view) {
+                currentView = view;
+                document.querySelectorAll('[id^="btn-"]').forEach((btn) => {
+                    btn.classList.remove("tab-active");
+                    btn.classList.add("text-gray-600");
+                });
+                document
+                    .getElementById(`btn-${view}`)
+                    .classList.add("tab-active");
+                document
+                    .getElementById(`btn-${view}`)
+                    .classList.remove("text-gray-600");
+
+                syncDashboard();
+            }
+
+            function syncDashboard() {
+                updateDateContext();
+                document.getElementById("drill-down-indicator").style.display =
+                    currentView === "hourly" ? "none" : "block";
+
+                renderCharts();
+                renderTable();
+                updateSummaryCards();
+            }
+
+            function updateDateContext() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const monthNames = [
+                    "January",
+                    "February",
+                    "March",
+                    "April",
+                    "May",
+                    "June",
+                    "July",
+                    "August",
+                    "September",
+                    "October",
+                    "November",
+                    "December",
+                ];
+                const month = monthNames[now.getMonth()];
+                const day = now.getDate();
+
+                const periodEl = document.getElementById("table-period-label");
+                const contextEl = document.getElementById("table-date-context");
+
+                periodEl.innerText =
+                    currentView.charAt(0).toUpperCase() +
+                    currentView.slice(1) +
+                    " View";
+
+                if (currentView === "monthly") {
+                    contextEl.innerText = `Year ${year}`;
+                } else if (currentView === "daily") {
+                    contextEl.innerText = `${month} ${year}`;
+                } else if (currentView === "hourly") {
+                    contextEl.innerText = `${day} ${month} ${year}`;
+                }
+            }
+
+            function calculateDeviation(dataArray, factor) {
+                const scaled = dataArray.map((v) => v * factor);
+                const total = scaled.reduce((a, b) => a + b, 0);
+                const avg = total / scaled.length;
+                const current = scaled[scaled.length - 1];
+
+                if (avg === 0) return 0;
+                return ((current - avg) / avg) * 100;
+            }
+
+            function updateDeviationBadge(elementId, deviation) {
+                const el = document.getElementById(elementId);
+                const isPos = deviation >= 0;
+                const colorClass = isPos
+                    ? "bg-red-100 text-red-700"
+                    : "bg-green-100 text-green-700";
+                const icon = isPos ? "↑" : "↓";
+
+                el.className = `deviation-badge ${colorClass}`;
+                el.innerHTML = `${icon} ${Math.abs(deviation).toFixed(1)}% <span class="opacity-50 font-normal ml-1">vs avg</span>`;
+            }
+
+            function updateSummaryCards() {
+                const factor = scaleFactors[currentView];
+                const sum = (arr) => arr.reduce((a, b) => a + b, 0);
+
+                // Electricity Calculations
+                const eImp = sum(rawMonthlyData.electricity.import) * factor;
+                const eSol = sum(rawMonthlyData.electricity.solar) * factor;
+                const eGen = sum(rawMonthlyData.electricity.generator) * factor;
+                const eTotal = eImp + eSol + eGen;
+
+                const eTotalData = rawMonthlyData.electricity.import.map(
+                    (v, i) =>
+                        v +
+                        rawMonthlyData.electricity.solar[i] +
+                        rawMonthlyData.electricity.generator[i],
+                );
+                const eDev = calculateDeviation(eTotalData, factor);
+                updateDeviationBadge("dev-elec", eDev);
+
+                document.getElementById("card-total-elec").innerText =
+                    Math.round(eTotal).toLocaleString();
+                document.getElementById("break-elec-import").innerText =
+                    Math.round(eImp).toLocaleString();
+                document.getElementById("break-elec-solar").innerText =
+                    Math.round(eSol).toLocaleString();
+                document.getElementById("break-elec-gen").innerText =
+                    Math.round(eGen).toLocaleString();
+                document.getElementById("perc-elec-import").innerText =
+                    ((eImp / eTotal) * 100).toFixed(0) + "%";
+                document.getElementById("perc-elec-solar").innerText =
+                    ((eSol / eTotal) * 100).toFixed(0) + "%";
+                document.getElementById("perc-elec-gen").innerText =
+                    ((eGen / eTotal) * 100).toFixed(0) + "%";
+
+                // Water Calculations
+                const wImp = sum(rawMonthlyData.water.import) * factor;
+                const wBor = sum(rawMonthlyData.water.borehole) * factor;
+                const wTotal = wImp + wBor;
+
+                const wTotalData = rawMonthlyData.water.import.map(
+                    (v, i) => v + rawMonthlyData.water.borehole[i],
+                );
+                const wDev = calculateDeviation(wTotalData, factor);
+                updateDeviationBadge("dev-water", wDev);
+
+                document.getElementById("card-total-water").innerText =
+                    Math.round(wTotal).toLocaleString();
+                document.getElementById("break-water-import").innerText =
+                    Math.round(wImp).toLocaleString();
+                document.getElementById("break-water-bore").innerText =
+                    Math.round(wBor).toLocaleString();
+                document.getElementById("perc-water-import").innerText =
+                    ((wImp / wTotal) * 100).toFixed(0) + "%";
+                document.getElementById("perc-water-bore").innerText =
+                    ((wBor / wTotal) * 100).toFixed(0) + "%";
+
+                // Gas Calculations
+                const gTotal = sum(rawMonthlyData.gas.consumption) * factor;
+                const gDev = calculateDeviation(
+                    rawMonthlyData.gas.consumption,
+                    factor,
+                );
+                updateDeviationBadge("dev-gas", gDev);
+
+                document.getElementById("card-total-gas").innerText =
+                    Math.round(gTotal).toLocaleString();
+            }
+
+            function renderCharts() {
+                const xAxisData = labels[currentView];
+                const factor = scaleFactors[currentView];
+                let series = [],
+                    legend = [],
+                    colors = [];
+
+                if (currentUtility === "electricity") {
+                    legend = ["Imported", "Solar", "Generator"];
+                    colors = ["#404068", "#faa919", "#e63946"];
+                    series = [
+                        {
+                            name: "Imported",
+                            type: "bar",
+                            stack: "total",
+                            data: rawMonthlyData.electricity.import.map(
+                                (v) => v * factor,
+                            ),
+                        },
+                        {
+                            name: "Solar",
+                            type: "bar",
+                            stack: "total",
+                            data: rawMonthlyData.electricity.solar.map(
+                                (v) => v * factor,
+                            ),
+                        },
+                        {
+                            name: "Generator",
+                            type: "bar",
+                            stack: "total",
+                            data: rawMonthlyData.electricity.generator.map(
+                                (v) => v * factor,
+                            ),
+                        },
+                    ];
+                } else if (currentUtility === "water") {
+                    legend = ["Imported", "Borehole"];
+                    colors = ["#0077b6", "#90e0ef"];
+                    series = [
+                        {
+                            name: "Imported",
+                            type: "bar",
+                            stack: "total",
+                            data: rawMonthlyData.water.import.map(
+                                (v) => v * factor,
+                            ),
+                        },
+                        {
+                            name: "Borehole",
+                            type: "bar",
+                            stack: "total",
+                            data: rawMonthlyData.water.borehole.map(
+                                (v) => v * factor,
+                            ),
+                        },
+                    ];
+                } else {
+                    legend = ["Gas"];
+                    colors = ["#d62828"];
+                    series = [
+                        {
+                            name: "Gas",
+                            type: "bar",
+                            data: rawMonthlyData.gas.consumption.map(
+                                (v) => v * factor,
+                            ),
+                        },
+                    ];
+                }
+
+                mainChart.setOption(
+                    {
+                        color: colors,
+                        tooltip: {
+                            trigger: "axis",
+                            axisPointer: { type: "shadow" },
+                        },
+                        legend: { data: legend, bottom: 0 },
+                        toolbox: {
+                            show: true,
+                            feature: {
+                                dataView: {
+                                    show: true,
+                                    readOnly: false,
+                                    title: "View Data",
+                                },
+                                magicType: {
+                                    show: true,
+                                    type: ["line", "bar", "stack"],
+                                    title: {
+                                        line: "Switch to Line",
+                                        bar: "Switch to Bar",
+                                        stack: "Switch to Stack",
+                                    },
+                                },
+                                restore: { show: true, title: "Reset" },
+                                saveAsImage: { show: true, title: "Download" },
+                            },
+                            right: "2%",
+                        },
+                        grid: {
+                            left: "3%",
+                            right: "4%",
+                            bottom: "10%",
+                            containLabel: true,
+                        },
+                        xAxis: { type: "category", data: xAxisData },
+                        yAxis: { type: "value" },
+                        series: series.map((s) => ({
+                            ...s,
+                            emphasis: { focus: "series" },
+                        })),
+                    },
+                    true,
+                );
+            }
+
+            function renderTable() {
+                const tbody = document.getElementById("unit-table-body");
+                const factor = scaleFactors[currentView];
+                document.getElementById("unit-count").innerText =
+                    `${units.length} Units`;
+
+                const periodTotals = units.reduce(
+                    (acc, u) => {
+                        acc.water += u.water * factor;
+                        acc.elec += u.elec * factor;
+                        acc.gas += u.gas * factor;
+                        return acc;
+                    },
+                    { water: 0, elec: 0, gas: 0 },
+                );
+
+                tbody.innerHTML = units
+                    .map((unit) => {
+                        const uWater = unit.water * factor;
+                        const uElec = unit.elec * factor;
+                        const uGas = unit.gas * factor;
+
+                        return `
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="font-bold text-brand-bg text-sm">${unit.name}</div>
+                            <div class="text-xs text-gray-400">${unit.consumer}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="font-semibold text-gray-800">${uWater.toFixed(1)}</span>
+                            <span class="perc-label text-blue-500">${((uWater / periodTotals.water) * 100).toFixed(1)}% of total</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="font-semibold text-gray-800">${uElec.toFixed(1)}</span>
+                            <span class="perc-label text-yellow-600">${((uElec / periodTotals.elec) * 100).toFixed(1)}% of total</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="font-semibold text-gray-800">${uGas.toFixed(1)}</span>
+                            <span class="perc-label text-orange-600">${((uGas / periodTotals.gas) * 100).toFixed(1)}% of total</span>
+                        </td>
+                    </tr>
+                `;
+                    })
+                    .join("");
+            }
+        </script>
+    </body>
+</html>

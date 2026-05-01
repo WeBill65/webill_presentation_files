@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Portfolio</title>
+        <!-- Tailwind and DaisyUI -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+            :root {
+                --primary-bg: #404068;
+                --primary-text: #faa919;
+                --body-bg: #f9fafb;
+                --manage-purple: #7c3aed;
+                --brand-yellow: #faa919;
+                --brand-dark: #404068;
+            }
+
+            body {
+                background-color: var(--body-bg);
+                min-height: 100vh;
+            }
+
+            .custom-header {
+                background-color: var(--primary-bg);
+                color: var(--primary-text);
+            }
+
+            /* Branded Create Button */
+            .btn-branded {
+                background-color: var(--brand-yellow);
+                color: var(--brand-dark);
+                border: none;
+                font-weight: 700;
+                transition: all 0.2s ease;
+            }
+
+            .btn-branded:hover {
+                background-color: #e59a16;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(250, 169, 25, 0.2);
+            }
+
+            /* Table Row Pointer */
+            .clickable-row {
+                cursor: pointer;
+            }
+
+            /* Custom styling for Action buttons - Starts Gray, Hovers Purple */
+            .action-btn {
+                color: #9ca3af;
+                transition: all 0.2s ease;
+            }
+
+            .action-btn:hover {
+                color: var(--manage-purple);
+                background-color: rgba(124, 58, 237, 0.08);
+            }
+
+            /* Trash icon starts gray and turns red on hover */
+            .trash-btn {
+                color: #9ca3af;
+                transition: all 0.2s ease;
+            }
+
+            .trash-btn:hover {
+                color: #ef4444;
+                background-color: rgba(239, 68, 68, 0.08);
+            }
+
+            /* Branded Tabs */
+            .tabs-container {
+                background-color: #fcfcfd;
+                border-bottom: 1px solid #e5e7eb;
+            }
+
+            .custom-tab {
+                height: 3rem;
+                padding: 0 1.5rem;
+                font-weight: 600;
+                color: #6b7280;
+                border-bottom: 2px solid transparent;
+                transition: all 0.2s ease;
+            }
+
+            .custom-tab.tab-active {
+                color: var(--brand-dark);
+                border-bottom-color: var(--brand-yellow);
+            }
+
+            .custom-tab:hover:not(.tab-active) {
+                color: var(--brand-dark);
+                background-color: rgba(0, 0, 0, 0.02);
+            }
+
+            /* Extra light badges */
+            .badge-soft-success {
+                background-color: #ecfdf5;
+                color: #059669;
+                border: 1px solid #d1fae5;
+            }
+
+            .badge-soft-warning {
+                background-color: #fffbeb;
+                color: #d97706;
+                border: 1px solid #fef3c7;
+            }
+
+            .badge-soft-info {
+                background-color: #f0f9ff;
+                color: #0284c7;
+                border: 1px solid #e0f2fe;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="max-w-6xl mx-auto pt-8 px-4 pb-12">
+            <!-- Header -->
+            <header class="custom-header p-6 rounded-t-2xl shadow-lg">
+                <h1 class="text-3xl font-bold tracking-tight">Portfolio</h1>
+            </header>
+
+            <!-- Tabs Container -->
+            <div
+                class="bg-white border-x border-b border-gray-200 rounded-b-2xl shadow-sm overflow-hidden"
+            >
+                <div class="tabs-container flex px-4">
+                    <button
+                        id="tab-search"
+                        class="custom-tab tab-active"
+                        onclick="switchTab('search')"
+                    >
+                        Search
+                    </button>
+                    <button
+                        id="tab-create"
+                        class="custom-tab"
+                        onclick="switchTab('create')"
+                    >
+                        Create
+                    </button>
+                </div>
+
+                <!-- Tab Content: Search -->
+                <div id="content-search" class="p-6">
+                    <section class="mb-6">
+                        <div class="relative w-full">
+                            <div
+                                class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                            >
+                                <svg
+                                    class="h-5 w-5 text-gray-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                    ></path>
+                                </svg>
+                            </div>
+                            <input
+                                type="text"
+                                id="searchInput"
+                                class="input input-bordered w-full pl-10 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all"
+                                placeholder="Search site name, address, meter, consumer, email or phone..."
+                                autocomplete="off"
+                            />
+                        </div>
+                    </section>
+
+                    <div
+                        id="mainTableContainer"
+                        class="hidden overflow-x-auto border border-gray-200 rounded-xl"
+                    >
+                        <table class="table w-full" id="portfolioTable">
+                            <thead class="bg-[#404068] text-white">
+                                <tr>
+                                    <th
+                                        class="rounded-none uppercase text-xs tracking-wider"
+                                    >
+                                        Site Name
+                                    </th>
+                                    <th
+                                        class="rounded-none uppercase text-xs tracking-wider"
+                                    >
+                                        Address
+                                    </th>
+                                    <th
+                                        class="rounded-none uppercase text-xs tracking-wider text-center w-24"
+                                    >
+                                        Action
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="portfolioTableBody">
+                                <!-- Rows injected via JS -->
+                            </tbody>
+                        </table>
+                        <div
+                            id="emptyMessage"
+                            class="hidden p-12 text-center text-gray-400 font-medium"
+                        >
+                            No results found matching your search.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Create -->
+                <div id="content-create" class="hidden p-6">
+                    <div class="flex justify-start mb-6">
+                        <button onclick="window.location.href='create.html'" class="btn btn-branded px-6 shadow-md">
+                            <svg
+                                class="w-5 h-5 mr-2"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 4v16m8-8H4"
+                                ></path>
+                            </svg>
+                            Create New Site
+                        </button>
+                    </div>
+
+                    <div
+                        class="overflow-x-auto border border-gray-200 rounded-xl"
+                    >
+                        <table class="table w-full">
+                            <thead class="bg-[#404068] text-white">
+                                <tr>
+                                    <th
+                                        class="rounded-none uppercase text-[10px] tracking-wider"
+                                    >
+                                        Site Name
+                                    </th>
+                                    <th
+                                        class="rounded-none uppercase text-[10px] tracking-wider"
+                                    >
+                                        Address
+                                    </th>
+                                    <th
+                                        class="rounded-none uppercase text-[10px] tracking-wider"
+                                    >
+                                        Created By
+                                    </th>
+                                    <th
+                                        class="rounded-none uppercase text-[10px] tracking-wider"
+                                    >
+                                        Updated By
+                                    </th>
+                                    <th
+                                        class="rounded-none uppercase text-[10px] tracking-wider"
+                                    >
+                                        Status
+                                    </th>
+                                    <th
+                                        class="rounded-none uppercase text-[10px] tracking-wider text-center"
+                                    >
+                                        Action
+                                    </th>
+                                    <th
+                                        class="rounded-none uppercase text-[10px] tracking-wider text-center"
+                                    >
+                                        Cancel
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="createTableBody">
+                                <!-- Rows injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const sites = [
+                {
+                    id: 1,
+                    name: "Project Alpha",
+                    address: "123 Tech Lane, San Francisco",
+                    meter_number: "MTR-00192",
+                    consumer_name: "John Doe",
+                    email: "john@alpha.com",
+                    cellphone: "555-0101",
+                    createdBy: "Admin User",
+                    createdDate: "2023-10-12 14:30",
+                    updatedBy: "System",
+                    updatedDate: "2023-11-05 09:15",
+                    status: "CREATED",
+                },
+                {
+                    id: 2,
+                    name: "Beta Warehouse",
+                    address: "456 Industrial Way, Austin",
+                    meter_number: "MTR-88273",
+                    consumer_name: "Sarah Smith",
+                    email: "sarah@warehouse.io",
+                    cellphone: "555-0202",
+                    createdBy: "Admin User",
+                    createdDate: "2023-09-20 11:20",
+                    updatedBy: "Sarah Smith",
+                    updatedDate: "2023-12-01 16:45",
+                    status: "PENDING",
+                },
+                {
+                    id: 3,
+                    name: "Gamma Complex",
+                    address: "789 Hub St, Seattle",
+                    meter_number: "MTR-99102",
+                    consumer_name: "Robert Fox",
+                    email: "r.fox@gamma.com",
+                    cellphone: "555-0999",
+                    createdBy: "System",
+                    createdDate: "2024-01-05 10:00",
+                    updatedBy: "Admin User",
+                    updatedDate: "2024-02-14 11:30",
+                    status: "COMPLETED",
+                },
+            ];
+
+            function switchTab(tab) {
+                document
+                    .getElementById("tab-search")
+                    .classList.toggle("tab-active", tab === "search");
+                document
+                    .getElementById("tab-create")
+                    .classList.toggle("tab-active", tab === "create");
+                document
+                    .getElementById("content-search")
+                    .classList.toggle("hidden", tab !== "search");
+                document
+                    .getElementById("content-create")
+                    .classList.toggle("hidden", tab !== "create");
+
+                if (tab === "create") renderCreateView();
+            }
+
+            // Search Logic
+            const tableContainer =
+                document.getElementById("mainTableContainer");
+            const tableBody = document.getElementById("portfolioTableBody");
+            const searchInput = document.getElementById("searchInput");
+            const emptyMessage = document.getElementById("emptyMessage");
+
+            function renderSearchTable(filterText = "") {
+                const query = filterText.toLowerCase().trim();
+                tableBody.innerHTML = "";
+
+                if (!query) {
+                    tableContainer.classList.add("hidden");
+                    return;
+                }
+
+                const filtered = sites.filter(
+                    (s) =>
+                        s.name.toLowerCase().includes(query) ||
+                        s.address.toLowerCase().includes(query) ||
+                        s.meter_number.toLowerCase().includes(query) ||
+                        s.consumer_name.toLowerCase().includes(query) ||
+                        s.email.toLowerCase().includes(query) ||
+                        s.cellphone.toLowerCase().includes(query),
+                );
+
+                tableContainer.classList.remove("hidden");
+
+                if (filtered.length === 0) {
+                    document
+                        .getElementById("portfolioTable")
+                        .classList.add("hidden");
+                    emptyMessage.classList.remove("hidden");
+                } else {
+                    document
+                        .getElementById("portfolioTable")
+                        .classList.remove("hidden");
+                    emptyMessage.classList.add("hidden");
+
+                    filtered.forEach((site) => {
+                        const tr = document.createElement("tr");
+                        tr.className = "hover clickable-row";
+                        tr.innerHTML = `
+                            <td><div class="font-bold text-gray-800">${site.name}</div></td>
+                            <td><div class="text-sm opacity-70">${site.address}</div></td>
+                            <td class="text-center">
+                                <button onclick="window.location.href='tree.html'" class="action-btn flex flex-col items-center mx-auto p-2 rounded-lg">
+                                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                    <span class="text-[9px] font-bold uppercase mt-1">Manage</span>
+                                </button>
+                            </td>
+                        `;
+                        tableBody.appendChild(tr);
+                    });
+                }
+            }
+
+            // Create View Logic
+            function renderCreateView() {
+                const createTableBody =
+                    document.getElementById("createTableBody");
+                createTableBody.innerHTML = "";
+
+                sites.forEach((site) => {
+                    let badgeClass = "badge-soft-success";
+                    let actionText = "Proceed";
+                    let actionIcon = `<path d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>`;
+
+                    if (site.status === "PENDING") {
+                        badgeClass = "badge-soft-warning";
+                        actionText = "Approve";
+                        actionIcon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>`;
+                    } else if (site.status === "COMPLETED") {
+                        badgeClass = "badge-soft-info";
+                        actionText = "Manage";
+                        actionIcon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>`;
+                    }
+
+                    // Conditional Trash Icon logic
+                    const cancelContent =
+                        site.status === "COMPLETED"
+                            ? `<div class="w-9 h-9"></div>` // Placeholder to maintain alignment
+                            : `
+                            <button class="trash-btn p-2 rounded-md transition-colors" title="Cancel/Delete">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        `;
+
+                    const tr = document.createElement("tr");
+                    tr.className =
+                        "hover clickable-row border-b border-gray-100";
+                    tr.innerHTML = `
+                        <td><div class="font-bold text-sm text-gray-800">${site.name}</div></td>
+                        <td class="text-[11px] max-w-xs truncate text-gray-500">${site.address}</td>
+                        <td class="py-3">
+                            <div class="font-semibold text-[11px] text-gray-700">${site.createdBy}</div>
+                            <div class="text-[10px] text-gray-400 mt-0.5">${site.createdDate}</div>
+                        </td>
+                        <td class="py-3">
+                            <div class="font-semibold text-[11px] text-gray-700">${site.updatedBy}</div>
+                            <div class="text-[10px] text-gray-400 mt-0.5">${site.updatedDate}</div>
+                        </td>
+                        <td>
+                            <span class="badge ${badgeClass} badge-sm text-[9px] font-extrabold px-2 py-0.5 rounded uppercase">
+                                ${site.status}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <button class="action-btn flex flex-col items-center mx-auto p-1.5 rounded-md transition-colors">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    ${actionIcon}
+                                </svg>
+                                <span class="text-[8px] font-bold uppercase mt-0.5">${actionText}</span>
+                            </button>
+                        </td>
+                        <td class="text-center">
+                            ${cancelContent}
+                        </td>
+                    `;
+                    createTableBody.appendChild(tr);
+                });
+            }
+
+            searchInput.addEventListener("input", (e) =>
+                renderSearchTable(e.target.value),
+            );
+
+            // Restore tab if returning from create.html
+            window.addEventListener("load", () => {
+                const savedTab = sessionStorage.getItem("portfolioTab");
+                if (savedTab) {
+                    sessionStorage.removeItem("portfolioTab");
+                    switchTab(savedTab);
+                }
+            });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,2128 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Work Force Instructions</title>
+        <!-- Tailwind CSS and DaisyUI via CDN -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <!-- Lucide Icons -->
+        <script src="https://unpkg.com/lucide@latest"></script>
+
+        <!-- Leaflet CSS and JS (Core) -->
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+        <!-- Leaflet MarkerCluster (Plugin) -->
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css"
+        />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css"
+        />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+
+        <style>
+            /* Force absolute screen stability */
+            html,
+            body {
+                height: 100%;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+            }
+
+            .brand-header {
+                background-color: #404068 !important;
+            }
+            .brand-title {
+                color: #faa919 !important;
+            }
+
+            .nav-bar {
+                background-color: #f8fafc;
+                border-bottom: 1px solid #e2e8f0;
+            }
+
+            .header-tabs .tab {
+                color: #64748b;
+                font-weight: 700;
+                border-bottom: 3px solid transparent;
+                height: 3.5rem;
+                padding-left: 1rem;
+                padding-right: 1rem;
+                border-radius: 0;
+                transition: all 0.2s ease;
+                font-size: 0.8rem;
+            }
+
+            .header-tabs .tab-active {
+                color: #404068 !important;
+                border-bottom-color: #faa919 !important;
+                background-color: white;
+            }
+
+            .tab .badge {
+                border: none;
+                background-color: #e2e8f0;
+                color: #64748b;
+            }
+            .tab-active .badge {
+                background-color: #404068 !important;
+                color: #faa919 !important;
+            }
+
+            .btn-brand-create {
+                background-color: #404068 !important;
+                color: white !important;
+                border: none !important;
+            }
+
+            /* Fixed View Container */
+            .view-section {
+                display: none;
+                width: 100%;
+                height: 100%;
+            }
+            .view-section.active {
+                display: flex;
+                flex-direction: column;
+            }
+
+            #map-container {
+                flex: 1;
+                width: 100%;
+                min-height: 500px;
+                border-radius: 0.5rem;
+                z-index: 5;
+            }
+
+            .toggle-view-active {
+                background-color: #404068 !important;
+                color: #faa919 !important;
+            }
+
+            /* Styled Header for Table */
+            .table-header-styled {
+                background-color: #404068 !important;
+                color: white !important;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                font-size: 0.75rem;
+            }
+
+            .custom-pin {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .pin-inner {
+                width: 32px;
+                height: 32px;
+                background-color: #404068;
+                border-radius: 50% 50% 50% 0;
+                transform: rotate(-45deg);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 2px solid #fff;
+                box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            }
+            .pin-inner .agent-initials {
+                transform: rotate(45deg);
+                color: #faa919;
+                font-size: 10px;
+                font-weight: 900;
+                text-transform: uppercase;
+            }
+
+            .close-branded:hover {
+                color: #faa919 !important;
+                background-color: rgba(255, 255, 255, 0.1) !important;
+            }
+
+            .badge-subtle {
+                border: none;
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+                font-weight: 600;
+                letter-spacing: 0.025em;
+            }
+            .badge-subtle-error {
+                background-color: #fee2e2;
+                color: #991b1b;
+            }
+            .badge-subtle-warning {
+                background-color: #ffedd5;
+                color: #9a3412;
+            }
+            .badge-subtle-success {
+                background-color: #dcfce7;
+                color: #166534;
+            }
+            .badge-subtle-ghost {
+                background-color: #f1f5f9;
+                color: #64748b;
+            }
+            .badge-subtle-primary {
+                background-color: #e0f2fe;
+                color: #0369a1;
+            }
+
+            .custom-drawer {
+                position: fixed;
+                top: calc(3.5rem + 3.5rem);
+                right: 0;
+                bottom: 0;
+                width: 480px;
+                background: white;
+                z-index: 500; /* Higher than map */
+                transform: translateX(100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: -4px 0 15px rgba(0, 0, 0, 0.1);
+                display: flex;
+                flex-direction: column;
+                border-left: 1px solid #e2e8f0;
+            }
+            .custom-drawer.open {
+                transform: translateX(0);
+            }
+
+            .main-wrapper {
+                position: relative;
+                flex: 1;
+                overflow: hidden;
+            }
+
+            .utility-badge {
+                font-size: 0.65rem;
+                padding: 0.2rem 0.5rem;
+                border-radius: 4px;
+                font-weight: 800;
+                text-transform: uppercase;
+            }
+            .util-water {
+                background-color: #e0f2fe;
+                color: #0369a1;
+            }
+            .util-electricity {
+                background-color: #fef9c3;
+                color: #854d0e;
+            }
+            .util-gas {
+                background-color: #ffedd5;
+                color: #9a3412;
+            }
+
+            .drawer-tab {
+                transition: all 0.2s ease;
+                position: relative;
+            }
+            .drawer-tab:hover:not(.drawer-tab-active) {
+                color: #404068;
+                background-color: #f8fafc;
+                border-bottom-color: #cbd5e1;
+            }
+            .drawer-tab-active {
+                border-bottom-color: #faa919 !important;
+                color: #404068 !important;
+            }
+
+            .chat-bubble-custom {
+                max-width: 85%;
+                padding: 0.75rem;
+                border-radius: 1rem;
+                font-size: 0.875rem;
+                position: relative;
+                font-weight: 400;
+            }
+
+            .chat-sent {
+                background-color: #eff6ff;
+                color: #1e3a8a;
+                align-self: flex-end;
+                border: 1px solid #dbeafe;
+                border-bottom-right-radius: 0.25rem;
+            }
+
+            .chat-received {
+                background-color: #f8fafc;
+                color: #334155;
+                align-self: flex-start;
+                border: 1px solid #f1f5f9;
+                border-bottom-left-radius: 0.25rem;
+            }
+
+            .attachment-item {
+                transition: background-color 0.2s;
+                border-bottom: 1px solid #f1f5f9;
+            }
+            .attachment-item:hover {
+                background-color: #f8fafc;
+            }
+            .type-icon {
+                width: 40px;
+                height: 40px;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+            .type-doc {
+                background-color: #e0f2fe;
+                color: #0369a1;
+            }
+            .type-photo {
+                background-color: #fce7f3;
+                color: #9d174d;
+            }
+            .type-voice {
+                background-color: #fef9c3;
+                color: #854d0e;
+            }
+            .type-video {
+                background-color: #ede9fe;
+                color: #5b21b6;
+            }
+
+            .chat-label {
+                font-size: 10px;
+                font-weight: 800;
+                text-transform: uppercase;
+                color: #94a3b8;
+                margin-bottom: 3px;
+                display: block;
+            }
+
+            .chat-label-sent {
+                margin-right: 8px;
+                text-align: right;
+            }
+            .chat-label-received {
+                margin-left: 8px;
+                text-align: left;
+            }
+
+            .item-row {
+                border-bottom: 1px solid #f1f5f9;
+                padding: 1rem 0;
+            }
+            .item-row:last-child {
+                border-bottom: none;
+            }
+            .item-index-badge {
+                background-color: #404068;
+                color: #faa919;
+                font-size: 10px;
+                font-weight: 900;
+                padding: 2px 6px;
+                border-radius: 4px;
+                text-transform: uppercase;
+            }
+
+            /* Leaflet Popup Styles */
+            .leaflet-popup-content-wrapper {
+                background-color: white !important;
+                border: 1px solid #e2e8f0 !important;
+                border-radius: 0.75rem !important;
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
+                padding: 0 !important;
+                overflow: hidden;
+            }
+            .leaflet-popup-content {
+                margin: 0 !important;
+                min-width: 240px;
+            }
+            .leaflet-popup-tip {
+                background: white !important;
+                border: 1px solid #e2e8f0;
+            }
+            .leaflet-popup-close-button {
+                color: #fff !important;
+                top: 10px !important;
+                right: 10px !important;
+                font-size: 18px !important;
+                font-weight: bold !important;
+                z-index: 10;
+            }
+
+            /* UPLOAD ZONE */
+            .upload-zone {
+                border: 2px dashed #e2e8f0;
+                transition: all 0.2s ease;
+                cursor: pointer;
+            }
+            .upload-zone:hover {
+                border-color: #404068;
+                background-color: #f8fafc;
+            }
+
+            /* QC SPECIFIC STYLES */
+            .qc-check-table {
+                width: 100%;
+                font-size: 11px;
+                border-collapse: collapse;
+            }
+            .qc-check-table th {
+                text-align: left;
+                text-transform: uppercase;
+                color: #94a3b8;
+                padding: 4px 0;
+                border-bottom: 1px solid #f1f5f9;
+            }
+            .qc-check-table td {
+                padding: 8px 0;
+                border-bottom: 1px solid #f8fafc;
+            }
+            .meter-thumbnail {
+                width: 60px;
+                height: 60px;
+                border-radius: 8px;
+                object-fit: cover;
+                border: 2px solid #e2e8f0;
+            }
+        </style>
+    </head>
+    <body class="bg-base-200 flex flex-col h-screen">
+        <!-- Top Branding Header -->
+        <header
+            class="navbar brand-header shadow-md px-4 lg:px-8 h-14 shrink-0 z-[110]"
+        >
+            <div class="flex-1">
+                <a
+                    class="text-xl font-black flex items-center gap-3 brand-title uppercase tracking-wider"
+                >
+                    <i data-lucide="shield" class="w-6 h-6"></i>
+                    Work Force Instructions
+                </a>
+            </div>
+        </header>
+
+        <!-- Secondary Navigation Bar (Tabs) -->
+        <div class="nav-bar px-4 lg:px-8 shrink-0 z-[105]">
+            <div class="flex items-center justify-between">
+                <nav role="tablist" class="tabs header-tabs h-full flex">
+                    <button
+                        role="tab"
+                        onclick="switchTab('pending')"
+                        id="tab-pending"
+                        class="tab tab-active"
+                    >
+                        Pending
+                        <div class="badge badge-sm ml-2" id="count-pending">
+                            0
+                        </div>
+                    </button>
+                    <button
+                        role="tab"
+                        onclick="switchTab('qc')"
+                        id="tab-qc"
+                        class="tab"
+                    >
+                        QC
+                        <div class="badge badge-sm ml-2" id="count-qc">0</div>
+                    </button>
+                    <button
+                        role="tab"
+                        onclick="switchTab('results')"
+                        id="tab-results"
+                        class="tab"
+                    >
+                        Results
+                    </button>
+                    <button
+                        role="tab"
+                        onclick="switchTab('historical')"
+                        id="tab-historical"
+                        class="tab"
+                    >
+                        Historical
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <div class="main-wrapper flex flex-col bg-slate-50">
+            <main class="flex-1 overflow-y-auto p-4 lg:p-8 h-full">
+                <div class="w-full max-w-7xl mx-auto h-full flex flex-col">
+                    <!-- Pending Section -->
+                    <section
+                        id="view-pending"
+                        class="view-section active animate-in fade-in duration-300 h-full"
+                    >
+                        <div
+                            class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 shrink-0"
+                        >
+                            <div>
+                                <h2
+                                    class="text-2xl font-bold tracking-tight text-slate-700"
+                                >
+                                    Pending Instructions
+                                </h2>
+                                <p class="text-sm text-slate-500">
+                                    Field meter operations and service tasks.
+                                </p>
+                            </div>
+
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="join border border-slate-300 shadow-sm bg-white"
+                                >
+                                    <button
+                                        onclick="togglePendingView('table')"
+                                        id="btn-view-table"
+                                        class="join-item btn btn-sm toggle-view-active"
+                                    >
+                                        <i
+                                            data-lucide="list"
+                                            class="w-4 mr-1"
+                                        ></i>
+                                        List
+                                    </button>
+                                    <button
+                                        onclick="togglePendingView('map')"
+                                        id="btn-view-map"
+                                        class="join-item btn btn-sm bg-white"
+                                    >
+                                        <i
+                                            data-lucide="map"
+                                            class="w-4 mr-1"
+                                        ></i>
+                                        Map
+                                    </button>
+                                </div>
+
+                                <button
+                                    onclick="instruction_modal.showModal()"
+                                    class="btn btn-brand-create btn-sm shadow-sm font-bold"
+                                >
+                                    <i data-lucide="plus" class="w-4 mr-1"></i>
+                                    Create New
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- PENDING FILTERS -->
+                        <div
+                            class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-wrap gap-4 items-end shrink-0"
+                        >
+                            <div class="form-control flex-1 min-w-[200px]">
+                                <label class="label py-1"
+                                    ><span
+                                        class="label-text text-[10px] font-black uppercase text-slate-400"
+                                        >Search Meter / Site</span
+                                    ></label
+                                >
+                                <div class="relative">
+                                    <span
+                                        class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"
+                                    >
+                                        <i
+                                            data-lucide="search"
+                                            class="w-3.5 h-3.5"
+                                        ></i>
+                                    </span>
+                                    <input
+                                        type="text"
+                                        id="pending-filter-search"
+                                        oninput="applyPendingFilters()"
+                                        placeholder="Enter meter or site name..."
+                                        class="input input-bordered input-sm w-full pl-9 font-medium text-slate-600 placeholder:text-slate-300"
+                                    />
+                                </div>
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-1"
+                                    ><span
+                                        class="label-text text-[10px] font-black uppercase text-slate-400"
+                                        >User Type</span
+                                    ></label
+                                >
+                                <select
+                                    id="pending-filter-user-type"
+                                    onchange="applyPendingFilters()"
+                                    class="select select-bordered select-sm w-36 font-bold text-slate-600"
+                                >
+                                    <option value="all">All Types</option>
+                                    <option value="Agent">Agent</option>
+                                    <option value="Consumer">Consumer</option>
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-1"
+                                    ><span
+                                        class="label-text text-[10px] font-black uppercase text-slate-400"
+                                        >Agent</span
+                                    ></label
+                                >
+                                <select
+                                    id="pending-filter-agent"
+                                    onchange="applyPendingFilters()"
+                                    class="select select-bordered select-sm w-32 font-bold text-slate-600"
+                                >
+                                    <option value="all">All Agents</option>
+                                    <option value="JD">John Doe</option>
+                                    <option value="MS">Musa Sithole</option>
+                                    <option value="BK">Ben Khumalo</option>
+                                    <option value="SR">Sarah Richards</option>
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-1"
+                                    ><span
+                                        class="label-text text-[10px] font-black uppercase text-slate-400"
+                                        >Level</span
+                                    ></label
+                                >
+                                <select
+                                    id="pending-filter-level"
+                                    onchange="applyPendingFilters()"
+                                    class="select select-bordered select-sm w-32 font-bold text-slate-600"
+                                >
+                                    <option value="all">All Levels</option>
+                                    <option value="High">High</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Low">Low</option>
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-1"
+                                    ><span
+                                        class="label-text text-[10px] font-black uppercase text-slate-400"
+                                        >Utility</span
+                                    ></label
+                                >
+                                <select
+                                    id="pending-filter-utility"
+                                    onchange="applyPendingFilters()"
+                                    class="select select-bordered select-sm w-32 font-bold text-slate-600"
+                                >
+                                    <option value="all">All Types</option>
+                                    <option value="Water">Water</option>
+                                    <option value="Electricity">
+                                        Electricity
+                                    </option>
+                                    <option value="Gas">Gas</option>
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-1"
+                                    ><span
+                                        class="label-text text-[10px] font-black uppercase text-slate-400"
+                                        >Instruction</span
+                                    ></label
+                                >
+                                <select
+                                    id="pending-filter-type"
+                                    onchange="applyPendingFilters()"
+                                    class="select select-bordered select-sm w-36 font-bold text-slate-600"
+                                >
+                                    <option value="all">All Tasks</option>
+                                    <option value="Read">Read</option>
+                                    <option value="Install">Install</option>
+                                    <option value="Audit">Audit</option>
+                                    <option value="Uninstall">Uninstall</option>
+                                </select>
+                            </div>
+                            <button
+                                onclick="resetPendingFilters()"
+                                class="btn btn-sm btn-ghost text-slate-400 font-bold hover:bg-slate-100"
+                            >
+                                Reset
+                            </button>
+                        </div>
+
+                        <div class="w-full flex-1 min-h-0 relative">
+                            <!-- List View -->
+                            <div
+                                id="pending-table-view"
+                                class="card bg-base-100 shadow-sm border border-base-300 overflow-hidden w-full h-full"
+                            >
+                                <div class="overflow-x-auto h-full">
+                                    <table
+                                        class="table table-zebra w-full border-separate border-spacing-0"
+                                    >
+                                        <thead class="sticky top-0 z-10">
+                                            <tr>
+                                                <th class="table-header-styled">
+                                                    Meter Number
+                                                </th>
+                                                <th class="table-header-styled">
+                                                    Agent
+                                                </th>
+                                                <th class="table-header-styled">
+                                                    Site
+                                                </th>
+                                                <th class="table-header-styled">
+                                                    Progress
+                                                </th>
+                                                <th class="table-header-styled">
+                                                    Expiry
+                                                </th>
+                                                <th class="table-header-styled">
+                                                    Level
+                                                </th>
+                                                <th
+                                                    class="table-header-styled text-center"
+                                                >
+                                                    Manage
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="pending-instructions-list">
+                                            <!-- Populated by JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Map View -->
+                            <div
+                                id="pending-map-view"
+                                class="hidden absolute inset-0 h-full w-full"
+                            >
+                                <div
+                                    class="card bg-base-100 shadow-sm border border-base-300 p-2 h-full w-full"
+                                >
+                                    <div id="map-container"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- QC Section -->
+                    <section
+                        id="view-qc"
+                        class="view-section animate-in fade-in duration-300 h-full"
+                    >
+                        <div
+                            class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 shrink-0"
+                        >
+                            <div>
+                                <h2
+                                    class="text-2xl font-bold tracking-tight text-slate-700"
+                                >
+                                    Quality Control
+                                </h2>
+                                <p class="text-sm text-slate-500">
+                                    Review completed tasks for verification and
+                                    approval.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- QC FILTERS (Identical to Pending) -->
+                        <div
+                            class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-wrap gap-4 items-end shrink-0"
+                        >
+                            <div class="form-control flex-1 min-w-[200px]">
+                                <label class="label py-1"
+                                    ><span
+                                        class="label-text text-[10px] font-black uppercase text-slate-400"
+                                        >Search Meter / Site</span
+                                    ></label
+                                >
+                                <div class="relative">
+                                    <span
+                                        class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"
+                                    >
+                                        <i
+                                            data-lucide="search"
+                                            class="w-3.5 h-3.5"
+                                        ></i>
+                                    </span>
+                                    <input
+                                        type="text"
+                                        id="qc-filter-search"
+                                        oninput="applyQCFilters()"
+                                        placeholder="Search completed..."
+                                        class="input input-bordered input-sm w-full pl-9 font-medium text-slate-600 placeholder:text-slate-300"
+                                    />
+                                </div>
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-1"
+                                    ><span
+                                        class="label-text text-[10px] font-black uppercase text-slate-400"
+                                        >User Type</span
+                                    ></label
+                                >
+                                <select
+                                    id="qc-filter-user-type"
+                                    onchange="applyQCFilters()"
+                                    class="select select-bordered select-sm w-36 font-bold text-slate-600"
+                                >
+                                    <option value="all">All Types</option>
+                                    <option value="Agent">Agent</option>
+                                    <option value="Consumer">Consumer</option>
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-1"
+                                    ><span
+                                        class="label-text text-[10px] font-black uppercase text-slate-400"
+                                        >Agent</span
+                                    ></label
+                                >
+                                <select
+                                    id="qc-filter-agent"
+                                    onchange="applyQCFilters()"
+                                    class="select select-bordered select-sm w-32 font-bold text-slate-600"
+                                >
+                                    <option value="all">All Agents</option>
+                                    <option value="JD">John Doe</option>
+                                    <option value="MS">Musa Sithole</option>
+                                    <option value="BK">Ben Khumalo</option>
+                                    <option value="SR">Sarah Richards</option>
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-1"
+                                    ><span
+                                        class="label-text text-[10px] font-black uppercase text-slate-400"
+                                        >Level</span
+                                    ></label
+                                >
+                                <select
+                                    id="qc-filter-level"
+                                    onchange="applyQCFilters()"
+                                    class="select select-bordered select-sm w-32 font-bold text-slate-600"
+                                >
+                                    <option value="all">All Levels</option>
+                                    <option value="High">High</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Low">Low</option>
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-1"
+                                    ><span
+                                        class="label-text text-[10px] font-black uppercase text-slate-400"
+                                        >Utility</span
+                                    ></label
+                                >
+                                <select
+                                    id="qc-filter-utility"
+                                    onchange="applyQCFilters()"
+                                    class="select select-bordered select-sm w-32 font-bold text-slate-600"
+                                >
+                                    <option value="all">All Types</option>
+                                    <option value="Water">Water</option>
+                                    <option value="Electricity">
+                                        Electricity
+                                    </option>
+                                    <option value="Gas">Gas</option>
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-1"
+                                    ><span
+                                        class="label-text text-[10px] font-black uppercase text-slate-400"
+                                        >Instruction</span
+                                    ></label
+                                >
+                                <select
+                                    id="qc-filter-type"
+                                    onchange="applyQCFilters()"
+                                    class="select select-bordered select-sm w-36 font-bold text-slate-600"
+                                >
+                                    <option value="all">All Tasks</option>
+                                    <option value="Read">Read</option>
+                                    <option value="Install">Install</option>
+                                    <option value="Audit">Audit</option>
+                                </select>
+                            </div>
+                            <button
+                                onclick="resetQCFilters()"
+                                class="btn btn-sm btn-ghost text-slate-400 font-bold hover:bg-slate-100"
+                            >
+                                Reset
+                            </button>
+                        </div>
+
+                        <!-- List View Only for QC -->
+                        <div class="w-full flex-1 min-h-0 relative">
+                            <div
+                                id="qc-table-view"
+                                class="card bg-base-100 shadow-sm border border-base-300 overflow-hidden w-full h-full"
+                            >
+                                <div class="overflow-x-auto h-full">
+                                    <table
+                                        class="table table-zebra w-full border-separate border-spacing-0"
+                                    >
+                                        <thead class="sticky top-0 z-10">
+                                            <tr>
+                                                <th class="table-header-styled">
+                                                    Meter Number
+                                                </th>
+                                                <th class="table-header-styled">
+                                                    Agent
+                                                </th>
+                                                <th class="table-header-styled">
+                                                    Site
+                                                </th>
+                                                <th class="table-header-styled">
+                                                    Progress
+                                                </th>
+                                                <th class="table-header-styled">
+                                                    Expiry
+                                                </th>
+                                                <th class="table-header-styled">
+                                                    Level
+                                                </th>
+                                                <th
+                                                    class="table-header-styled text-center"
+                                                >
+                                                    Manage
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="qc-instructions-list">
+                                            <!-- Populated by JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section
+                        id="view-results"
+                        class="view-section animate-in fade-in duration-300 h-full"
+                    >
+                        <h2
+                            class="text-2xl font-bold tracking-tight text-slate-700 mb-6"
+                        >
+                            Instruction Results
+                        </h2>
+                        <div
+                            class="bg-white p-12 rounded-xl border-2 border-dashed border-slate-200 text-center"
+                        >
+                            <i
+                                data-lucide="file-check"
+                                class="w-12 h-12 mx-auto text-slate-300 mb-4"
+                            ></i>
+                            <h3 class="font-bold text-slate-600">
+                                No finalized results found.
+                            </h3>
+                            <p class="text-sm text-slate-400">
+                                Completed instructions that have passed QC will
+                                appear here.
+                            </p>
+                        </div>
+                    </section>
+
+                    <section
+                        id="view-historical"
+                        class="view-section animate-in fade-in duration-300 h-full"
+                    >
+                        <h2
+                            class="text-2xl font-bold tracking-tight text-slate-700 mb-6"
+                        >
+                            Historical Archive
+                        </h2>
+                        <div
+                            class="bg-white p-12 rounded-xl border-2 border-dashed border-slate-200 text-center"
+                        >
+                            <i
+                                data-lucide="history"
+                                class="w-12 h-12 mx-auto text-slate-300 mb-4"
+                            ></i>
+                            <h3 class="font-bold text-slate-600">
+                                Archive is empty.
+                            </h3>
+                            <p class="text-sm text-slate-400">
+                                Old records will be moved here periodically.
+                            </p>
+                        </div>
+                    </section>
+                </div>
+            </main>
+
+            <!-- Custom Detail Drawer -->
+            <div id="custom-detail-drawer" class="custom-drawer">
+                <!-- HEADER -->
+                <div
+                    class="brand-header p-4 flex justify-between items-center h-14 shrink-0"
+                >
+                    <h2
+                        class="text-white font-bold flex items-center gap-2 text-sm uppercase"
+                    >
+                        <i data-lucide="clipboard-list" class="w-4"></i>
+                        Instruction Detail
+                    </h2>
+                    <button
+                        onclick="closeDrawer()"
+                        class="btn btn-sm btn-circle btn-ghost text-white close-branded"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                <!-- PRIMARY TABS -->
+                <div
+                    class="flex border-b border-slate-100 shrink-0 bg-white shadow-sm z-10 overflow-x-auto"
+                >
+                    <button
+                        onclick="switchDrawerTab('info')"
+                        id="drawer-tab-info"
+                        class="drawer-tab drawer-tab-active flex-1 py-4 text-[10px] font-bold uppercase tracking-widest border-b-2 text-[#404068] whitespace-nowrap min-w-[80px]"
+                    >
+                        Info
+                    </button>
+                    <button
+                        onclick="switchDrawerTab('items')"
+                        id="drawer-tab-items"
+                        class="drawer-tab flex-1 py-4 text-[10px] font-bold uppercase tracking-widest border-b-2 border-transparent text-slate-400 whitespace-nowrap min-w-[80px]"
+                    >
+                        Items
+                    </button>
+                    <button
+                        onclick="switchDrawerTab('attachments')"
+                        id="drawer-tab-attachments"
+                        class="drawer-tab flex-1 py-4 text-[10px] font-bold uppercase tracking-widest border-b-2 border-transparent text-slate-400 whitespace-nowrap min-w-[80px]"
+                    >
+                        Files
+                    </button>
+                    <button
+                        onclick="switchDrawerTab('chat')"
+                        id="drawer-tab-chat"
+                        class="drawer-tab flex-1 py-4 text-[10px] font-bold uppercase tracking-widest border-b-2 border-transparent text-slate-400 whitespace-nowrap min-w-[80px]"
+                    >
+                        Messages
+                    </button>
+                </div>
+
+                <div
+                    class="p-0 flex-1 overflow-hidden flex flex-col bg-white"
+                    id="drawer-content-body"
+                >
+                    <div
+                        id="drawer-loading"
+                        class="flex flex-col items-center justify-center py-20 opacity-40"
+                    >
+                        <span
+                            class="loading loading-spinner loading-md mb-2"
+                        ></span>
+                        <p class="text-xs font-bold uppercase tracking-widest">
+                            Fetching Record...
+                        </p>
+                    </div>
+
+                    <div
+                        id="drawer-data"
+                        class="hidden flex flex-col h-full overflow-hidden"
+                    >
+                        <div
+                            class="flex-1 overflow-hidden relative bg-slate-50/30 flex flex-col"
+                        >
+                            <!-- INFO PANEL -->
+                            <div
+                                id="drawer-panel-info"
+                                class="p-6 space-y-6 overflow-y-auto h-full"
+                            >
+                                <div class="pb-2">
+                                    <div
+                                        class="flex justify-between items-start mb-4"
+                                    >
+                                        <div>
+                                            <h3
+                                                class="text-xs font-black text-slate-400 uppercase tracking-tighter"
+                                                id="drawer-ins-id"
+                                            >
+                                                ---
+                                            </h3>
+                                            <h1
+                                                class="text-xl font-bold text-slate-800 leading-tight"
+                                                id="drawer-ins-type"
+                                            >
+                                                ---
+                                            </h1>
+                                        </div>
+                                        <div id="drawer-ins-priority"></div>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 mb-4">
+                                        <div
+                                            class="badge badge-outline badge-sm"
+                                            id="drawer-utility-tag"
+                                        >
+                                            ---
+                                        </div>
+                                        <div
+                                            class="badge badge-subtle badge-subtle-ghost badge-sm font-mono"
+                                            id="drawer-meter-no"
+                                        >
+                                            ---
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        class="p-4 bg-white border border-slate-200 rounded-xl shadow-sm"
+                                    >
+                                        <label
+                                            class="text-[9px] font-black uppercase text-slate-400 block mb-1"
+                                            >Site & Property</label
+                                        >
+                                        <p
+                                            class="font-bold text-slate-700 text-sm"
+                                            id="drawer-property-name"
+                                        >
+                                            ---
+                                        </p>
+                                        <p
+                                            class="text-[11px] text-slate-500"
+                                            id="drawer-address"
+                                        >
+                                            ---
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div
+                                        class="p-4 bg-white border border-slate-200 rounded-xl shadow-sm"
+                                    >
+                                        <label
+                                            class="text-[10px] font-black uppercase text-slate-400 block mb-1"
+                                            >Expiry</label
+                                        >
+                                        <p
+                                            class="font-bold text-error"
+                                            id="drawer-expiry-hours"
+                                        >
+                                            ---
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="p-4 bg-white border border-slate-200 rounded-xl shadow-sm"
+                                    >
+                                        <label
+                                            class="text-[10px] font-black uppercase text-slate-400 block mb-1"
+                                            >Status</label
+                                        >
+                                        <p
+                                            class="font-bold text-slate-700"
+                                            id="drawer-ins-status"
+                                        >
+                                            Open
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="p-4 bg-white border border-slate-200 rounded-xl shadow-sm"
+                                >
+                                    <label
+                                        class="text-[10px] font-black uppercase text-slate-400 block mb-2"
+                                        >Assigned Field Agent</label
+                                    >
+                                    <div
+                                        class="flex items-center justify-between"
+                                    >
+                                        <div class="flex items-center gap-3">
+                                            <div class="avatar placeholder">
+                                                <div
+                                                    class="bg-[#404068] text-[#faa919] rounded-full w-8 font-black text-xs"
+                                                >
+                                                    <span
+                                                        id="drawer-agent-avatar"
+                                                        >---</span
+                                                    >
+                                                </div>
+                                            </div>
+                                            <p
+                                                class="font-bold text-slate-700"
+                                                id="drawer-agent-name"
+                                            >
+                                                ---
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="divider"></div>
+
+                                <div
+                                    id="drawer-actions-container"
+                                    class="space-y-3"
+                                >
+                                    <!-- Dynamic Actions -->
+                                </div>
+                            </div>
+
+                            <!-- ITEMS PANEL -->
+                            <div
+                                id="drawer-panel-items"
+                                class="hidden h-full flex flex-col overflow-hidden bg-white"
+                            >
+                                <div
+                                    class="p-6 overflow-y-auto flex-1 space-y-6"
+                                    id="drawer-items-container"
+                                >
+                                    <!-- Items will be rendered here -->
+                                </div>
+                                <!-- QC ACTION FOOTER (INTERNAL TO PANEL) -->
+                                <div
+                                    id="drawer-qc-actions-footer"
+                                    class="p-4 bg-slate-50 border-t border-slate-200 hidden shrink-0"
+                                >
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <button
+                                            onclick="
+                                                alert('Instruction Accepted')
+                                            "
+                                            class="btn btn-success btn-sm text-white font-bold uppercase text-[10px]"
+                                        >
+                                            Accept
+                                        </button>
+                                        <button
+                                            onclick="
+                                                alert('Instruction Rejected')
+                                            "
+                                            class="btn btn-error btn-sm text-white font-bold uppercase text-[10px]"
+                                        >
+                                            Reject
+                                        </button>
+                                        <button
+                                            onclick="
+                                                alert('Instruction Reassigned')
+                                            "
+                                            class="btn btn-warning btn-sm text-white font-bold uppercase text-[10px]"
+                                        >
+                                            Reassign
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ATTACHMENTS PANEL -->
+                            <div
+                                id="drawer-panel-attachments"
+                                class="hidden h-full flex flex-col overflow-hidden bg-slate-50/50"
+                            >
+                                <!-- Pending Only Upload Facility -->
+                                <div
+                                    id="drawer-upload-container"
+                                    class="p-4 border-b border-slate-200 bg-white hidden"
+                                >
+                                    <div
+                                        class="upload-zone p-6 rounded-xl flex flex-col items-center justify-center gap-2"
+                                        onclick="triggerFileInput()"
+                                    >
+                                        <i
+                                            data-lucide="upload-cloud"
+                                            class="w-6 h-6 text-slate-400"
+                                        ></i>
+                                        <div class="text-center">
+                                            <p
+                                                class="text-xs font-bold text-slate-600 uppercase tracking-widest"
+                                            >
+                                                Click or Drop File
+                                            </p>
+                                            <p
+                                                class="text-[9px] text-slate-400 mt-1"
+                                            >
+                                                PDF, JPG, or PNG (Max 10MB)
+                                            </p>
+                                        </div>
+                                        <input
+                                            type="file"
+                                            id="drawer-real-file-input"
+                                            class="hidden"
+                                            onchange="
+                                                handleDrawerFileUpload(event)
+                                            "
+                                        />
+                                    </div>
+                                </div>
+                                <!-- Files List -->
+                                <div
+                                    class="flex-1 overflow-y-auto p-6 space-y-3"
+                                    id="drawer-attachments-container"
+                                >
+                                    <!-- Attachments will be rendered here -->
+                                </div>
+                            </div>
+
+                            <!-- CHAT PANEL -->
+                            <div
+                                id="drawer-panel-chat"
+                                class="hidden h-full flex flex-col overflow-hidden bg-[#fcfdfe]"
+                            >
+                                <div
+                                    class="flex-1 p-5 space-y-4 overflow-y-auto"
+                                    id="chat-messages-container"
+                                >
+                                    <!-- Messages injected here -->
+                                </div>
+                                <!-- CONDITIONAL CHAT INPUT (Hiddent in QC) -->
+                                <div
+                                    id="drawer-chat-input-container"
+                                    class="p-4 bg-white border-t border-slate-200 shrink-0"
+                                >
+                                    <div class="flex items-center gap-2">
+                                        <input
+                                            type="text"
+                                            id="chat-input"
+                                            placeholder="Type message..."
+                                            class="input input-bordered input-sm flex-1 bg-slate-50 focus:outline-none"
+                                            onkeypress="handleChatKey(event)"
+                                        />
+                                        <button
+                                            onclick="sendChatMessage()"
+                                            class="btn btn-sm bg-[#404068] text-white hover:bg-[#faa919] border-none"
+                                        >
+                                            <i
+                                                data-lucide="send"
+                                                class="w-4"
+                                            ></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Creation Modal -->
+        <dialog id="instruction_modal" class="modal z-[600]">
+            <div
+                class="modal-box p-0 max-w-2xl border-none overflow-hidden rounded-xl bg-white shadow-2xl"
+            >
+                <div
+                    class="brand-header p-4 flex justify-between items-center h-14"
+                >
+                    <h3
+                        class="font-black flex items-center gap-3 brand-title uppercase tracking-wider text-lg"
+                    >
+                        <i data-lucide="file-plus" class="w-6 h-6"></i>
+                        New Instruction
+                    </h3>
+                    <form method="dialog">
+                        <button
+                            class="btn btn-sm btn-circle btn-ghost text-white close-branded"
+                        >
+                            ✕
+                        </button>
+                    </form>
+                </div>
+                <div class="p-8">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-control">
+                            <label class="label"
+                                ><span class="label-text font-bold"
+                                    >Utility Type</span
+                                ></label
+                            >
+                            <select class="select select-bordered w-full">
+                                <option>Water</option>
+                                <option>Electricity</option>
+                                <option>Gas</option>
+                            </select>
+                        </div>
+                        <div class="form-control">
+                            <label class="label"
+                                ><span class="label-text font-bold"
+                                    >Instruction Type</span
+                                ></label
+                            >
+                            <select class="select select-bordered w-full">
+                                <option>Read</option>
+                                <option>Audit</option>
+                                <option>Install</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-action mt-8">
+                        <form method="dialog" class="flex gap-3 w-full">
+                            <button class="btn btn-ghost flex-1 font-bold">
+                                Cancel
+                            </button>
+                            <button
+                                class="btn btn-brand-create flex-[2] font-bold shadow-lg"
+                            >
+                                Create Instruction
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </dialog>
+
+        <script>
+            const nowRef = new Date();
+            const getExpiryDate = (hours) => {
+                const d = new Date(nowRef.getTime() + hours * 60 * 60 * 1000);
+                return d.toLocaleString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                });
+            };
+
+            const mockInstructions = [
+                {
+                    id: "INS-7721",
+                    status: "Pending",
+                    type: "Read",
+                    utility: "Water",
+                    priority: "High",
+                    property: "Sunset Heights A",
+                    address: "12 Juta St, Braamfontein",
+                    meter: "W-99821-X",
+                    expiry: 4,
+                    agent: "JD",
+                    agentName: "John Doe",
+                    agentType: "Agent",
+                    lat: -26.1925,
+                    lng: 28.0372,
+                    items: [
+                        {
+                            index: "KL",
+                            photoRequired: true,
+                            note: "Check for leak signs around the main valve pipe.",
+                            status: "Completed",
+                            actual: 12.3,
+                            expected: 12.0,
+                        },
+                        {
+                            index: "Meter Reading",
+                            photoRequired: true,
+                            note: "Capture clear photo of the dial numbers.",
+                            status: "Pending",
+                        },
+                    ],
+                    attachments: [],
+                    messages: [],
+                },
+                {
+                    id: "INS-8842",
+                    status: "Pending",
+                    type: "Audit",
+                    utility: "Electricity",
+                    priority: "Medium",
+                    property: "Newtown Hub",
+                    address: "45 Gwigwi Mrere St",
+                    meter: "E-44120-P",
+                    expiry: 18,
+                    agent: "MS",
+                    agentName: "Musa Sithole",
+                    agentType: "Agent",
+                    lat: -26.2012,
+                    lng: 28.0315,
+                    items: [
+                        {
+                            index: "Terminal Check",
+                            photoRequired: false,
+                            note: "Check for loose connections.",
+                            status: "Pending",
+                        },
+                    ],
+                    attachments: [],
+                    messages: [],
+                },
+                {
+                    id: "INS-QC-1",
+                    status: "QC",
+                    type: "Audit",
+                    utility: "Electricity",
+                    priority: "High",
+                    property: "Metropolitan Square",
+                    address: "100 Market St",
+                    meter: "E-88001-Z",
+                    expiry: 24,
+                    agent: "SR",
+                    agentName: "Sarah Richards",
+                    agentType: "Agent",
+                    lat: -26.2041,
+                    lng: 28.0473,
+                    items: [
+                        {
+                            index: "KWH",
+                            photoRequired: true,
+                            note: "Full building load test results.",
+                            status: "Completed",
+                            actual: 442.5,
+                            expected: 440.0,
+                        },
+                    ],
+                    attachments: [
+                        {
+                            name: "Test_Report.pdf",
+                            type: "Document",
+                            date: "2023-10-27 10:00",
+                            size: "1.2 MB",
+                        },
+                    ],
+                    messages: [
+                        {
+                            sender: "Agent",
+                            text: "All tests passed building load limit.",
+                            time: "2 hours ago",
+                        },
+                    ],
+                },
+                {
+                    id: "INS-QC-2",
+                    status: "QC",
+                    type: "Read",
+                    utility: "Water",
+                    priority: "Low",
+                    property: "Greenway Villas",
+                    address: "15 Rose St",
+                    meter: "W-55002-L",
+                    expiry: 12,
+                    agent: "BK",
+                    agentName: "Ben Khumalo",
+                    agentType: "Consumer",
+                    lat: -26.18,
+                    lng: 28.02,
+                    items: [
+                        {
+                            index: "KL",
+                            photoRequired: true,
+                            note: "End of month reading.",
+                            status: "Completed",
+                            actual: 88.2,
+                            expected: 85.0,
+                        },
+                    ],
+                    attachments: [
+                        {
+                            name: "Reading_Photo.jpg",
+                            type: "Photo",
+                            date: "2023-10-27 11:30",
+                            size: "0.8 MB",
+                        },
+                    ],
+                    messages: [],
+                },
+            ];
+
+            let currentActiveInsId = null;
+            let map = null;
+            let markerClusterGroup = null;
+
+            window.onload = () => {
+                refreshAllViews();
+                lucide.createIcons();
+            };
+
+            function refreshAllViews() {
+                applyPendingFilters();
+                applyQCFilters();
+                updateCounts();
+            }
+
+            function updateCounts() {
+                const pendingCount = mockInstructions.filter(
+                    (i) => i.status === "Pending",
+                ).length;
+                const qcCount = mockInstructions.filter(
+                    (i) => i.status === "QC",
+                ).length;
+                document.getElementById("count-pending").innerText =
+                    pendingCount;
+                document.getElementById("count-qc").innerText = qcCount;
+            }
+
+            // --- PENDING LOGIC ---
+            function applyPendingFilters() {
+                const data = filterData("pending");
+                renderTable("pending-instructions-list", data);
+                if (map) updateMarkers(data);
+            }
+
+            function resetPendingFilters() {
+                [
+                    "pending-filter-search",
+                    "pending-filter-user-type",
+                    "pending-filter-agent",
+                    "pending-filter-level",
+                    "pending-filter-utility",
+                    "pending-filter-type",
+                ].forEach((id) => {
+                    const el = document.getElementById(id);
+                    if (el.tagName === "SELECT") el.value = "all";
+                    else el.value = "";
+                });
+                applyPendingFilters();
+            }
+
+            // --- QC LOGIC ---
+            function applyQCFilters() {
+                const data = filterData("qc");
+                renderTable("qc-instructions-list", data);
+            }
+
+            function resetQCFilters() {
+                [
+                    "qc-filter-search",
+                    "qc-filter-user-type",
+                    "qc-filter-agent",
+                    "qc-filter-level",
+                    "qc-filter-utility",
+                    "qc-filter-type",
+                ].forEach((id) => {
+                    const el = document.getElementById(id);
+                    if (el.tagName === "SELECT") el.value = "all";
+                    else el.value = "";
+                });
+                applyQCFilters();
+            }
+
+            // --- SHARED DATA LOGIC ---
+            function filterData(statusKey) {
+                const prefix =
+                    statusKey === "pending" ? "pending-filter" : "qc-filter";
+                const searchText = document
+                    .getElementById(`${prefix}-search`)
+                    .value.toLowerCase();
+                const userType = document.getElementById(
+                    `${prefix}-user-type`,
+                ).value;
+                const agent = document.getElementById(`${prefix}-agent`).value;
+                const level = document.getElementById(`${prefix}-level`).value;
+                const utility = document.getElementById(
+                    `${prefix}-utility`,
+                ).value;
+                const type = document.getElementById(`${prefix}-type`).value;
+
+                return mockInstructions.filter((ins) => {
+                    if (ins.status.toLowerCase() !== statusKey) return false;
+
+                    const matchSearch =
+                        !searchText ||
+                        ins.meter.toLowerCase().includes(searchText) ||
+                        ins.property.toLowerCase().includes(searchText);
+                    const matchUserType =
+                        userType === "all" || ins.agentType === userType;
+                    const matchAgent = agent === "all" || ins.agent === agent;
+                    const matchLevel =
+                        level === "all" || ins.priority === level;
+                    const matchUtility =
+                        utility === "all" || ins.utility === utility;
+                    const matchType = type === "all" || ins.type === type;
+
+                    return (
+                        matchSearch &&
+                        matchUserType &&
+                        matchAgent &&
+                        matchLevel &&
+                        matchUtility &&
+                        matchType
+                    );
+                });
+            }
+
+            function renderTable(containerId, data) {
+                const container = document.getElementById(containerId);
+                container.innerHTML = "";
+
+                if (data.length === 0) {
+                    container.innerHTML =
+                        '<tr><td colspan="7" class="text-center py-12 text-slate-400 font-bold uppercase tracking-widest text-xs">No records found</td></tr>';
+                    return;
+                }
+
+                data.forEach((ins) => {
+                    const completed = ins.items
+                        ? ins.items.filter((i) => i.status === "Completed")
+                              .length
+                        : 0;
+                    const total = ins.items ? ins.items.length : 0;
+                    const agentBadgeClass =
+                        ins.agentType === "Agent"
+                            ? "badge-subtle-primary"
+                            : "badge-subtle-ghost";
+
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                    <td class="border-b border-slate-200">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-mono font-black text-slate-800 tracking-tight">${ins.meter}</span>
+                            <div class="flex items-center gap-1.5 mt-1">
+                                <span class="utility-badge util-${ins.utility.toLowerCase()} scale-90 origin-left">${ins.utility}</span>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">${ins.type}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="border-b border-slate-200">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-sm font-bold text-slate-700">${ins.agentName}</span>
+                            <span class="badge ${agentBadgeClass} badge-xs uppercase font-black tracking-widest text-[8px] py-2">${ins.agentType}</span>
+                        </div>
+                    </td>
+                    <td class="border-b border-slate-200">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold text-slate-700">${ins.property}</span>
+                            <span class="text-[11px] text-slate-400 font-medium">${ins.address}</span>
+                        </div>
+                    </td>
+                    <td class="border-b border-slate-200">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-black text-slate-600">${completed}/${total}</span>
+                            <progress class="progress progress-primary w-16 h-1 mt-1" value="${completed}" max="${total || 1}"></progress>
+                        </div>
+                    </td>
+                    <td class="border-b border-slate-200">
+                        <div class="flex flex-col">
+                            <span class="text-[11px] font-bold text-slate-600">${getExpiryDate(ins.expiry)}</span>
+                            <div class="flex items-center gap-1 text-[10px] font-black ${ins.expiry < 6 ? "text-error" : "text-slate-400"} uppercase">
+                                <i data-lucide="clock" class="w-2.5"></i> ${ins.expiry}h Left
+                            </div>
+                        </div>
+                    </td>
+                    <td class="border-b border-slate-200"><span class="badge ${getPriorityClass(ins.priority)} badge-sm uppercase">${ins.priority}</span></td>
+                    <td class="text-center border-b border-slate-200">
+                        <button onclick="openInstructionDetail('${ins.id}')" class="btn btn-ghost btn-xs text-[#404068]">
+                             <i data-lucide="arrow-right-circle" class="w-5"></i>
+                        </button>
+                    </td>
+                `;
+                    container.appendChild(row);
+                });
+                lucide.createIcons();
+            }
+
+            function getPriorityClass(p) {
+                if (p === "High") return "badge-subtle badge-subtle-error";
+                if (p === "Medium") return "badge-subtle badge-subtle-warning";
+                return "badge-subtle badge-subtle-ghost";
+            }
+
+            function switchTab(category) {
+                document
+                    .querySelectorAll(".view-section")
+                    .forEach((el) => el.classList.remove("active"));
+                document
+                    .getElementById(`view-${category}`)
+                    .classList.add("active");
+                document
+                    .querySelectorAll(".header-tabs .tab")
+                    .forEach((el) => el.classList.remove("tab-active"));
+                document
+                    .getElementById(`tab-${category}`)
+                    .classList.add("tab-active");
+
+                if (
+                    category === "pending" &&
+                    document
+                        .getElementById("pending-map-view")
+                        .classList.contains("hidden") === false
+                ) {
+                    setTimeout(() => map && map.invalidateSize(), 100);
+                }
+            }
+
+            function togglePendingView(type) {
+                const tableView = document.getElementById("pending-table-view");
+                const mapView = document.getElementById("pending-map-view");
+                const btnTable = document.getElementById("btn-view-table");
+                const btnMap = document.getElementById("btn-view-map");
+
+                if (type === "table") {
+                    tableView.classList.remove("hidden");
+                    mapView.classList.add("hidden");
+                    btnTable.classList.add("toggle-view-active");
+                    btnMap.classList.remove("toggle-view-active");
+                } else {
+                    tableView.classList.add("hidden");
+                    mapView.classList.remove("hidden");
+                    btnTable.classList.remove("toggle-view-active");
+                    btnMap.classList.add("toggle-view-active");
+                    initMap();
+                }
+            }
+
+            // --- DRAWER ACTIONS ---
+            function openInstructionDetail(id) {
+                currentActiveInsId = id;
+                const drawer = document.getElementById("custom-detail-drawer");
+                const drawerLoading = document.getElementById("drawer-loading");
+                const drawerData = document.getElementById("drawer-data");
+
+                drawer.classList.add("open");
+                drawerLoading.classList.remove("hidden");
+                drawerData.classList.add("hidden");
+
+                const ins = mockInstructions.find((i) => i.id === id);
+
+                setTimeout(() => {
+                    if (ins) {
+                        document.getElementById("drawer-ins-id").innerText =
+                            ins.id;
+                        document.getElementById("drawer-ins-type").innerText =
+                            ins.type + " Instruction";
+                        document.getElementById(
+                            "drawer-ins-priority",
+                        ).innerHTML =
+                            `<span class="badge ${getPriorityClass(ins.priority)} uppercase text-[10px]">${ins.priority} Priority</span>`;
+                        document.getElementById(
+                            "drawer-utility-tag",
+                        ).innerText = ins.utility + " Utility";
+                        document.getElementById(
+                            "drawer-property-name",
+                        ).innerText = ins.property;
+                        document.getElementById("drawer-address").innerText =
+                            ins.address;
+                        document.getElementById("drawer-meter-no").innerText =
+                            ins.meter;
+                        document.getElementById(
+                            "drawer-expiry-hours",
+                        ).innerText = ins.expiry + " Hours Remaining";
+                        document.getElementById("drawer-ins-status").innerText =
+                            ins.status;
+
+                        document.getElementById(
+                            "drawer-agent-avatar",
+                        ).innerText = ins.agent;
+                        document.getElementById("drawer-agent-name").innerText =
+                            ins.agentName || "Not Assigned";
+
+                        // Toggle Upload zone (Files tab) - Hiddent if not Pending
+                        document
+                            .getElementById("drawer-upload-container")
+                            .classList.toggle(
+                                "hidden",
+                                ins.status !== "Pending",
+                            );
+
+                        // Toggle Chat input (Messages tab) - Hidden if QC
+                        document
+                            .getElementById("drawer-chat-input-container")
+                            .classList.toggle("hidden", ins.status === "QC");
+
+                        // Toggle QC Action Footer
+                        document
+                            .getElementById("drawer-qc-actions-footer")
+                            .classList.toggle("hidden", ins.status !== "QC");
+
+                        renderItems(ins.items || [], ins.utility, ins.status);
+                        renderAttachments(ins.attachments || []);
+                        renderMessages(ins.messages || []);
+                        renderDrawerActions(ins);
+
+                        drawerLoading.classList.add("hidden");
+                        drawerData.classList.remove("hidden");
+                        switchDrawerTab("info");
+                        lucide.createIcons();
+                    }
+                }, 300);
+            }
+
+            function renderDrawerActions(ins) {
+                const container = document.getElementById(
+                    "drawer-actions-container",
+                );
+                container.innerHTML = "";
+
+                if (ins.status === "Pending") {
+                    container.innerHTML = `
+                    <button onclick="confirmCancel()" class="btn btn-block btn-outline btn-error btn-sm border-2 font-bold uppercase tracking-wider">
+                        <i data-lucide="trash-2" class="w-4 mr-2"></i> Cancel Instruction
+                    </button>
+                `;
+                }
+                lucide.createIcons();
+            }
+
+            function closeDrawer() {
+                document
+                    .getElementById("custom-detail-drawer")
+                    .classList.remove("open");
+                currentActiveInsId = null;
+            }
+
+            function switchDrawerTab(tab) {
+                const tabs = ["info", "items", "attachments", "chat"];
+                tabs.forEach((t) => {
+                    const tabEl = document.getElementById(`drawer-tab-${t}`);
+                    const panelEl = document.getElementById(
+                        `drawer-panel-${t}`,
+                    );
+                    if (t === tab) {
+                        tabEl.classList.add("drawer-tab-active");
+                        tabEl.classList.remove(
+                            "border-transparent",
+                            "text-slate-400",
+                        );
+                        panelEl.classList.remove("hidden");
+                    } else {
+                        tabEl.classList.remove("drawer-tab-active");
+                        tabEl.classList.add(
+                            "border-transparent",
+                            "text-slate-400",
+                        );
+                        panelEl.classList.add("hidden");
+                    }
+                });
+                if (tab === "chat") setTimeout(scrollToBottom, 50);
+            }
+
+            function renderItems(items, utility, status) {
+                const container = document.getElementById(
+                    "drawer-items-container",
+                );
+                container.innerHTML = items.length
+                    ? ""
+                    : '<p class="text-center text-slate-400 py-10">No items defined</p>';
+
+                let indices = [];
+                if (utility === "Electricity")
+                    indices = ["KWH", "KVA", "KVARH"];
+                else if (utility === "Water") indices = ["KL"];
+                else if (utility === "Gas") indices = ["KJ"];
+
+                items.forEach((item, idx) => {
+                    const isQC = status === "QC";
+                    const statusClass =
+                        item.status === "Completed"
+                            ? "badge-subtle-success"
+                            : "badge-subtle-warning";
+                    const assignedIndex =
+                        indices[idx % indices.length] || item.index || "N/A";
+                    const actualVal = item.actual || 0;
+                    const expectedVal = item.expected || 0;
+                    const isPass = actualVal >= expectedVal;
+
+                    const row = document.createElement("div");
+                    row.className = "item-row";
+
+                    if (isQC) {
+                        // NEW QC VIEW FOR ITEMS
+                        row.innerHTML = `
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <span class="item-index-badge">${assignedIndex}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-black uppercase text-slate-400">Capture</span>
+                                    <img src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=100&h=100&fit=crop" class="meter-thumbnail" alt="Meter Preview">
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-4">
+                                <div class="flex-1">
+                                    <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Verify Reading (${assignedIndex})</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="number" step="0.1" value="${actualVal}" class="input input-bordered input-sm font-bold w-24">
+                                        <span class="text-xs font-bold text-slate-500">${assignedIndex}</span>
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Status</label>
+                                    <span class="badge ${statusClass} badge-sm text-[9px] uppercase tracking-tighter">${item.status}</span>
+                                </div>
+                            </div>
+
+                            <table class="qc-check-table">
+                                <thead>
+                                    <tr>
+                                        <th>Check</th>
+                                        <th>Expected</th>
+                                        <th>Actual</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <div class="flex items-center gap-2">
+                                                ${
+                                                    isPass
+                                                        ? '<span class="text-success"><i data-lucide="check-circle-2" class="w-3"></i></span>'
+                                                        : '<span class="text-error"><i data-lucide="x-circle" class="w-3"></i></span>'
+                                                }
+                                                <span class="font-medium text-slate-600">Threshold Pass</span>
+                                            </div>
+                                        </td>
+                                        <td class="font-mono text-slate-500">${expectedVal}</td>
+                                        <td class="font-mono font-bold ${isPass ? "text-success" : "text-error"}">${actualVal}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    } else {
+                        // PREVIOUS PENDING VIEW
+                        row.innerHTML = `
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="item-index-badge">${assignedIndex}</span>
+                                        <span class="badge badge-subtle ${statusClass} badge-sm text-[9px] uppercase tracking-tighter">${item.status}</span>
+                                    </div>
+                                    ${item.photoRequired ? `<div class="flex items-center text-[9px] font-black uppercase tracking-tighter text-info gap-1"><i data-lucide="camera" class="w-3"></i> Photo Req.</div>` : ""}
+                                </div>
+                                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                    <p class="text-sm text-slate-700 leading-relaxed">${item.note || "No note"}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    }
+                    container.appendChild(row);
+                });
+                lucide.createIcons();
+            }
+
+            function renderAttachments(files) {
+                const container = document.getElementById(
+                    "drawer-attachments-container",
+                );
+                container.innerHTML = files.length
+                    ? ""
+                    : '<div class="text-center py-10"><i data-lucide="folder-open" class="w-10 h-10 mx-auto text-slate-200 mb-2"></i><p class="text-slate-400 text-xs font-bold uppercase tracking-widest">No files uploaded</p></div>';
+                files.forEach((file) => {
+                    const row = document.createElement("div");
+                    row.className =
+                        "attachment-item p-4 bg-white border border-slate-200 rounded-xl flex items-center gap-4 shadow-sm";
+                    row.innerHTML = `
+                    <div class="type-icon ${file.type === "Photo" ? "type-photo" : "type-doc"}"><i data-lucide="${file.type === "Photo" ? "image" : "file-text"}" class="w-5 h-5"></i></div>
+                    <div class="flex-1 overflow-hidden">
+                        <h4 class="text-sm font-bold text-slate-700 truncate">${file.name}</h4>
+                        <span class="text-[10px] text-slate-400">${file.date} ${file.size ? `• ${file.size}` : ""}</span>
+                    </div>
+                    <button class="btn btn-xs btn-outline border-slate-300">View</button>
+                `;
+                    container.appendChild(row);
+                });
+                lucide.createIcons();
+            }
+
+            function triggerFileInput() {
+                document.getElementById("drawer-real-file-input").click();
+            }
+
+            function handleDrawerFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file || !currentActiveInsId) return;
+
+                const ins = mockInstructions.find(
+                    (i) => i.id === currentActiveInsId,
+                );
+                const now = new Date();
+                const dateStr =
+                    now.toISOString().split("T")[0] +
+                    " " +
+                    now.getHours() +
+                    ":" +
+                    now.getMinutes();
+
+                ins.attachments.unshift({
+                    name: file.name,
+                    type: file.type.includes("image") ? "Photo" : "Document",
+                    date: dateStr,
+                    size: (file.size / 1024 / 1024).toFixed(1) + " MB",
+                });
+
+                renderAttachments(ins.attachments);
+                event.target.value = ""; // Reset input
+            }
+
+            function renderMessages(messages) {
+                const container = document.getElementById(
+                    "chat-messages-container",
+                );
+                container.innerHTML = messages.length
+                    ? ""
+                    : '<p class="text-center text-slate-400 py-10">No messages</p>';
+                messages.forEach((msg) => {
+                    const isOffice = msg.sender === "Office";
+                    const div = document.createElement("div");
+                    div.className = `flex flex-col ${isOffice ? "items-end" : "items-start"} mb-5 w-full`;
+                    div.innerHTML = `
+                    <span class="chat-label">${msg.sender}</span>
+                    <div class="chat-bubble-custom ${isOffice ? "chat-sent" : "chat-received"} shadow-sm">
+                        <p>${msg.text}</p>
+                        <span class="text-[9px] font-bold block mt-1 opacity-50">${msg.time}</span>
+                    </div>
+                `;
+                    container.appendChild(div);
+                });
+                scrollToBottom();
+            }
+
+            function handleChatKey(e) {
+                if (e.key === "Enter") sendChatMessage();
+            }
+            function sendChatMessage() {
+                const input = document.getElementById("chat-input");
+                if (!input.value.trim() || !currentActiveInsId) return;
+                const ins = mockInstructions.find(
+                    (i) => i.id === currentActiveInsId,
+                );
+                ins.messages.push({
+                    sender: "Office",
+                    text: input.value,
+                    time: "Now",
+                });
+                input.value = "";
+                renderMessages(ins.messages);
+            }
+            function scrollToBottom() {
+                const c = document.getElementById("chat-messages-container");
+                c.scrollTop = c.scrollHeight;
+            }
+
+            // --- MAP LOGIC ---
+            function initMap() {
+                if (map) {
+                    setTimeout(() => map.invalidateSize(), 50);
+                    return;
+                }
+                map = L.map("map-container").setView([-26.19, 28.03], 12);
+                L.tileLayer(
+                    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                ).addTo(map);
+                markerClusterGroup = L.markerClusterGroup({
+                    showCoverageOnHover: false,
+                });
+                map.addLayer(markerClusterGroup);
+                updateMarkers(
+                    mockInstructions.filter((i) => i.status === "Pending"),
+                );
+            }
+
+            function updateMarkers(data) {
+                if (!map || !markerClusterGroup) return;
+                markerClusterGroup.clearLayers();
+                data.forEach((ins) => {
+                    const marker = L.marker([ins.lat, ins.lng], {
+                        icon: L.divIcon({
+                            className: "custom-pin-container",
+                            html: `<div class="custom-pin"><div class="pin-inner"><span class="agent-initials">${ins.agent}</span></div></div>`,
+                            iconSize: [32, 40],
+                            iconAnchor: [16, 40],
+                        }),
+                    });
+                    marker.bindPopup(
+                        `<b>${ins.property}</b><br>${ins.meter}<br><button class="btn btn-xs mt-2" onclick="openInstructionDetail('${ins.id}')">Details</button>`,
+                    );
+                    markerClusterGroup.addLayer(marker);
+                });
+            }
+
+            function confirmCancel() {
+                if (confirm(`Cancel instruction?`)) closeDrawer();
+            }
+        </script>
+    </body>
+</html>

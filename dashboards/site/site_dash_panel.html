@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Property Management Dashboard</title>
+        <!-- Tailwind CSS and DaisyUI -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <!-- Lucide Icons -->
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <style>
+            /* Branded Colors */
+            .bg-brand {
+                background-color: #404068;
+            }
+            .text-brand {
+                color: #faa919;
+            }
+            .border-brand {
+                border-color: #404068;
+            }
+
+            /* Custom Tab Styling for Pill Tabs */
+            .tab-brand.tab-active {
+                background-color: #404068 !important;
+                color: #faa919 !important;
+                border-radius: 9999px;
+            }
+
+            body {
+                background-color: #ffffff;
+                font-family:
+                    ui-sans-serif,
+                    system-ui,
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    "Segoe UI",
+                    Roboto,
+                    "Helvetica Neue",
+                    Arial,
+                    sans-serif;
+            }
+
+            /* Sticky stack definitions */
+            .sticky-header {
+                position: sticky;
+                top: 0;
+                z-index: 100;
+            }
+
+            .sticky-stats {
+                position: sticky;
+                top: 88px; /* Adjusted based on reduced header padding */
+                z-index: 90;
+            }
+
+            .sticky-tabs {
+                position: sticky;
+                top: 195px; /* Offset by header + stats height */
+                z-index: 80;
+            }
+
+            /* Full Screen Toggle Class */
+            .fullscreen-content {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                z-index: 1000 !important;
+                margin: 0 !important;
+                border-radius: 0 !important;
+                overflow-y: auto;
+                background: white;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-50">
+        <!-- Header Section: Sticky with Rounded TOP Corners only -->
+        <header class="sticky-header bg-brand p-4 shadow-md rounded-t-[2rem]">
+            <div
+                class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-2"
+            >
+                <div class="text-center md:text-left">
+                    <h1 class="text-2xl font-bold text-brand">
+                        Grandview Heights
+                    </h1>
+                    <p class="text-gray-300 text-xs italic">
+                        123 Business Parkway, Sandton, Johannesburg, 2196
+                    </p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-center md:text-right">
+                        <p
+                            class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold leading-tight"
+                        >
+                            Utility Suppliers
+                        </p>
+                        <p class="text-white text-sm font-medium">
+                            Eskom & City of Johannesburg
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="container mx-auto p-4 md:p-6">
+            <!-- Stats Grid - STICKY -->
+            <div class="sticky-stats py-2 bg-gray-50/95 backdrop-blur-sm">
+                <div
+                    class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+                >
+                    <!-- Tenants -->
+                    <div
+                        class="stats shadow-sm bg-white border border-gray-100 rounded-xl"
+                    >
+                        <div class="stat p-3">
+                            <div class="stat-figure text-brand opacity-80">
+                                <i data-lucide="users" class="w-5 h-5"></i>
+                            </div>
+                            <div class="stat-title text-[10px] font-semibold">
+                                Tenants
+                            </div>
+                            <div class="stat-value text-lg text-gray-800">
+                                142
+                            </div>
+                            <div class="stat-desc text-[9px]">
+                                98% Occupancy
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Meters Breakdown -->
+                    <div
+                        class="stats shadow-sm bg-white border border-gray-100 rounded-xl"
+                    >
+                        <div class="stat p-3">
+                            <div
+                                class="stat-title text-[9px] mb-1 text-brand font-bold uppercase"
+                            >
+                                Meter Inventory
+                            </div>
+                            <div class="flex flex-col gap-0.5">
+                                <div class="flex justify-between items-center">
+                                    <span
+                                        class="text-[10px] font-medium flex items-center gap-1.5"
+                                    >
+                                        <i
+                                            data-lucide="droplet"
+                                            class="w-3 h-3 text-blue-500"
+                                        ></i>
+                                        Water
+                                    </span>
+                                    <span
+                                        class="badge badge-ghost badge-xs font-bold"
+                                        >48</span
+                                    >
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span
+                                        class="text-[10px] font-medium flex items-center gap-1.5"
+                                    >
+                                        <i
+                                            data-lucide="zap"
+                                            class="w-3 h-3 text-yellow-500"
+                                        ></i>
+                                        Electricity
+                                    </span>
+                                    <span
+                                        class="badge badge-ghost badge-xs font-bold"
+                                        >142</span
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Infrastructure -->
+                    <div
+                        class="stats shadow-sm bg-white border border-gray-100 rounded-xl"
+                    >
+                        <div class="stat p-3">
+                            <div class="stat-figure text-brand opacity-80">
+                                <i data-lucide="factory" class="w-5 h-5"></i>
+                            </div>
+                            <div class="stat-title text-[10px] font-semibold">
+                                Generators
+                            </div>
+                            <div class="stat-value text-lg text-gray-800">
+                                2
+                            </div>
+                            <div class="stat-desc text-[9px]">Operational</div>
+                        </div>
+                    </div>
+
+                    <!-- Boreholes -->
+                    <div
+                        class="stats shadow-sm bg-white border border-gray-100 rounded-xl"
+                    >
+                        <div class="stat p-3">
+                            <div class="stat-figure text-brand opacity-80">
+                                <i data-lucide="waves" class="w-5 h-5"></i>
+                            </div>
+                            <div class="stat-title text-[10px] font-semibold">
+                                Boreholes
+                            </div>
+                            <div class="stat-value text-lg text-gray-800">
+                                3
+                            </div>
+                            <div
+                                class="stat-desc text-success font-medium text-[9px]"
+                            >
+                                High Yield
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs - STICKY -->
+            <div
+                class="sticky-tabs mb-6 flex justify-center py-4 bg-gray-50/95 backdrop-blur-sm"
+            >
+                <div
+                    role="tablist"
+                    class="tabs tabs-boxed bg-gray-200 p-1 rounded-full inline-flex shadow-sm scale-90 sm:scale-100"
+                >
+                    <button
+                        role="tab"
+                        class="tab tab-brand px-4 sm:px-6 text-xs sm:text-sm transition-all duration-300"
+                        onclick="switchTab(event, 'recon')"
+                    >
+                        Recon
+                    </button>
+                    <button
+                        role="tab"
+                        class="tab tab-brand px-4 sm:px-6 text-xs sm:text-sm transition-all duration-300"
+                        onclick="switchTab(event, 'vacancy')"
+                    >
+                        Vacancy
+                    </button>
+                    <button
+                        role="tab"
+                        class="tab tab-brand px-4 sm:px-6 text-xs sm:text-sm transition-all duration-300"
+                        onclick="switchTab(event, 'estate')"
+                    >
+                        Estate
+                    </button>
+                    <button
+                        role="tab"
+                        class="tab tab-brand px-4 sm:px-6 text-xs sm:text-sm transition-all duration-300"
+                        onclick="switchTab(event, 'alerts')"
+                    >
+                        Alerts
+                    </button>
+                    <button
+                        role="tab"
+                        class="tab tab-brand px-4 sm:px-6 text-xs sm:text-sm transition-all duration-300"
+                        onclick="switchTab(event, 'consumption')"
+                    >
+                        Consumption
+                    </button>
+                    <button
+                        role="tab"
+                        class="tab tab-brand px-4 sm:px-6 text-xs sm:text-sm transition-all duration-300"
+                        onclick="switchTab(event, 'revenue')"
+                    >
+                        Revenue
+                    </button>
+                    <button
+                        role="tab"
+                        class="tab tab-brand px-4 sm:px-6 text-xs sm:text-sm transition-all duration-300"
+                        onclick="switchTab(event, 'comparison')"
+                    >
+                        Comparison
+                    </button>
+                    <button
+                        role="tab"
+                        class="tab tab-brand px-4 sm:px-6 text-xs sm:text-sm transition-all duration-300"
+                        onclick="switchTab(event, 'projection')"
+                    >
+                        Projection
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab Content Wrapper -->
+            <div
+                id="tab-container"
+                class="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-sm min-h-[600px] transition-all duration-300"
+            >
+                <!-- Expand Button -->
+                <button
+                    onclick="toggleFullScreen()"
+                    class="absolute top-6 right-6 btn btn-circle btn-sm btn-ghost text-gray-400 hover:text-brand"
+                    title="Toggle Fullscreen"
+                >
+                    <i
+                        id="expand-icon"
+                        data-lucide="maximize-2"
+                        class="w-4 h-4"
+                    ></i>
+                </button>
+
+                <div id="content-body" class="animate-in fade-in duration-500">
+                    <!-- Content will be injected here -->
+                </div>
+            </div>
+        </main>
+
+        <script>
+            const tabData = {
+                recon: {
+                    title: "Reconciliation Overview",
+                    icon: "activity",
+                    desc: "Financial reconciliation between utility bills and tenant recoveries.",
+                },
+                vacancy: {
+                    title: "Vacancy",
+                    icon: "door-open",
+                    desc: "Vacant unit utility charge participation and month-on-month trend analysis.",
+                },
+                estate: {
+                    title: "Estate Management",
+                    icon: "building-2",
+                    desc: "Maintenance logs and physical property documentation.",
+                },
+                alerts: {
+                    title: "Critical Alerts",
+                    icon: "bell-ring",
+                    desc: "Real-time notifications for meter faults and infrastructure.",
+                },
+                consumption: {
+                    title: "Consumption Analytics",
+                    icon: "bar-chart-3",
+                    desc: "Detailed breakdown of water, gas, and electricity usage.",
+                },
+                revenue: {
+                    title: "Revenue Tracking",
+                    icon: "wallet",
+                    desc: "Billing cycles and historical revenue collection.",
+                },
+                comparison: {
+                    title: "Year-on-Year Comparison",
+                    icon: "scale",
+                    desc: "Performance against historical data.",
+                },
+                projection: {
+                    title: "Future Projections",
+                    icon: "line-chart",
+                    desc: "Estimated costs based on current trends.",
+                },
+            };
+
+            let currentTab = "recon";
+
+            function toggleFullScreen() {
+                const container = document.getElementById("tab-container");
+                const icon = document.getElementById("expand-icon");
+                const isFull = container.classList.toggle("fullscreen-content");
+
+                if (isFull) {
+                    icon.setAttribute("data-lucide", "minimize-2");
+                    document.body.style.overflow = "hidden";
+                } else {
+                    icon.setAttribute("data-lucide", "maximize-2");
+                    document.body.style.overflow = "";
+                }
+                lucide.createIcons();
+            }
+
+            function loadIframeTab(container, src, headerSelector) {
+                container.innerHTML = "";
+                container.className = "animate-in fade-in duration-500";
+
+                const iframe = document.createElement("iframe");
+                iframe.src = src;
+                iframe.style.cssText = "width:100%;height:1150px;border:none;display:block;";
+
+                iframe.addEventListener("load", function () {
+                    try {
+                        const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        const style = iDoc.createElement("style");
+                        style.textContent =
+                            headerSelector + " { display: none !important; }" +
+                            "body { padding-top: 0 !important; margin-top: 0 !important; }";
+                        iDoc.head.appendChild(style);
+                        setTimeout(() => {
+                            const h = iDoc.documentElement.scrollHeight;
+                            iframe.style.height = Math.max(1150, h) + "px";
+                        }, 800);
+                    } catch (e) {}
+                });
+
+                container.appendChild(iframe);
+            }
+
+            function switchTab(event, tabKey) {
+                currentTab = tabKey;
+                const tabs = document.querySelectorAll(".tab");
+                const contentBody = document.getElementById("content-body");
+                const data = tabData[tabKey];
+
+                tabs.forEach((t) => t.classList.remove("tab-active"));
+                event.target.classList.add("tab-active");
+
+                if (tabKey === "recon") {
+                    document.getElementById("tab-container").classList.add("!p-0", "overflow-hidden");
+                    loadIframeTab(contentBody, "recon.html", ".bg-brand-primary");
+                    return;
+                }
+
+                if (tabKey === "vacancy") {
+                    document.getElementById("tab-container").classList.add("!p-0", "overflow-hidden");
+                    loadIframeTab(contentBody, "vacancy.html", "header");
+                    return;
+                }
+
+                if (tabKey === "alerts") {
+                    document.getElementById("tab-container").classList.add("!p-0", "overflow-hidden");
+                    loadIframeTab(contentBody, "alerts.html", "header");
+                    return;
+                }
+
+                if (tabKey === "consumption") {
+                    document.getElementById("tab-container").classList.add("!p-0", "overflow-hidden");
+                    loadIframeTab(contentBody, "site_consumption.html", "header");
+                    return;
+                }
+
+                if (tabKey === "revenue") {
+                    document.getElementById("tab-container").classList.add("!p-0", "overflow-hidden");
+                    loadIframeTab(contentBody, "revenue.html", "header");
+                    return;
+                }
+
+                if (tabKey === "comparison") {
+                    document.getElementById("tab-container").classList.add("!p-0", "overflow-hidden");
+                    loadIframeTab(contentBody, "site_comparison.html", ".custom-header");
+                    return;
+                }
+
+                if (tabKey === "estate") {
+                    document.getElementById("tab-container").classList.add("!p-0", "overflow-hidden");
+                    loadIframeTab(contentBody, "estate_energy_dashboard.html", ".bg-slate-800");
+                    return;
+                }
+
+                document.getElementById("tab-container").classList.remove("!p-0", "overflow-hidden");
+
+                contentBody.innerHTML = `
+                <div class="flex flex-col items-center justify-center text-center py-12 opacity-0 transition-opacity duration-300" id="inner-fade">
+                    <div class="bg-gray-50 p-5 rounded-full mb-4">
+                        <i data-lucide="${data.icon}" class="w-10 h-10 text-brand"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-800">${data.title}</h2>
+                    <p class="text-gray-500 text-sm max-w-md mt-1 mb-10">${data.desc}</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl text-left">
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-gray-100">
+                            <h4 class="font-bold text-gray-700 mb-4">Primary Metrics</h4>
+                            <div class="space-y-3">
+                                <div class="h-2 bg-gray-200 rounded-full w-full"></div>
+                                <div class="h-2 bg-gray-200 rounded-full w-2/3"></div>
+                                <div class="h-2 bg-gray-200 rounded-full w-3/4"></div>
+                            </div>
+                        </div>
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-gray-100">
+                            <h4 class="font-bold text-gray-700 mb-4">Activity Log</h4>
+                            <div class="space-y-4">
+                                <div class="flex gap-3">
+                                    <div class="w-2 h-2 rounded-full bg-green-500 mt-1.5"></div>
+                                    <div class="h-2 bg-gray-200 rounded-full w-24"></div>
+                                </div>
+                                <div class="flex gap-3">
+                                    <div class="w-2 h-2 rounded-full bg-brand mt-1.5"></div>
+                                    <div class="h-2 bg-gray-200 rounded-full w-32"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="md:col-span-2 p-8 bg-slate-50 rounded-2xl border border-gray-100 min-h-[300px] flex items-center justify-center">
+                            <div class="text-center">
+                                <i data-lucide="bar-chart" class="w-12 h-12 text-gray-300 mx-auto mb-2"></i>
+                                <span class="text-gray-400 text-sm">Visual Data Component</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+                lucide.createIcons();
+                setTimeout(() => {
+                    const inner = document.getElementById("inner-fade");
+                    if (inner) inner.classList.remove("opacity-0");
+                }, 50);
+            }
+
+            window.onload = () => {
+                lucide.createIcons();
+                const firstTab = document.querySelector(".tab");
+                if (firstTab) firstTab.click();
+            };
+
+            // Esc to exit fullscreen
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "Escape") {
+                    const container = document.getElementById("tab-container");
+                    if (container.classList.contains("fullscreen-content")) {
+                        toggleFullScreen();
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>

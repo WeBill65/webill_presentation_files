@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Utility TOU Configuration</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            body {
+                font-family: "Inter", sans-serif;
+            }
+
+            /* Custom Colors */
+            .bg-custom-navy {
+                background-color: #404068;
+            }
+            .text-custom-gold {
+                color: #faa919;
+            }
+
+            /* Sticky Header Fix */
+            .sticky-header {
+                position: sticky;
+                top: 0;
+                z-index: 50; /* Higher z-index to stay above grid elements */
+                background-color: #404068;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            /* Daily UI Refined Period States */
+            .state-offpeak {
+                background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+                color: white;
+                box-shadow: 0 4px 6px -1px rgba(34, 197, 94, 0.2);
+            }
+            .state-standard {
+                background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+                color: white;
+                box-shadow: 0 4px 6px -1px rgba(234, 179, 8, 0.2);
+            }
+            .state-peak {
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                color: white;
+                box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);
+            }
+
+            .hour-btn {
+                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                font-size: 0.75rem;
+                font-weight: 700;
+                cursor: pointer;
+                min-height: 4rem;
+                border: 2px solid transparent;
+            }
+
+            .hour-btn:hover {
+                filter: brightness(1.1);
+                transform: scale(1.05) translateY(-2px);
+                z-index: 10;
+            }
+
+            .tab-active {
+                background-color: white;
+                color: #404068;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            }
+
+            .btn-save {
+                background-color: #404068;
+                color: white;
+                transition: all 0.3s ease;
+                cursor: pointer;
+                box-shadow: 0 10px 15px -3px rgba(64, 64, 104, 0.3);
+            }
+            .btn-save:hover {
+                color: #faa919;
+                transform: translateY(-2px);
+                box-shadow: 0 20px 25px -5px rgba(64, 64, 104, 0.4);
+            }
+
+            .required-star {
+                color: #ef4444;
+                margin-left: 2px;
+            }
+
+            .input-daily-ui {
+                background-color: #f8fafc;
+                border: 2px solid #e2e8f0;
+                transition: all 0.2s ease;
+                appearance: none;
+            }
+            .input-daily-ui:focus {
+                border-color: #404068;
+                background-color: white;
+                box-shadow: 0 0 0 4px rgba(64, 64, 104, 0.1);
+            }
+
+            /* Custom dropdown arrow for Daily UI feel */
+            .select-wrapper {
+                position: relative;
+            }
+            .select-wrapper::after {
+                content: "▼";
+                font-size: 0.6rem;
+                position: absolute;
+                right: 1.25rem;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #94a3b8;
+                pointer-events: none;
+            }
+
+            .period-indicator {
+                font-size: 0.65rem;
+                opacity: 0.9;
+                margin-top: 2px;
+                font-weight: 800;
+            }
+
+            .info-bubble {
+                background: #e0f2fe;
+                color: #0369a1;
+                padding: 4px 12px;
+                border-radius: 9999px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                display: inline-flex;
+                align-items: center;
+            }
+
+            body {
+                overflow-x: hidden;
+            }
+        </style>
+    </head>
+    <body class="bg-slate-50 min-h-screen">
+        <div class="max-w-screen-xl mx-auto md:p-8">
+            <!-- Container - Removed overflow-hidden to allow sticky to work -->
+            <div
+                class="bg-white shadow-2xl md:rounded-3xl border border-slate-100 mb-8 relative"
+            >
+                <!-- Sticky Header -->
+                <div
+                    class="sticky-header p-6 md:p-10 md:rounded-t-3xl overflow-hidden"
+                >
+                    <div
+                        class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    >
+                        <div>
+                            <h1
+                                class="text-2xl md:text-3xl font-extrabold text-custom-gold tracking-tight"
+                            >
+                                Utility TOU Configuration
+                            </h1>
+                            <p
+                                class="text-slate-300 text-sm mt-1 max-w-2xl font-medium"
+                            >
+                                Design and deploy complex Time of Use schedules
+                                with seasonal intelligence.
+                            </p>
+                        </div>
+                    </div>
+                    <!-- Abstract Design Element -->
+                    <div
+                        class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none"
+                    ></div>
+                </div>
+
+                <form id="touForm" class="p-6 md:p-12 space-y-12">
+                    <!-- Metadata Section -->
+                    <div
+                        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                    >
+                        <div class="space-y-6">
+                            <div class="group">
+                                <label
+                                    class="block text-xs font-extrabold text-slate-500 uppercase tracking-widest mb-2"
+                                    >Name<span class="required-star"
+                                        >*</span
+                                    ></label
+                                >
+                                <input
+                                    type="text"
+                                    name="name"
+                                    required
+                                    placeholder="Residential Peak Plan"
+                                    class="input-daily-ui w-full px-5 py-3 rounded-xl text-sm outline-none"
+                                />
+                            </div>
+                            <div class="group">
+                                <label
+                                    class="block text-xs font-extrabold text-slate-500 uppercase tracking-widest mb-2"
+                                    >Organization</label
+                                >
+                                <div class="select-wrapper">
+                                    <select
+                                        name="organization"
+                                        class="input-daily-ui w-full px-5 py-3 rounded-xl text-sm outline-none cursor-pointer"
+                                    >
+                                        <option value="" disabled selected>
+                                            Select Organization
+                                        </option>
+                                        <option value="grid-systems">
+                                            Grid Systems Inc.
+                                        </option>
+                                        <option value="eco-power">
+                                            Eco Power Solutions
+                                        </option>
+                                        <option value="urban-electric">
+                                            Urban Electric Co.
+                                        </option>
+                                        <option value="national-utility">
+                                            National Utility Board
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div class="group">
+                                <label
+                                    class="block text-xs font-extrabold text-slate-500 uppercase tracking-widest mb-2"
+                                    >Country<span class="required-star"
+                                        >*</span
+                                    ></label
+                                >
+                                <div class="select-wrapper">
+                                    <select
+                                        name="country"
+                                        required
+                                        class="input-daily-ui w-full px-5 py-3 rounded-xl text-sm outline-none cursor-pointer"
+                                    >
+                                        <option value="" disabled selected>
+                                            Select Country
+                                        </option>
+                                        <option value="US">
+                                            United States
+                                        </option>
+                                        <option value="UK">
+                                            United Kingdom
+                                        </option>
+                                        <option value="CA">Canada</option>
+                                        <option value="AU">Australia</option>
+                                        <option value="DE">Germany</option>
+                                        <option value="FR">France</option>
+                                        <option value="ZA">South Africa</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="group">
+                                <label
+                                    class="block text-xs font-extrabold text-slate-500 uppercase tracking-widest mb-2"
+                                    >Provider</label
+                                >
+                                <input
+                                    type="text"
+                                    name="provider"
+                                    placeholder="PowerConnect"
+                                    class="input-daily-ui w-full px-5 py-3 rounded-xl text-sm outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div class="group">
+                                <label
+                                    class="block text-xs font-extrabold text-slate-500 uppercase tracking-widest mb-2"
+                                    >Description</label
+                                >
+                                <textarea
+                                    name="description"
+                                    rows="1"
+                                    placeholder="Add additional details..."
+                                    class="input-daily-ui w-full px-5 py-3 rounded-xl text-sm outline-none resize-none"
+                                ></textarea>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-8 pt-2">
+                                <label
+                                    class="flex items-center cursor-pointer group"
+                                >
+                                    <div class="relative">
+                                        <input
+                                            type="checkbox"
+                                            name="is_public"
+                                            class="sr-only peer"
+                                        />
+                                        <div
+                                            class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"
+                                        ></div>
+                                    </div>
+                                    <span
+                                        class="ml-3 text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors"
+                                        >Public Access</span
+                                    >
+                                </label>
+                                <label
+                                    class="flex items-center cursor-pointer group"
+                                >
+                                    <div class="relative">
+                                        <input
+                                            type="checkbox"
+                                            id="seasonToggle"
+                                            name="season"
+                                            class="sr-only peer"
+                                        />
+                                        <div
+                                            class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"
+                                        ></div>
+                                    </div>
+                                    <span
+                                        class="ml-3 text-sm font-bold text-custom-navy group-hover:text-indigo-700 transition-colors uppercase tracking-tight"
+                                        >Seasonal Mode</span
+                                    >
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-8 border-t border-slate-100">
+                        <div
+                            class="flex flex-col xl:flex-row xl:items-center justify-between gap-8 mb-10"
+                        >
+                            <div class="space-y-4">
+                                <div class="flex items-center gap-4">
+                                    <h2
+                                        class="text-2xl font-extrabold text-slate-800"
+                                    >
+                                        Hourly Schedule
+                                    </h2>
+                                    <span class="info-bubble">
+                                        <svg
+                                            class="w-3 h-3 mr-1.5"
+                                            fill="currentColor"
+                                            viewBox="0 0 20 20"
+                                        >
+                                            <path
+                                                fill-rule="evenodd"
+                                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                                clip-rule="evenodd"
+                                            ></path>
+                                        </svg>
+                                        Click an hour button to toggle peak
+                                        periods
+                                    </span>
+                                </div>
+                                <div class="flex flex-wrap gap-4">
+                                    <div
+                                        class="flex items-center bg-white shadow-sm px-4 py-2 rounded-full border border-slate-100 text-[10px] font-black uppercase tracking-tighter"
+                                    >
+                                        <span
+                                            class="w-3 h-3 bg-green-500 rounded-full mr-2"
+                                        ></span>
+                                        Off-Peak (O)
+                                    </div>
+                                    <div
+                                        class="flex items-center bg-white shadow-sm px-4 py-2 rounded-full border border-slate-100 text-[10px] font-black uppercase tracking-tighter"
+                                    >
+                                        <span
+                                            class="w-3 h-3 bg-yellow-500 rounded-full mr-2"
+                                        ></span>
+                                        Standard (S)
+                                    </div>
+                                    <div
+                                        class="flex items-center bg-white shadow-sm px-4 py-2 rounded-full border border-slate-100 text-[10px] font-black uppercase tracking-tighter"
+                                    >
+                                        <span
+                                            class="w-3 h-3 bg-red-500 rounded-full mr-2"
+                                        ></span>
+                                        Peak (P)
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Season Tabs -->
+                            <div
+                                id="seasonTabsContainer"
+                                class="hidden flex bg-slate-100 p-1.5 rounded-2xl w-fit"
+                            >
+                                <button
+                                    type="button"
+                                    onclick="switchSeason('high')"
+                                    id="tab-high"
+                                    class="px-8 py-3 text-sm font-extrabold rounded-xl tab-active transition-all cursor-pointer"
+                                >
+                                    High Season
+                                </button>
+                                <button
+                                    type="button"
+                                    onclick="switchSeason('low')"
+                                    id="tab-low"
+                                    class="px-8 py-3 text-sm font-extrabold rounded-xl text-slate-500 hover:text-slate-700 transition-all cursor-pointer"
+                                >
+                                    Low Season
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Schedule Grids -->
+                        <div id="schedule-container" class="space-y-16">
+                            <!-- Javascript will inject Saturday, Sunday, and Weekday grids here -->
+                        </div>
+                    </div>
+
+                    <!-- Spacer to push content above fixed footer -->
+                    <div class="h-24 md:h-32"></div>
+
+                    <!-- Fixed Sticky Footer -->
+                    <div
+                        class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 p-4 md:p-6 z-40 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]"
+                    >
+                        <div
+                            class="max-w-screen-xl mx-auto flex flex-row items-center justify-end gap-4 md:gap-6"
+                        >
+                            <button
+                                type="button"
+                                class="px-6 md:px-10 py-3 md:py-4 border-2 border-slate-200 rounded-2xl text-xs md:text-sm font-extrabold text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer whitespace-nowrap"
+                            >
+                                Discard Changes
+                            </button>
+                            <button
+                                type="submit"
+                                form="touForm"
+                                class="px-8 md:px-12 py-3 md:py-4 btn-save rounded-2xl text-xs md:text-sm font-extrabold uppercase tracking-widest whitespace-nowrap"
+                            >
+                                Save TOU Configuration
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Success Message Overlay -->
+        <div
+            id="successToast"
+            class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-10 py-5 rounded-3xl shadow-2xl opacity-0 pointer-events-none transition-all duration-500 transform translate-y-8 z-50"
+        >
+            <div class="flex items-center gap-4">
+                <div
+                    class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center"
+                >
+                    <svg
+                        class="w-5 h-5 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="3"
+                            d="M5 13l4 4L19 7"
+                        ></path>
+                    </svg>
+                </div>
+                <span class="font-extrabold tracking-tight"
+                    >Configuration saved successfully</span
+                >
+            </div>
+        </div>
+
+        <script>
+            const dayTypes = ["Weekday", "Saturday", "Sunday"];
+            const states = [
+                { id: "offpeak", class: "state-offpeak", label: "O" },
+                { id: "standard", class: "state-standard", label: "S" },
+                { id: "peak", class: "state-peak", label: "P" },
+            ];
+
+            let activeSeason = "general";
+            const schedules = {
+                general: {
+                    Weekday: Array(24).fill(0),
+                    Saturday: Array(24).fill(0),
+                    Sunday: Array(24).fill(0),
+                },
+                high: {
+                    Weekday: Array(24).fill(0),
+                    Saturday: Array(24).fill(0),
+                    Sunday: Array(24).fill(0),
+                },
+                low: {
+                    Weekday: Array(24).fill(0),
+                    Saturday: Array(24).fill(0),
+                    Sunday: Array(24).fill(0),
+                },
+            };
+
+            const seasonToggle = document.getElementById("seasonToggle");
+            const seasonTabsContainer = document.getElementById(
+                "seasonTabsContainer",
+            );
+
+            seasonToggle.addEventListener("change", (e) => {
+                if (e.target.checked) {
+                    seasonTabsContainer.classList.remove("hidden");
+                    seasonTabsContainer.classList.add("flex");
+                    activeSeason = "high";
+                    updateTabUI();
+                } else {
+                    seasonTabsContainer.classList.add("hidden");
+                    seasonTabsContainer.classList.remove("flex");
+                    activeSeason = "general";
+                }
+                renderGrids();
+            });
+
+            function switchSeason(season) {
+                activeSeason = season;
+                updateTabUI();
+                renderGrids();
+            }
+
+            function updateTabUI() {
+                const highTab = document.getElementById("tab-high");
+                const lowTab = document.getElementById("tab-low");
+                const activeClasses =
+                    "px-8 py-3 text-sm font-extrabold rounded-xl tab-active transition-all cursor-pointer bg-white shadow-md text-slate-800";
+                const inactiveClasses =
+                    "px-8 py-3 text-sm font-extrabold rounded-xl text-slate-400 hover:text-slate-600 transition-all cursor-pointer bg-transparent";
+
+                if (activeSeason === "high") {
+                    highTab.className = activeClasses;
+                    lowTab.className = inactiveClasses;
+                } else {
+                    lowTab.className = activeClasses;
+                    highTab.className = inactiveClasses;
+                }
+            }
+
+            function renderGrids() {
+                const container = document.getElementById("schedule-container");
+                container.innerHTML = "";
+
+                const currentSchedule = schedules[activeSeason];
+
+                dayTypes.forEach((dayType) => {
+                    const section = document.createElement("div");
+                    section.className = "space-y-6";
+
+                    const label = document.createElement("h3");
+                    label.className =
+                        "text-xs font-black text-slate-400 uppercase tracking-[0.25em] flex items-center gap-4";
+                    label.innerHTML = `<span>${dayType} Schedule</span> <span class="h-[1px] flex-1 bg-slate-200"></span>`;
+                    section.appendChild(label);
+
+                    const grid = document.createElement("div");
+                    grid.className =
+                        "grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-12 gap-4";
+
+                    for (let h = 0; h < 24; h++) {
+                        const btn = document.createElement("button");
+                        btn.type = "button";
+
+                        const updateButtonUI = () => {
+                            const stateIdx = currentSchedule[dayType][h];
+                            btn.className = `hour-btn rounded-2xl flex flex-col items-center justify-center shadow-md ${states[stateIdx].class}`;
+                            btn.innerHTML = `
+                            <span class="text-[0.7rem]">${h}:00</span>
+                            <span class="period-indicator">${states[stateIdx].label}</span>
+                        `;
+                        };
+
+                        updateButtonUI();
+
+                        btn.onclick = () => {
+                            currentSchedule[dayType][h] =
+                                (currentSchedule[dayType][h] + 1) % 3;
+                            updateButtonUI();
+                        };
+
+                        grid.appendChild(btn);
+                    }
+
+                    section.appendChild(grid);
+                    container.appendChild(section);
+                });
+            }
+
+            document.getElementById("touForm").onsubmit = (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const metadata = Object.fromEntries(formData.entries());
+
+                const finalPayload = {
+                    metadata: metadata,
+                    isSeasonal: seasonToggle.checked,
+                    config: seasonToggle.checked
+                        ? { high: schedules.high, low: schedules.low }
+                        : { general: schedules.general },
+                };
+
+                console.log("Final TOU Data Saved:", finalPayload);
+
+                const toast = document.getElementById("successToast");
+                toast.classList.remove("opacity-0", "translate-y-8");
+                toast.classList.add("opacity-100", "translate-y-0");
+
+                setTimeout(() => {
+                    toast.classList.add("opacity-0", "translate-y-8");
+                    toast.classList.remove("opacity-100", "translate-y-0");
+                }, 3000);
+            };
+
+            window.onload = renderGrids;
+        </script>
+    </body>
+</html>

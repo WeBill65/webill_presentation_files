@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Municipal Account Entry</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        />
+        <style>
+            input::-webkit-outer-spin-button,
+            input::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
+
+            .brand-bg {
+                background-color: #404068;
+            }
+            .brand-text {
+                color: #faa919;
+            }
+
+            .main-header {
+                background-color: #404068;
+                border-top-left-radius: 1rem;
+                border-top-right-radius: 1rem;
+                border-bottom: 4px solid #faa919;
+            }
+
+            .section-header {
+                background-color: #404068;
+                color: #faa919;
+                border-top-left-radius: 1rem;
+                border-top-right-radius: 1rem;
+            }
+
+            .header-input {
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                color: white;
+                transition: all 0.2s;
+            }
+            .header-input:focus {
+                background: rgba(255, 255, 255, 0.1);
+                border-color: #faa919;
+                outline: none;
+            }
+            .header-label {
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #faa919;
+                font-weight: 900;
+                margin-bottom: 4px;
+            }
+
+            .pdf-page {
+                width: 100%;
+                max-width: 800px;
+                margin: 0 auto;
+                aspect-ratio: 1 / 1.414;
+                background: white;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            }
+
+            .table-row-disabled {
+                background-color: rgba(0, 0, 0, 0.02);
+                color: rgba(0, 0, 0, 0.4);
+            }
+
+            .input-readonly {
+                background: transparent !important;
+                border: none !important;
+                cursor: default;
+            }
+
+            .static-label-box {
+                background-color: #f3f4f6;
+                border: 1px solid #e5e7eb;
+                display: flex;
+                align-items: center;
+                height: 1.5rem;
+                padding: 0 0.5rem;
+                border-radius: 0.25rem;
+                font-size: 0.75rem;
+                font-weight: 700;
+            }
+
+            .service-total-pill {
+                background-color: #404068;
+                color: #faa919;
+                padding: 2px 10px;
+                border-radius: 999px;
+                font-weight: 900;
+                font-size: 0.75rem;
+                border: 1px solid rgba(250, 169, 25, 0.3);
+            }
+
+            /* Branded Table Headers */
+            .service-table-head {
+                background-color: #404068 !important;
+                color: white !important;
+            }
+            .service-table-head th {
+                color: white !important;
+                font-weight: 700 !important;
+                letter-spacing: 0.025em;
+                padding-top: 0.75rem !important;
+                padding-bottom: 0.75rem !important;
+            }
+
+            .status-badge {
+                font-size: 9px;
+                font-weight: 900;
+                padding: 2px 6px;
+                border-radius: 4px;
+                text-transform: uppercase;
+            }
+        </style>
+    </head>
+    <body class="bg-base-200 min-h-screen pb-20 font-sans text-slate-800">
+        <div class="container mx-auto p-4 lg:p-6 max-w-7xl">
+            <!-- TOP ACTIONS & ACCOUNT DETAILS -->
+            <div class="main-header shadow-lg overflow-hidden">
+                <div
+                    class="flex justify-between items-center px-6 py-4 border-b border-white/10"
+                >
+                    <div class="flex items-center gap-4">
+                    <a href="billing.html" onclick="sessionStorage.setItem('billingTab','munix')"
+                       class="btn btn-sm bg-white/10 hover:bg-white/20 text-white border-white/20 gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                        Back
+                    </a>
+                    <h1
+                        class="text-xl font-light tracking-wide brand-text flex items-center gap-3"
+                    >
+                        <div
+                            class="p-1.5 bg-white/5 rounded-lg border border-white/10"
+                        >
+                            <i
+                                class="fa-solid fa-file-invoice-dollar text-white/80 text-sm"
+                            ></i>
+                        </div>
+                        <span id="header_title" class="opacity-90"
+                            >Munix Invoice:
+                            <span class="font-normal">INV-2024-001</span></span
+                        >
+                    </h1>
+                    </div>
+                </div>
+
+                <div
+                    class="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-black/10"
+                >
+                    <div class="flex flex-col gap-3">
+                        <div class="form-control">
+                            <label class="header-label">Account Number</label>
+                            <input
+                                type="text"
+                                id="acc_num"
+                                value="5588-9922-101"
+                                class="header-input px-3 py-1 rounded text-sm font-mono font-bold"
+                            />
+                        </div>
+                        <div class="form-control">
+                            <input
+                                type="text"
+                                id="provider"
+                                value="City of Johannesburg"
+                                class="header-input px-3 py-1 rounded text-xs opacity-80"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-2 md:col-span-2">
+                        <div
+                            class="header-label border-b border-[#faa919]/20 pb-1 mb-1"
+                        >
+                            Property Details
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <div class="form-control">
+                                <input
+                                    type="text"
+                                    id="prop_name"
+                                    value="Sunset Heights Complex"
+                                    class="header-input px-3 py-1 rounded text-sm font-bold"
+                                    placeholder="Property Name"
+                                />
+                            </div>
+                            <div class="form-control">
+                                <input
+                                    type="text"
+                                    id="prop_addr"
+                                    value="128 Jan Smuts Ave, Rosebank, 2196"
+                                    class="header-input px-3 py-1 rounded text-sm opacity-90 font-normal"
+                                    placeholder="Address"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6"></div>
+
+            <!-- SECTION 2: INVOICE SUMMARY -->
+            <div class="card bg-base-100 shadow-md mb-8 overflow-hidden">
+                <div
+                    class="section-header px-6 py-3 flex items-center justify-between font-bold uppercase text-xs tracking-widest"
+                >
+                    <span class="flex items-center gap-2"
+                        ><i class="fa-solid fa-receipt"></i> Invoice
+                        Details</span
+                    >
+                    <button
+                        onclick="openPdfModal()"
+                        class="btn btn-xs bg-white/10 hover:bg-white/20 border-white/20 text-white gap-2 font-bold normal-case"
+                    >
+                        <i class="fa-solid fa-file-pdf"></i> View PDF
+                    </button>
+                </div>
+                <div class="card-body p-6">
+                    <div
+                        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 items-start"
+                    >
+                        <div class="flex flex-col">
+                            <span
+                                class="text-[10px] font-bold uppercase opacity-50 tracking-wider"
+                                >Invoice Number</span
+                            >
+                            <span
+                                id="display_inv_num"
+                                class="text-sm font-mono font-bold"
+                                >INV-2024-001</span
+                            >
+                        </div>
+                        <div class="flex flex-col">
+                            <span
+                                class="text-[10px] font-bold uppercase opacity-50 tracking-wider"
+                                >Invoice Date</span
+                            >
+                            <span
+                                id="display_inv_date"
+                                class="text-sm font-bold"
+                                >15 Mar 2024</span
+                            >
+                        </div>
+                        <div class="flex flex-col">
+                            <span
+                                class="text-[10px] font-bold uppercase opacity-50 tracking-wider mb-1"
+                                >Status</span
+                            >
+                            <div>
+                                <span
+                                    id="display_status"
+                                    class="badge badge-neutral font-black text-[10px] py-3 px-4 border-0 brand-bg text-[#faa919]"
+                                    >CREATED</span
+                                >
+                            </div>
+                        </div>
+                        <div
+                            class="flex flex-col items-end md:items-start lg:border-l lg:pl-6 border-base-200"
+                        >
+                            <span
+                                class="text-[10px] font-bold uppercase opacity-50 tracking-wider"
+                                >Total (Excl)</span
+                            >
+                            <span
+                                id="display_total"
+                                class="text-sm font-bold text-neutral"
+                                >R 0.00</span
+                            >
+                        </div>
+                        <div class="flex flex-col items-end md:items-start">
+                            <span
+                                class="text-[10px] font-bold uppercase opacity-50 tracking-wider"
+                                >VAT (15%)</span
+                            >
+                            <span
+                                id="display_vat"
+                                class="text-sm font-bold text-neutral"
+                                >R 0.00</span
+                            >
+                        </div>
+                        <div
+                            class="flex flex-col items-end md:items-start bg-base-200/30 p-2 rounded-lg -m-2"
+                        >
+                            <span
+                                class="text-[10px] font-bold uppercase text-error tracking-wider"
+                                >Gross Total</span
+                            >
+                            <span
+                                id="display_gross"
+                                class="text-lg font-black text-error"
+                                >R 0.00</span
+                            >
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 3: METERS -->
+            <div class="w-full">
+                <div
+                    class="flex items-center justify-between mb-4 px-2 border-b border-base-300 pb-2"
+                >
+                    <h2
+                        class="text-xl font-black uppercase tracking-tight flex items-center gap-2 text-neutral-600"
+                    >
+                        <i class="fa-solid fa-microchip"></i> Meter Readings &
+                        Tariff Breakdown
+                    </h2>
+                </div>
+
+                <div id="meters_container" class="space-y-6">
+                    <!-- Meters rendered via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- PDF MODAL -->
+        <dialog id="pdf_modal" class="modal">
+            <div
+                class="modal-box w-11/12 max-w-5xl p-0 h-[90vh] flex flex-col bg-[#525659] overflow-hidden"
+            >
+                <div
+                    class="bg-[#323639] text-white px-4 py-2 flex items-center justify-between shadow-md z-10"
+                >
+                    <div class="flex items-center gap-4">
+                        <span
+                            class="text-sm font-medium flex items-center gap-2"
+                        >
+                            <i class="fa-solid fa-file-pdf text-red-500"></i>
+                            INV-2024-001.pdf
+                        </span>
+                    </div>
+                    <form method="dialog">
+                        <button
+                            class="btn btn-circle btn-ghost btn-xs text-white hover:bg-red-500"
+                        >
+                            ✕
+                        </button>
+                    </form>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4 md:p-8">
+                    <div
+                        class="pdf-page rounded shadow-2xl p-10 md:p-16 relative overflow-hidden text-neutral"
+                    >
+                        <div
+                            class="flex justify-between mb-12 border-b-4 border-[#404068] pb-6"
+                        >
+                            <div>
+                                <div class="text-3xl font-black text-[#404068]">
+                                    INVOICE
+                                </div>
+                                <div
+                                    class="text-sm opacity-60 font-mono"
+                                    id="pdf_inv_num"
+                                >
+                                    INV-2024-001
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div
+                                    class="font-bold text-lg"
+                                    id="pdf_provider"
+                                >
+                                    City of Johannesburg
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-10 mb-12">
+                            <div>
+                                <div
+                                    class="text-[10px] font-black uppercase text-[#faa919] mb-1"
+                                >
+                                    Billing To:
+                                </div>
+                                <div
+                                    class="font-bold text-sm"
+                                    id="pdf_prop_name"
+                                >
+                                    Sunset Heights Complex
+                                </div>
+                                <div
+                                    class="text-xs opacity-70"
+                                    id="pdf_prop_addr"
+                                >
+                                    128 Jan Smuts Ave, Rosebank, 2196
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div
+                                    class="text-[10px] font-black uppercase text-[#faa919] mb-1"
+                                >
+                                    Account Details:
+                                </div>
+                                <div class="text-xs">
+                                    Account #:
+                                    <span
+                                        class="font-bold font-mono"
+                                        id="pdf_acc_num"
+                                        >5588-9922-101</span
+                                    >
+                                </div>
+                                <div class="text-xs">
+                                    Date:
+                                    <span class="font-bold" id="pdf_inv_date"
+                                        >15 Mar 2024</span
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                        <table class="table table-compact w-full text-xs">
+                            <thead>
+                                <tr class="bg-neutral/5">
+                                    <th>Service / Item</th>
+                                    <th>Meter #</th>
+                                    <th class="text-right">Amount (Excl)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pdf_table_body"></tbody>
+                            <tfoot>
+                                <tr class="border-t">
+                                    <td
+                                        colspan="2"
+                                        class="text-right font-bold pt-2"
+                                    >
+                                        Total Excl. VAT
+                                    </td>
+                                    <td
+                                        class="text-right font-bold pt-2"
+                                        id="pdf_total_excl"
+                                    >
+                                        R 0.00
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td
+                                        colspan="2"
+                                        class="text-right opacity-60"
+                                    >
+                                        VAT (15%)
+                                    </td>
+                                    <td
+                                        class="text-right opacity-60"
+                                        id="pdf_vat_amt"
+                                    >
+                                        R 0.00
+                                    </td>
+                                </tr>
+                                <tr class="text-lg">
+                                    <td
+                                        colspan="2"
+                                        class="text-right font-black text-[#404068]"
+                                    >
+                                        Amount Due
+                                    </td>
+                                    <td
+                                        class="text-right font-black text-[#404068]"
+                                        id="pdf_total_gross"
+                                    >
+                                        R 0.00
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </dialog>
+
+        <script>
+            let state = {
+                meters: [
+                    {
+                        id: 1,
+                        type: "electricity",
+                        meterNumber: "E-442211",
+                        tariffName: "Main Supply - 3 Phase",
+                        startDate: "2024-02-15",
+                        endDate: "2024-03-15",
+                        charges: [
+                            {
+                                id: 101,
+                                status: "CREATED",
+                                type: "consumption",
+                                desc: "Energy Usage - Peak",
+                                prev: "45210",
+                                current: "45450",
+                                consumption: "0",
+                                step: "1",
+                                tou: "Peak",
+                                rate: "3.15",
+                                amount: "",
+                            },
+                            {
+                                id: 102,
+                                status: "CREATED",
+                                type: "consumption",
+                                desc: "Energy Usage - Standard",
+                                prev: "21050",
+                                current: "21200",
+                                consumption: "0",
+                                step: "1",
+                                tou: "Std",
+                                rate: "2.45",
+                                amount: "",
+                            },
+                            {
+                                id: 103,
+                                status: "CREATED",
+                                type: "flat",
+                                desc: "Network Access Fee",
+                                prev: "-",
+                                current: "-",
+                                consumption: "-",
+                                step: "-",
+                                tou: "-",
+                                rate: "285.50",
+                                amount: "285.50",
+                            },
+                            {
+                                id: 104,
+                                status: "CREATED",
+                                type: "flat",
+                                desc: "Service Charge",
+                                prev: "-",
+                                current: "-",
+                                consumption: "-",
+                                step: "-",
+                                tou: "-",
+                                rate: "120.00",
+                                amount: "120.00",
+                            },
+                        ],
+                    },
+                    {
+                        id: 4,
+                        type: "electricity",
+                        meterNumber: "E-442212",
+                        tariffName: "HVAC Supply - Secondary",
+                        startDate: "2024-02-15",
+                        endDate: "2024-03-15",
+                        charges: [
+                            {
+                                id: 401,
+                                status: "CREATED",
+                                type: "consumption",
+                                desc: "HVAC Energy Usage",
+                                prev: "12400",
+                                current: "12550",
+                                consumption: "0",
+                                step: "1",
+                                tou: "Std",
+                                rate: "2.45",
+                                amount: "",
+                            },
+                            {
+                                id: 402,
+                                status: "CREATED",
+                                type: "flat",
+                                desc: "Demand Charge",
+                                prev: "-",
+                                current: "-",
+                                consumption: "-",
+                                step: "-",
+                                tou: "-",
+                                rate: "150.00",
+                                amount: "150.00",
+                            },
+                        ],
+                    },
+                    {
+                        id: 2,
+                        type: "water",
+                        meterNumber: "W-990033",
+                        tariffName: "Commercial Water",
+                        startDate: "2024-02-15",
+                        endDate: "2024-03-15",
+                        charges: [
+                            {
+                                id: 201,
+                                status: "CREATED",
+                                type: "consumption",
+                                desc: "Water Usage Step 1",
+                                prev: "1280",
+                                current: "1310",
+                                consumption: "0",
+                                step: "1",
+                                tou: "-",
+                                rate: "28.40",
+                                amount: "",
+                            },
+                            {
+                                id: 202,
+                                status: "CREATED",
+                                type: "consumption",
+                                desc: "Water Usage Step 2",
+                                prev: "1350",
+                                current: "1350",
+                                consumption: "0",
+                                step: "2",
+                                tou: "-",
+                                rate: "34.20",
+                                amount: "",
+                            },
+                            {
+                                id: 203,
+                                status: "CREATED",
+                                type: "flat",
+                                desc: "Water Demand Levy",
+                                prev: "-",
+                                current: "-",
+                                consumption: "-",
+                                step: "-",
+                                tou: "-",
+                                rate: "45.00",
+                                amount: "45.00",
+                            },
+                        ],
+                    },
+                    {
+                        id: 3,
+                        type: "sewage",
+                        meterNumber: "S-990033",
+                        tariffName: "Sewerage Disposal",
+                        startDate: "2024-02-15",
+                        endDate: "2024-03-15",
+                        charges: [
+                            {
+                                id: 301,
+                                status: "CREATED",
+                                type: "consumption",
+                                desc: "Sewage Volumetric Charge",
+                                prev: "1280",
+                                current: "1310",
+                                consumption: "0",
+                                step: "1",
+                                tou: "-",
+                                rate: "18.50",
+                                amount: "",
+                            },
+                            {
+                                id: 302,
+                                status: "CREATED",
+                                type: "flat",
+                                desc: "Sanitation Fixed Fee",
+                                prev: "-",
+                                current: "-",
+                                consumption: "-",
+                                step: "-",
+                                tou: "-",
+                                rate: "420.00",
+                                amount: "420.00",
+                            },
+                        ],
+                    },
+                ],
+            };
+
+            function calculateServiceTotal(meterId) {
+                const meter = state.meters.find((m) => m.id === meterId);
+                if (!meter) return 0;
+                return meter.charges.reduce(
+                    (acc, c) => acc + (parseFloat(c.amount) || 0),
+                    0,
+                );
+            }
+
+            function calculateTotals() {
+                let totalExcl = 0;
+                state.meters.forEach((meter) => {
+                    totalExcl += calculateServiceTotal(meter.id);
+                });
+                const vat = totalExcl * 0.15;
+                const gross = totalExcl + vat;
+                document.getElementById("display_total").innerText =
+                    `R ${totalExcl.toFixed(2)}`;
+                document.getElementById("display_vat").innerText =
+                    `R ${vat.toFixed(2)}`;
+                document.getElementById("display_gross").innerText =
+                    `R ${gross.toFixed(2)}`;
+                return { totalExcl, vat, gross };
+            }
+
+            function updateMeterField(id, field, value) {
+                const meter = state.meters.find((m) => m.id === id);
+                if (meter) {
+                    meter[field] = value;
+                }
+            }
+
+            function recalculateCharge(charge) {
+                if (charge.type === "consumption") {
+                    const prev = parseFloat(charge.prev) || 0;
+                    const curr = parseFloat(charge.current) || 0;
+                    const rate = parseFloat(charge.rate) || 0;
+
+                    const cons = Math.max(0, curr - prev);
+                    charge.consumption = cons.toString();
+                    charge.amount = (cons * rate).toFixed(2);
+                }
+            }
+
+            function updateChargeField(meterId, chargeId, field, value) {
+                const meter = state.meters.find((m) => m.id === meterId);
+                if (!meter) return;
+                const charge = meter.charges.find((c) => c.id === chargeId);
+                if (!charge) return;
+
+                charge[field] = value;
+
+                if (field === "amount" && charge.status === "CHECKED") {
+                    charge.status = "PENDING";
+                }
+
+                if (
+                    (field === "current" ||
+                        field === "prev" ||
+                        field === "rate") &&
+                    charge.type === "consumption"
+                ) {
+                    recalculateCharge(charge);
+                    if (
+                        charge.status === "CHECKED" ||
+                        charge.status === "COMPLETED"
+                    ) {
+                        charge.status = "PENDING";
+                    }
+                }
+
+                renderMeters();
+                calculateTotals();
+            }
+
+            function setChargeStatus(meterId, chargeId, nextStatus) {
+                const meter = state.meters.find((m) => m.id === meterId);
+                if (!meter) return;
+                const charge = meter.charges.find((c) => c.id === chargeId);
+                if (!charge) return;
+
+                charge.status = nextStatus;
+                renderMeters();
+            }
+
+            function renderMeters() {
+                const container = document.getElementById("meters_container");
+                container.innerHTML = state.meters
+                    .map((meter) => {
+                        let icon = "bolt text-yellow-500";
+                        if (meter.type === "water")
+                            icon = "droplet text-blue-500";
+                        if (meter.type === "sewage")
+                            icon = "soap text-emerald-600";
+
+                        const isElec = meter.type === "electricity";
+                        const serviceTotal = calculateServiceTotal(meter.id);
+
+                        return `
+                <div class="card bg-base-100 shadow-sm border border-base-200 overflow-hidden">
+                    <div class="bg-base-200/50 px-6 py-3 border-b border-base-200">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <i class="fa-solid fa-${icon} text-md"></i>
+                                <h3 class="font-black uppercase tracking-widest text-xs">${meter.type} Service [Meter ${meter.meterNumber}]</h3>
+                                <div class="service-total-pill ml-2">
+                                    Total: R ${serviceTotal.toFixed(2)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-4">
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                            <div class="form-control">
+                                <label class="label py-0"><span class="label-text-alt font-bold opacity-40 uppercase text-[9px]">Meter #</span></label>
+                                <div class="static-label-box font-mono text-primary font-black uppercase">${meter.meterNumber}</div>
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-0"><span class="label-text-alt font-bold opacity-40 uppercase text-[9px]">Tariff Plan</span></label>
+                                <div class="static-label-box">${meter.tariffName}</div>
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-0"><span class="label-text-alt font-bold opacity-40 uppercase text-[9px]">Reading From</span></label>
+                                <input type="date" class="input input-xs input-bordered" value="${meter.startDate}" oninput="updateMeterField(${meter.id}, 'startDate', this.value)">
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-0"><span class="label-text-alt font-bold opacity-40 uppercase text-[9px]">Reading To</span></label>
+                                <input type="date" class="input input-xs input-bordered" value="${meter.endDate}" oninput="updateMeterField(${meter.id}, 'endDate', this.value)">
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto rounded-lg border border-base-200">
+                            <table class="table table-xs w-full border-collapse">
+                                <thead>
+                                    <tr class="service-table-head text-[10px] uppercase border-b border-[#faa919]/20">
+                                        <th class="w-10 text-center">Type</th>
+                                        <th>Charge Description</th>
+                                        <th class="text-right">Prev</th>
+                                        <th class="text-right">Current</th>
+                                        <th class="text-right">Usage</th>
+                                        <th class="text-center">Step</th>
+                                        ${isElec ? '<th class="text-center">TOU</th>' : ""}
+                                        <th class="text-right">Rate</th>
+                                        <th class="text-right">Amount (R)</th>
+                                        <th class="text-center w-24">Save/Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${meter.charges
+                                        .map((c) => {
+                                            const isFixed = c.type === "flat";
+                                            const amountVal =
+                                                parseFloat(c.amount) || 0;
+
+                                            let statusContent = "";
+                                            if (c.status === "CREATED") {
+                                                statusContent = `
+                                                <div class="tooltip" data-tip="Save Charge">
+                                                    <button onclick="setChargeStatus(${meter.id}, ${c.id}, 'PENDING')" class="btn btn-ghost btn-xs text-info p-0 min-h-0 h-6 w-6">
+                                                        <i class="fa-solid fa-floppy-disk"></i>
+                                                    </button>
+                                                </div>
+                                                <span class="status-badge bg-blue-100 text-blue-600">CREATED</span>
+                                            `;
+                                            } else if (c.status === "PENDING") {
+                                                const canApprove =
+                                                    amountVal > 0;
+                                                statusContent = `
+                                                <div class="tooltip" data-tip="${canApprove ? "Approve Entry" : "Amount Required"}">
+                                                    <button
+                                                        onclick="setChargeStatus(${meter.id}, ${c.id}, 'CHECKED')"
+                                                        class="btn btn-ghost btn-xs text-warning p-0 min-h-0 h-6 w-6"
+                                                        ${!canApprove ? "disabled" : ""}>
+                                                        <i class="fa-solid fa-circle-check"></i>
+                                                    </button>
+                                                </div>
+                                                <span class="status-badge bg-orange-100 text-orange-600">PENDING</span>
+                                            `;
+                                            } else if (c.status === "CHECKED") {
+                                                statusContent = `
+                                                <div class="tooltip" data-tip="Approve Final">
+                                                    <button onclick="setChargeStatus(${meter.id}, ${c.id}, 'COMPLETED')" class="btn btn-ghost btn-xs text-success p-0 min-h-0 h-6 w-6">
+                                                        <i class="fa-solid fa-circle-check"></i>
+                                                    </button>
+                                                </div>
+                                                <span class="status-badge bg-purple-100 text-purple-600">CHECKED</span>
+                                            `;
+                                            } else if (
+                                                c.status === "COMPLETED"
+                                            ) {
+                                                statusContent = `
+                                                <i class="fa-solid fa-check-double text-success text-[10px]"></i>
+                                                <span class="status-badge bg-green-100 text-green-600">COMPLETED</span>
+                                            `;
+                                            }
+
+                                            return `
+                                        <tr class="${isFixed ? "table-row-disabled" : "hover:bg-base-200/20"} transition-colors">
+                                            <td class="text-center">
+                                                <i class="fa-solid ${c.type === "consumption" ? "fa-chart-line text-primary" : "fa-lock text-neutral/30"}"
+                                                   title="${c.type === "consumption" ? "Consumption" : "Fixed"}"></i>
+                                            </td>
+                                            <td>
+                                                <div class="flex flex-col">
+                                                    <span class="font-bold text-[11px]">${c.desc}</span>
+                                                    <span class="text-[8px] opacity-40 uppercase font-black">${c.type}</span>
+                                                </div>
+                                            </td>
+                                            <td class="text-right">
+                                                <input type="number"
+                                                       class="input input-bordered input-xs w-16 text-right font-mono ${isFixed ? "input-readonly" : "bg-white"}"
+                                                       value="${c.prev}"
+                                                       ${isFixed ? "readonly" : ""}
+                                                       oninput="updateChargeField(${meter.id}, ${c.id}, 'prev', this.value)">
+                                            </td>
+                                            <td class="text-right">
+                                                <input type="number"
+                                                       class="input input-bordered input-xs w-16 text-right font-bold ${isFixed ? "input-readonly" : "bg-white"}"
+                                                       value="${c.current}"
+                                                       ${isFixed ? "readonly" : ""}
+                                                       oninput="updateChargeField(${meter.id}, ${c.id}, 'current', this.value)">
+                                            </td>
+                                            <td class="text-right font-mono text-neutral/60 font-bold bg-base-200/20">${c.consumption}</td>
+                                            <td class="text-center text-neutral/60">${c.step}</td>
+                                            ${isElec ? `<td class="text-center text-neutral/60 font-bold">${c.tou}</td>` : ""}
+                                            <td class="text-right text-neutral/60 font-mono">${c.rate}</td>
+                                            <td class="text-right">
+                                                <input type="number"
+                                                       class="input input-bordered input-xs w-20 text-right font-black ${isFixed ? "bg-base-100" : "bg-white"}"
+                                                       value="${c.amount}"
+                                                       oninput="updateChargeField(${meter.id}, ${c.id}, 'amount', this.value)">
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="flex items-center justify-center gap-1">
+                                                    ${statusContent}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `;
+                                        })
+                                        .join("")}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                `;
+                    })
+                    .join("");
+            }
+
+            function openPdfModal() {
+                const totals = calculateTotals();
+                document.getElementById("pdf_inv_num").innerText =
+                    document.getElementById("display_inv_num").innerText;
+                document.getElementById("pdf_inv_date").innerText =
+                    document.getElementById("display_inv_date").innerText;
+                document.getElementById("pdf_acc_num").innerText =
+                    document.getElementById("acc_num").value;
+                document.getElementById("pdf_provider").innerText =
+                    document.getElementById("provider").value;
+                document.getElementById("pdf_prop_name").innerText =
+                    document.getElementById("prop_name").value;
+                document.getElementById("pdf_prop_addr").innerText =
+                    document.getElementById("prop_addr").value;
+
+                const tbody = document.getElementById("pdf_table_body");
+                tbody.innerHTML = "";
+                state.meters.forEach((meter) => {
+                    const meterTotal = calculateServiceTotal(meter.id);
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                    <td class="font-bold uppercase tracking-tight">${meter.type} [${meter.meterNumber}]</td>
+                    <td class="font-mono text-[10px]">${meter.meterNumber}</td>
+                    <td class="text-right font-bold">R ${meterTotal.toFixed(2)}</td>
+                `;
+                    tbody.appendChild(row);
+                });
+
+                document.getElementById("pdf_total_excl").innerText =
+                    `R ${totals.totalExcl.toFixed(2)}`;
+                document.getElementById("pdf_vat_amt").innerText =
+                    `R ${totals.vat.toFixed(2)}`;
+                document.getElementById("pdf_total_gross").innerText =
+                    `R ${totals.gross.toFixed(2)}`;
+                document.getElementById("pdf_modal").showModal();
+            }
+
+            // Initialize state calculations before first render
+            state.meters.forEach((m) =>
+                m.charges.forEach((c) => recalculateCharge(c)),
+            );
+
+            renderMeters();
+            calculateTotals();
+        </script>
+    </body>
+</html>

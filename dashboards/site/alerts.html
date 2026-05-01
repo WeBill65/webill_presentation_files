@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Gary Player Estate Alerts Board</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <style>
+            :root {
+                --brand-primary: #404068;
+                --brand-accent: #faa919;
+            }
+            .bg-brand-header {
+                background-color: var(--brand-primary);
+            }
+            .text-brand-accent {
+                color: var(--brand-accent);
+            }
+
+            /* Global Sticky Header Logic */
+            .table-container {
+                max-height: 400px;
+                overflow-y: auto;
+                position: relative;
+                border-bottom-left-radius: 0.5rem;
+                border-bottom-right-radius: 0.5rem;
+            }
+
+            .table {
+                border-collapse: separate;
+                border-spacing: 0;
+            }
+
+            .table thead th {
+                position: sticky;
+                top: 0;
+                z-index: 20;
+                background-color: var(--brand-primary) !important;
+                color: white !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            /* Row Interactivity */
+            tbody tr {
+                cursor: pointer;
+                transition: background-color 0.15s ease;
+            }
+
+            tbody tr:hover {
+                background-color: #f3f4f6 !important;
+            }
+
+            /* Action Icon Styling */
+            .action-icon {
+                color: #9ca3af;
+                transition: all 0.2s ease;
+                cursor: pointer;
+            }
+            .action-icon:hover {
+                color: var(--brand-primary);
+                transform: scale(1.2);
+            }
+
+            /* Custom scrollbar */
+            ::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            ::-webkit-scrollbar-track {
+                background: #f1f1f1;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #404068;
+                border-radius: 10px;
+            }
+
+            tr.selected {
+                background-color: rgba(250, 169, 25, 0.1) !important;
+            }
+
+            .count-badge {
+                background-color: rgba(255, 255, 255, 0.1);
+                color: var(--brand-accent);
+                padding: 2px 8px;
+                border-radius: 999px;
+                font-size: 0.75rem;
+                font-weight: 800;
+                margin-left: 8px;
+                border: 1px solid rgba(250, 169, 25, 0.3);
+            }
+
+            .total-badge {
+                background-color: rgba(0, 0, 0, 0.2);
+                color: white;
+                padding: 2px 10px;
+                border-radius: 4px;
+                font-size: 0.75rem;
+                font-weight: 700;
+                margin-left: 12px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+
+            /* Bulk Action Badge Style */
+            .bulk-action-trigger {
+                opacity: 0.4;
+                pointer-events: none;
+                transition: all 0.2s ease;
+            }
+            .bulk-action-trigger.active {
+                opacity: 1;
+                pointer-events: auto;
+                cursor: pointer;
+                background-color: var(--brand-accent);
+                color: var(--brand-primary);
+                border-color: white;
+            }
+            .bulk-action-trigger.active:hover {
+                transform: scale(1.05);
+                box-shadow: 0 0 10px rgba(250, 169, 25, 0.4);
+            }
+
+            /* Softer Badges */
+            .badge-soft-error {
+                background-color: #fee2e2;
+                color: #991b1b;
+                border: 1px solid #fecaca;
+            }
+            .badge-soft-warning {
+                background-color: #fef3c7;
+                color: #92400e;
+                border: 1px solid #fde68a;
+            }
+            .badge-soft-info {
+                background-color: #e0f2fe;
+                color: #075985;
+                border: 1px solid #bae6fd;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-50 min-h-screen font-sans">
+        <!-- Header -->
+        <header class="bg-brand-header shadow-lg p-4 sticky top-0 z-50">
+            <div class="container mx-auto flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="bg-white p-2 rounded-lg">
+                        <i
+                            data-lucide="shield-check"
+                            class="text-[#404068] w-8 h-8"
+                        ></i>
+                    </div>
+                    <div>
+                        <h1
+                            class="text-2xl font-bold text-brand-accent tracking-tight"
+                        >
+                            Gary Player Estate
+                        </h1>
+                        <p
+                            class="text-white text-xs opacity-80 uppercase tracking-widest"
+                        >
+                            Alerts Management Board
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-right hidden md:block">
+                        <p id="current-time" class="text-white font-medium"></p>
+                        <p class="text-brand-accent text-xs">
+                            System Live Status: Active
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="container mx-auto p-4 space-y-8 pb-32">
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div class="stats shadow bg-white border-l-4 border-blue-500">
+                    <div class="stat p-4">
+                        <div
+                            class="stat-title text-xs font-bold uppercase text-gray-500"
+                        >
+                            Water Alerts
+                        </div>
+                        <div
+                            class="stat-value text-2xl text-blue-600"
+                            id="stat-water"
+                        >
+                            0
+                        </div>
+                    </div>
+                </div>
+                <div class="stats shadow bg-white border-l-4 border-orange-500">
+                    <div class="stat p-4">
+                        <div
+                            class="stat-title text-xs font-bold uppercase text-gray-500"
+                        >
+                            Low Balances
+                        </div>
+                        <div
+                            class="stat-value text-2xl text-orange-600"
+                            id="stat-balance"
+                        >
+                            0
+                        </div>
+                    </div>
+                </div>
+                <div class="stats shadow bg-white border-l-4 border-red-500">
+                    <div class="stat p-4">
+                        <div
+                            class="stat-title text-xs font-bold uppercase text-gray-500"
+                        >
+                            Meters Off
+                        </div>
+                        <div
+                            class="stat-value text-2xl text-red-600"
+                            id="stat-off"
+                        >
+                            0
+                        </div>
+                    </div>
+                </div>
+                <div class="stats shadow bg-white border-l-4 border-gray-400">
+                    <div class="stat p-4">
+                        <div
+                            class="stat-title text-xs font-bold uppercase text-gray-500"
+                        >
+                            Non-Reporting
+                        </div>
+                        <div
+                            class="stat-value text-2xl text-gray-600"
+                            id="stat-reporting"
+                        >
+                            0
+                        </div>
+                    </div>
+                </div>
+                <div class="stats shadow bg-white border-l-4 border-purple-500">
+                    <div class="stat p-4">
+                        <div
+                            class="stat-title text-xs font-bold uppercase text-gray-500"
+                        >
+                            Arrears
+                        </div>
+                        <div
+                            class="stat-value text-2xl text-purple-600"
+                            id="stat-arrears"
+                        >
+                            0
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Water Alerts -->
+            <section
+                class="card bg-white shadow-xl overflow-hidden border border-gray-200"
+            >
+                <div
+                    class="bg-brand-header p-3 px-6 flex justify-between items-center border-b border-white/10"
+                >
+                    <h2 class="text-white font-bold flex items-center gap-2">
+                        <i
+                            data-lucide="droplets"
+                            class="w-5 h-5 text-brand-accent"
+                        ></i>
+                        Water Alerts
+                        <span class="count-badge" id="count-water">0</span>
+                    </h2>
+                    <div
+                        id="bulk-water"
+                        onclick="handleBulkAction('water')"
+                        class="bulk-action-trigger badge badge-sm font-bold py-3 px-4"
+                    >
+                        Create Instructions (<span id="sel-count-water">0</span
+                        >)
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="table w-full">
+                        <thead>
+                            <tr>
+                                <th class="w-12">
+                                    <input
+                                        type="checkbox"
+                                        id="check-all-water"
+                                        class="checkbox checkbox-sm border-white"
+                                        onchange="
+                                            toggleSelectAll('water', this)
+                                        "
+                                    />
+                                </th>
+                                <th class="w-16">Utility</th>
+                                <th>Meter & Unit</th>
+                                <th>Issue</th>
+                                <th>Alert Time</th>
+                                <th>Duration</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="water-alerts-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Low Balance -->
+            <section
+                class="card bg-white shadow-xl overflow-hidden border border-gray-200"
+            >
+                <div
+                    class="bg-brand-header p-3 px-6 flex justify-between items-center border-b border-white/10"
+                >
+                    <h2 class="text-white font-bold flex items-center gap-2">
+                        <i
+                            data-lucide="wallet"
+                            class="w-5 h-5 text-brand-accent"
+                        ></i>
+                        Low Account Balances
+                        <span class="count-badge" id="count-balance">0</span>
+                    </h2>
+                    <div
+                        id="bulk-balance"
+                        onclick="handleBulkAction('balance')"
+                        class="bulk-action-trigger badge badge-sm font-bold py-3 px-4"
+                    >
+                        Send Alerts (<span id="sel-count-balance">0</span>)
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="table w-full">
+                        <thead>
+                            <tr>
+                                <th class="w-12">
+                                    <input
+                                        type="checkbox"
+                                        id="check-all-balance"
+                                        class="checkbox checkbox-sm border-white"
+                                        onchange="
+                                            toggleSelectAll('balance', this)
+                                        "
+                                    />
+                                </th>
+                                <th class="w-16">Utility</th>
+                                <th>Meter & Unit</th>
+                                <th>Consumer</th>
+                                <th>Balance</th>
+                                <th>Min. Req.</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="balance-alerts-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Grid for Small Tables -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Meters Off -->
+                <section
+                    class="card bg-white shadow-xl overflow-hidden border border-gray-200"
+                >
+                    <div
+                        class="bg-brand-header p-3 px-6 flex justify-between items-center border-b border-white/10"
+                    >
+                        <h2
+                            class="text-white font-bold flex items-center gap-2 text-sm md:text-base"
+                        >
+                            <i
+                                data-lucide="power-off"
+                                class="w-5 h-5 text-brand-accent"
+                            ></i>
+                            Meters Off
+                            <span class="count-badge" id="count-off">0</span>
+                        </h2>
+                        <div
+                            id="bulk-off"
+                            onclick="handleBulkAction('off')"
+                            class="bulk-action-trigger badge badge-sm font-bold py-3 px-4"
+                        >
+                            Switch On (<span id="sel-count-off">0</span>)
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="table w-full">
+                            <thead>
+                                <tr>
+                                    <th class="w-12">
+                                        <input
+                                            type="checkbox"
+                                            id="check-all-off"
+                                            class="checkbox checkbox-sm border-white"
+                                            onchange="
+                                                toggleSelectAll('off', this)
+                                            "
+                                        />
+                                    </th>
+                                    <th class="w-16">Utility</th>
+                                    <th>Meter & Unit</th>
+                                    <th>Down Since</th>
+                                    <th>Hours Off</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="meters-off-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Non Reporting -->
+                <section
+                    class="card bg-white shadow-xl overflow-hidden border border-gray-200"
+                >
+                    <div
+                        class="bg-brand-header p-3 px-6 flex justify-between items-center border-b border-white/10"
+                    >
+                        <h2
+                            class="text-white font-bold flex items-center gap-2 text-sm md:text-base"
+                        >
+                            <i
+                                data-lucide="wifi-off"
+                                class="w-5 h-5 text-brand-accent"
+                            ></i>
+                            Non Reporting
+                            <span class="count-badge" id="count-reporting"
+                                >0</span
+                            >
+                        </h2>
+                        <div
+                            id="bulk-reporting"
+                            onclick="handleBulkAction('reporting')"
+                            class="bulk-action-trigger badge badge-sm font-bold py-3 px-4"
+                        >
+                            Create Instructions (<span id="sel-count-reporting"
+                                >0</span
+                            >)
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="table w-full">
+                            <thead>
+                                <tr>
+                                    <th class="w-12">
+                                        <input
+                                            type="checkbox"
+                                            id="check-all-reporting"
+                                            class="checkbox checkbox-sm border-white"
+                                            onchange="
+                                                toggleSelectAll(
+                                                    'reporting',
+                                                    this,
+                                                )
+                                            "
+                                        />
+                                    </th>
+                                    <th class="w-16">Utility</th>
+                                    <th>Meter & Unit</th>
+                                    <th>Last Seen</th>
+                                    <th>Silence</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="non-reporting-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Arrears -->
+            <section
+                class="card bg-white shadow-xl overflow-hidden border border-gray-200"
+            >
+                <div
+                    class="bg-brand-header p-3 px-6 flex justify-between items-center border-b border-white/10"
+                >
+                    <h2 class="text-white font-bold flex items-center gap-2">
+                        <i
+                            data-lucide="alert-triangle"
+                            class="w-5 h-5 text-brand-accent"
+                        ></i>
+                        Accounts in Arrears
+                        <span class="count-badge" id="count-arrears">0</span>
+                        <span class="total-badge" id="header-total-arrears"
+                            >R 0.00</span
+                        >
+                    </h2>
+                    <div
+                        id="bulk-arrears"
+                        onclick="handleBulkAction('arrears')"
+                        class="bulk-action-trigger badge badge-sm font-bold py-3 px-4"
+                    >
+                        Send Alerts (<span id="sel-count-arrears">0</span>)
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="table w-full">
+                        <thead>
+                            <tr>
+                                <th class="w-12">
+                                    <input
+                                        type="checkbox"
+                                        id="check-all-arrears"
+                                        class="checkbox checkbox-sm border-white"
+                                        onchange="
+                                            toggleSelectAll('arrears', this)
+                                        "
+                                    />
+                                </th>
+                                <th>Account Unit</th>
+                                <th>Consumer Name</th>
+                                <th>Bill Period</th>
+                                <th>Days Elapsed</th>
+                                <th>Amount Due</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="arrears-alerts-body"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <div
+            id="toast-container"
+            class="toast toast-end toast-bottom z-[100]"
+        ></div>
+
+        <script>
+            // Internal helper to format date strings to "15 May 2024"
+            function formatDateString(str) {
+                if (!str) return "";
+                const parts = str.split(" ");
+                const datePart = parts[0];
+                const timePart = parts[1] || "";
+
+                const d = new Date(datePart);
+                if (isNaN(d.getTime())) return str;
+
+                const months = [
+                    "Jan",
+                    "Feb",
+                    "Mar",
+                    "Apr",
+                    "May",
+                    "Jun",
+                    "Jul",
+                    "Aug",
+                    "Sep",
+                    "Oct",
+                    "Nov",
+                    "Dec",
+                ];
+                const formattedDate = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+
+                return timePart
+                    ? `${formattedDate} ${timePart}`
+                    : formattedDate;
+            }
+
+            const generateOffData = () => {
+                const arr = [];
+                for (let i = 1; i <= 10; i++) {
+                    arr.push({
+                        id: `o${i}`,
+                        type: i % 2 === 0 ? "water" : "elec",
+                        meter: `${i % 2 === 0 ? "WM" : "EM"}-${1000 + i}`,
+                        unit: `Unit ${10 + i}, Fairway`,
+                        time: "2024-05-15 08:00",
+                        hours: 1.5 + i * 0.5,
+                    });
+                }
+                return arr;
+            };
+
+            const generateReportingData = () => {
+                const arr = [];
+                for (let i = 1; i <= 15; i++) {
+                    arr.push({
+                        id: `r${i}`,
+                        type: i % 3 === 0 ? "water" : "elec",
+                        meter: `${i % 3 === 0 ? "WM" : "EM"}-${2000 + i}`,
+                        unit: `Unit ${100 + i}, Estate Dr`,
+                        lastSeen: "2024-05-14 12:00",
+                        silence: 24 + i,
+                    });
+                }
+                return arr;
+            };
+
+            const generateArrearsData = () => {
+                const names = [
+                    "Robert King",
+                    "Alice Vance",
+                    "Charlie Dean",
+                    "Diane Smith",
+                    "Edward Norton",
+                    "Fiona Apple",
+                    "George Michael",
+                    "Hannah Montana",
+                    "Ian Wright",
+                    "Julia Roberts",
+                ];
+                const arr = [];
+                for (let i = 1; i <= 12; i++) {
+                    arr.push({
+                        id: `a${i}`,
+                        unit: `Unit ${15 + i}, Fairway`,
+                        consumer: names[i % names.length],
+                        period: i < 5 ? "April 2024" : "March 2024",
+                        days: 15 + i * 3,
+                        amount: 1000 + Math.random() * 5000,
+                    });
+                }
+                return arr;
+            };
+
+            const data = {
+                water: [
+                    {
+                        id: "w1",
+                        type: "water",
+                        meter: "WM-0922",
+                        unit: "Unit 42, Fairway Dr",
+                        issue: "Leak",
+                        time: "2024-05-15 08:30",
+                        hours: 4.5,
+                    },
+                    {
+                        id: "w2",
+                        type: "water",
+                        meter: "WM-1104",
+                        unit: "Unit 12, Bunker Close",
+                        issue: "Burst Pipe",
+                        time: "2024-05-15 10:15",
+                        hours: 2.25,
+                    },
+                    {
+                        id: "w3",
+                        type: "water",
+                        meter: "WM-0552",
+                        unit: "Clubhouse Main",
+                        issue: "Excessive Usage",
+                        time: "2024-05-14 22:00",
+                        hours: 14.1,
+                    },
+                    {
+                        id: "w4",
+                        type: "water",
+                        meter: "WM-0925",
+                        unit: "Unit 45, Fairway Dr",
+                        issue: "Leak",
+                        time: "2024-05-15 09:00",
+                        hours: 3.75,
+                    },
+                ],
+                balance: [
+                    {
+                        id: "b1",
+                        type: "elec",
+                        meter: "EM-8821",
+                        unit: "Unit 05, Eagle Ave",
+                        consumer: "John Smith",
+                        current: 12.5,
+                        min: 50.0,
+                    },
+                    {
+                        id: "b2",
+                        type: "elec",
+                        meter: "EM-7723",
+                        unit: "Unit 88, Green Way",
+                        consumer: "Sarah Meyer",
+                        current: -5.2,
+                        min: 50.0,
+                    },
+                ],
+                off: generateOffData(),
+                reporting: generateReportingData(),
+                arrears: generateArrearsData(),
+            };
+
+            let selectionState = {
+                water: new Set(),
+                balance: new Set(),
+                off: new Set(),
+                reporting: new Set(),
+                arrears: new Set(),
+            };
+
+            function formatDuration(decimalHours) {
+                const h = Math.floor(decimalHours);
+                const m = Math.round((decimalHours - h) * 60);
+                return `${h}h ${m}m`;
+            }
+
+            function getUtilityIcon(type) {
+                if (type === "water") {
+                    return `<div class="tooltip" data-tip="Water Utility"><div class="bg-blue-100 p-2 rounded-full inline-block"><i data-lucide="droplets" class="w-4 h-4 text-blue-600"></i></div></div>`;
+                }
+                return `<div class="tooltip" data-tip="Electricity Utility"><div class="bg-orange-100 p-2 rounded-full inline-block"><i data-lucide="zap" class="w-4 h-4 text-orange-600"></i></div></div>`;
+            }
+
+            function showNotification(message, type = "info") {
+                const container = document.getElementById("toast-container");
+                const alert = document.createElement("div");
+                alert.className = `alert alert-${type} shadow-lg`;
+                alert.innerHTML = `<span>${message}</span>`;
+                container.appendChild(alert);
+                setTimeout(() => alert.remove(), 3000);
+            }
+
+            function updateSelectionUI(category) {
+                const set = selectionState[category];
+                const count = set.size;
+
+                const trigger = document.getElementById(`bulk-${category}`);
+                const countDisplay = document.getElementById(
+                    `sel-count-${category}`,
+                );
+
+                if (countDisplay) countDisplay.innerText = count;
+                if (trigger) {
+                    if (count > 0) trigger.classList.add("active");
+                    else trigger.classList.remove("active");
+                }
+
+                const containerId =
+                    category === "water"
+                        ? "water-alerts-body"
+                        : category === "balance"
+                          ? "balance-alerts-body"
+                          : category === "off"
+                            ? "meters-off-body"
+                            : category === "reporting"
+                              ? "non-reporting-body"
+                              : "arrears-alerts-body";
+                const container = document.getElementById(containerId);
+
+                if (container) {
+                    container.querySelectorAll("tr").forEach((tr) => {
+                        const id = tr.getAttribute("data-id");
+                        const checkbox = tr.querySelector(".row-check");
+                        if (id && set.has(id)) {
+                            tr.classList.add("selected");
+                            if (checkbox) checkbox.checked = true;
+                        } else {
+                            tr.classList.remove("selected");
+                            if (checkbox) checkbox.checked = false;
+                        }
+                    });
+                }
+
+                const headerCheck = document.getElementById(
+                    `check-all-${category}`,
+                );
+                if (headerCheck) {
+                    headerCheck.checked =
+                        count === data[category].length && count > 0;
+                    headerCheck.indeterminate =
+                        count > 0 && count < data[category].length;
+                }
+            }
+
+            function handleRowClick(event, category, id) {
+                if (
+                    event.target.closest(".action-icon") ||
+                    event.target.closest(".checkbox") ||
+                    event.target.closest(".tooltip") ||
+                    event.target.closest(".bulk-action-trigger")
+                )
+                    return;
+                toggleRow(category, id);
+            }
+
+            function toggleRow(category, id) {
+                const set = selectionState[category];
+                if (set.has(id)) set.delete(id);
+                else set.add(id);
+                updateSelectionUI(category);
+            }
+
+            function toggleSelectAll(category, el) {
+                const set = selectionState[category];
+                if (el.checked) {
+                    data[category].forEach((item) => set.add(item.id));
+                } else {
+                    set.clear();
+                }
+                updateSelectionUI(category);
+            }
+
+            function handleBulkAction(category) {
+                const count = selectionState[category].size;
+                let actionVerb = "executed action for";
+
+                if (category === "water" || category === "reporting")
+                    actionVerb = "logged WF instructions for";
+                if (category === "balance" || category === "arrears")
+                    actionVerb = "sent alerts to";
+                if (category === "off")
+                    actionVerb = "sent switch-on commands to";
+
+                showNotification(
+                    `Successfully ${actionVerb} ${count} records.`,
+                    "success",
+                );
+                selectionState[category].clear();
+                updateSelectionUI(category);
+            }
+
+            function updateClock() {
+                const now = new Date();
+                const months = [
+                    "January",
+                    "February",
+                    "March",
+                    "April",
+                    "May",
+                    "June",
+                    "July",
+                    "August",
+                    "September",
+                    "October",
+                    "November",
+                    "December",
+                ];
+
+                const day = now.getDate();
+                const month = months[now.getMonth()];
+                const year = now.getFullYear();
+
+                const hours = now.getHours().toString().padStart(2, "0");
+                const mins = now.getMinutes().toString().padStart(2, "0");
+                const secs = now.getSeconds().toString().padStart(2, "0");
+
+                document.getElementById("current-time").innerText =
+                    `${day} ${month} ${year}, ${hours}:${mins}:${secs}`;
+            }
+
+            function renderAll() {
+                Object.keys(data).forEach((key) => {
+                    const statEl = document.getElementById(`stat-${key}`);
+                    const countEl = document.getElementById(`count-${key}`);
+                    const count = data[key].length;
+                    if (statEl) statEl.innerText = count;
+                    if (countEl) countEl.innerText = count;
+                });
+
+                document.getElementById("water-alerts-body").innerHTML =
+                    data.water
+                        .map(
+                            (item) => `
+                <tr data-id="${item.id}" onclick="handleRowClick(event, 'water', '${item.id}')">
+                    <td><input type="checkbox" class="checkbox checkbox-sm row-check" onchange="toggleRow('water', '${item.id}')"></td>
+                    <td>${getUtilityIcon(item.type)}</td>
+                    <td><div class="font-bold text-sm">${item.meter}</div><div class="text-xs opacity-60">${item.unit}</div></td>
+                    <td><span class="badge ${item.issue === "Burst Pipe" ? "badge-soft-error" : "badge-soft-warning"} badge-sm text-xs font-semibold">${item.issue}</span></td>
+                    <td class="text-sm">${formatDateString(item.time)}</td>
+                    <td class="text-sm font-mono font-semibold text-blue-700">${formatDuration(item.hours)}</td>
+                    <td class="text-center">
+                        <div class="tooltip" data-tip="Create Workflow Instruction">
+                            <i data-lucide="clipboard-list" class="w-5 h-5 action-icon mx-auto" onclick="showNotification('WF Instruction created')"></i>
+                        </div>
+                    </td>
+                </tr>
+            `,
+                        )
+                        .join("");
+
+                document.getElementById("balance-alerts-body").innerHTML =
+                    data.balance
+                        .map(
+                            (item) => `
+                <tr data-id="${item.id}" onclick="handleRowClick(event, 'balance', '${item.id}')">
+                    <td><input type="checkbox" class="checkbox checkbox-sm row-check" onchange="toggleRow('balance', '${item.id}')"></td>
+                    <td>${getUtilityIcon(item.type)}</td>
+                    <td><div class="font-bold text-sm">${item.meter}</div><div class="text-xs opacity-60">${item.unit}</div></td>
+                    <td class="font-medium text-sm">${item.consumer}</td>
+                    <td class="text-red-600 font-bold text-sm">R ${item.current.toFixed(2)}</td>
+                    <td class="text-xs">R ${item.min.toFixed(2)}</td>
+                    <td class="text-center">
+                        <div class="tooltip" data-tip="Send Balance Alert">
+                            <i data-lucide="send" class="w-5 h-5 action-icon mx-auto" onclick="showNotification('Alert sent')"></i>
+                        </div>
+                    </td>
+                </tr>
+            `,
+                        )
+                        .join("");
+
+                document.getElementById("meters-off-body").innerHTML = data.off
+                    .map(
+                        (item) => `
+                <tr data-id="${item.id}" onclick="handleRowClick(event, 'off', '${item.id}')">
+                    <td><input type="checkbox" class="checkbox checkbox-sm row-check" onchange="toggleRow('off', '${item.id}')"></td>
+                    <td>${getUtilityIcon(item.type)}</td>
+                    <td><div class="font-bold text-sm">${item.meter}</div><div class="text-xs opacity-60">${item.unit}</div></td>
+                    <td class="text-sm">${formatDateString(item.time)}</td>
+                    <td><span class="text-red-500 font-mono font-bold text-sm">${formatDuration(item.hours)}</span></td>
+                    <td class="text-center">
+                        <div class="tooltip" data-tip="Send Remote Switch On">
+                            <i data-lucide="power" class="w-5 h-5 action-icon mx-auto" onclick="showNotification('Remote command sent')"></i>
+                        </div>
+                    </td>
+                </tr>
+            `,
+                    )
+                    .join("");
+
+                document.getElementById("non-reporting-body").innerHTML =
+                    data.reporting
+                        .map(
+                            (item) => `
+                <tr data-id="${item.id}" onclick="handleRowClick(event, 'reporting', '${item.id}')">
+                    <td><input type="checkbox" class="checkbox checkbox-sm row-check" onchange="toggleRow('reporting', '${item.id}')"></td>
+                    <td>${getUtilityIcon(item.type)}</td>
+                    <td><div class="font-bold text-sm">${item.meter}</div><div class="text-xs opacity-60">${item.unit}</div></td>
+                    <td class="text-sm">${formatDateString(item.lastSeen)}</td>
+                    <td><span class="text-gray-500 font-mono font-bold text-sm">${formatDuration(item.silence)}</span></td>
+                    <td class="text-center">
+                        <div class="tooltip" data-tip="Log Audit Instruction">
+                            <i data-lucide="clipboard-list" class="w-5 h-5 action-icon mx-auto" onclick="showNotification('Audit instruction logged')"></i>
+                        </div>
+                    </td>
+                </tr>
+            `,
+                        )
+                        .join("");
+
+                let totalArrears = 0;
+                document.getElementById("arrears-alerts-body").innerHTML =
+                    data.arrears
+                        .map((item) => {
+                            totalArrears += item.amount;
+                            return `
+                <tr data-id="${item.id}" onclick="handleRowClick(event, 'arrears', '${item.id}')">
+                    <td><input type="checkbox" class="checkbox checkbox-sm row-check" onchange="toggleRow('arrears', '${item.id}')"></td>
+                    <td class="font-bold text-sm">${item.unit}</td>
+                    <td class="font-medium text-sm">${item.consumer}</td>
+                    <td class="text-sm">${item.period}</td>
+                    <td><span class="badge badge-soft-error badge-sm font-bold">${item.days} Days</span></td>
+                    <td class="font-bold text-sm">R ${item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td class="text-center">
+                        <div class="tooltip" data-tip="Send Arrears Notice">
+                            <i data-lucide="send" class="w-5 h-5 action-icon mx-auto" onclick="showNotification('Arrears notice sent')"></i>
+                        </div>
+                    </td>
+                </tr>
+            `;
+                        })
+                        .join("");
+
+                const formattedTotal = `R ${totalArrears.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                document.getElementById("header-total-arrears").innerText =
+                    formattedTotal;
+
+                lucide.createIcons();
+                Object.keys(selectionState).forEach((cat) =>
+                    updateSelectionUI(cat),
+                );
+            }
+
+            window.onload = function () {
+                renderAll();
+                updateClock();
+                setInterval(updateClock, 1000);
+            };
+        </script>
+    </body>
+</html>

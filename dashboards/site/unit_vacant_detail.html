@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Vacant Unit Detail</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+        <style>
+            :root { --brand-bg: #404068; --brand-text: #faa919; }
+            .bg-brand  { background-color: var(--brand-bg); }
+            .text-brand { color: var(--brand-text); }
+            .border-brand { border-color: var(--brand-bg); }
+            .card {
+                background: white;
+                border-radius: 0.75rem;
+                box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+                padding: 1.25rem;
+            }
+            .stat-divider { border-top: 1px dashed #e5e7eb; margin: 0.75rem 0; }
+            .drill-btn {
+                background: var(--brand-bg);
+                color: var(--brand-text);
+                padding: 6px 16px;
+                border-radius: 6px;
+                font-size: 0.75rem;
+                font-weight: 700;
+                cursor: pointer;
+                border: none;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+            }
+            .drill-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+            .level-pill {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 14px;
+                border-radius: 999px;
+                font-size: 0.7rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+            }
+            .level-pill.active   { background: var(--brand-bg); color: var(--brand-text); }
+            .level-pill.inactive { background: #f1f5f9; color: #94a3b8; }
+            .nav-unit-btn {
+                background: #f1f5f9;
+                border: 1px solid #e2e8f0;
+                color: #404068;
+                padding: 6px 14px;
+                border-radius: 6px;
+                font-size: 0.75rem;
+                font-weight: 700;
+                cursor: pointer;
+            }
+            .nav-unit-btn:hover { background: #e2e8f0; }
+            .nav-unit-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+            .dl-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                padding: 6px 14px;
+                border-radius: 6px;
+                font-size: 0.72rem;
+                font-weight: 700;
+                cursor: pointer;
+                border: none;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+                transition: opacity 0.15s;
+            }
+            .dl-btn:hover { opacity: 0.82; }
+            .dl-btn-pdf    { background: #faa919; color: #404068; }
+            .dl-btn-report { background: #fff; color: #404068; border: 1.5px solid #404068; }
+
+            @media print {
+                * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                .dl-btn, .nav-unit-btn { display: none !important; }
+                header { background: #404068 !important; }
+                body { background: white !important; }
+                .card { box-shadow: none !important; border: 1px solid #e5e7eb !important; }
+            }
+
+            /* Scrollbar */
+            ::-webkit-scrollbar { width: 6px; height: 6px; }
+            ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+            ::-webkit-scrollbar-thumb { background: #404068; border-radius: 10px; }
+        </style>
+    </head>
+    <body class="bg-gray-50 text-gray-800 font-sans">
+
+        <!-- Header -->
+        <header class="bg-brand text-brand p-5 shadow-lg mb-6">
+            <div class="max-w-[1400px] mx-auto flex justify-between items-center">
+                <div class="flex items-center gap-5">
+                    <a href="vacancy.html"
+                       class="flex items-center gap-2 text-[#faa919] hover:opacity-75 transition-opacity text-sm font-bold uppercase tracking-wider">
+                        ← Back to Dashboard
+                    </a>
+                    <span class="text-[#faa919] opacity-30 text-lg">|</span>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight uppercase" id="page-title">
+                            Vacant Unit —
+                        </h1>
+                        <p class="text-xs opacity-60 mt-0.5">Utility Charge Deep Dive · Monthly → Daily → Hourly</p>
+                    </div>
+                </div>
+                <!-- Right controls: download + Prev/Next -->
+                <div class="flex items-center gap-3">
+                    <button class="dl-btn dl-btn-report" onclick="downloadReport()">
+                        ⬇ Report
+                    </button>
+                    <button class="dl-btn dl-btn-pdf" id="btn-dl-pdf" onclick="downloadPDF()">
+                        ⬇ PDF
+                    </button>
+                    <span class="opacity-20 text-[#faa919] text-lg">|</span>
+                    <button class="nav-unit-btn" id="btn-prev" onclick="navigateUnit(-1)">← Prev</button>
+                    <span class="text-xs font-bold opacity-60 px-1" id="unit-position"></span>
+                    <button class="nav-unit-btn" id="btn-next" onclick="navigateUnit(1)">Next →</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-[1400px] mx-auto px-4 pb-12">
+
+            <!-- Unit summary cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <!-- Total -->
+                <div class="card border-t-4 border-[#faa919] col-span-2 md:col-span-1">
+                    <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Total Vacancy Charge</p>
+                    <p class="text-3xl font-bold text-brand mt-1" id="stat-total">—</p>
+                    <div class="stat-divider"></div>
+                    <p class="text-[10px] text-gray-400 uppercase font-bold">Peak Month</p>
+                    <p class="text-sm font-bold text-gray-700 mt-0.5" id="stat-peak-month">—</p>
+                    <p class="text-xs text-gray-400" id="stat-peak-val">—</p>
+                </div>
+                <!-- Electricity -->
+                <div class="card border-t-4 border-[#404068]">
+                    <p class="text-[10px] text-gray-400 uppercase font-bold">⚡ Electricity</p>
+                    <p class="text-2xl font-bold text-[#404068] mt-1" id="stat-elec">—</p>
+                    <div class="stat-divider"></div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-gray-400">Consumption</span>
+                        <span class="font-bold" id="stat-elec-cons">—</span>
+                    </div>
+                    <div class="flex justify-between text-xs mt-0.5">
+                        <span class="text-gray-400">Cons % of site</span>
+                        <span class="font-bold text-brand" id="stat-elec-cons-pct">—</span>
+                    </div>
+                    <div class="flex justify-between text-xs mt-1">
+                        <span class="text-gray-400">Charge % of site</span>
+                        <span class="font-bold text-brand" id="stat-elec-charge-pct">—</span>
+                    </div>
+                </div>
+                <!-- Water -->
+                <div class="card border-t-4 border-blue-500">
+                    <p class="text-[10px] text-gray-400 uppercase font-bold">💧 Water</p>
+                    <p class="text-2xl font-bold text-blue-600 mt-1" id="stat-water">—</p>
+                    <div class="stat-divider"></div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-gray-400">Consumption</span>
+                        <span class="font-bold" id="stat-water-cons">—</span>
+                    </div>
+                    <div class="flex justify-between text-xs mt-0.5">
+                        <span class="text-gray-400">Cons % of site</span>
+                        <span class="font-bold text-brand" id="stat-water-cons-pct">—</span>
+                    </div>
+                    <div class="flex justify-between text-xs mt-1">
+                        <span class="text-gray-400">Charge % of site</span>
+                        <span class="font-bold text-brand" id="stat-water-charge-pct">—</span>
+                    </div>
+                </div>
+                <!-- Gas -->
+                <div class="card border-t-4 border-red-400">
+                    <p class="text-[10px] text-gray-400 uppercase font-bold">🔥 Gas</p>
+                    <p class="text-2xl font-bold text-red-500 mt-1" id="stat-gas">—</p>
+                    <div class="stat-divider"></div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-gray-400">Consumption</span>
+                        <span class="font-bold" id="stat-gas-cons">—</span>
+                    </div>
+                    <div class="flex justify-between text-xs mt-0.5">
+                        <span class="text-gray-400">Cons % of site</span>
+                        <span class="font-bold text-brand" id="stat-gas-cons-pct">—</span>
+                    </div>
+                    <div class="flex justify-between text-xs mt-1">
+                        <span class="text-gray-400">Charge % of site</span>
+                        <span class="font-bold text-brand" id="stat-gas-charge-pct">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drill-down level controls -->
+            <div class="card mb-6">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <!-- Level breadcrumb + selected context -->
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="level-pill active"   id="pill-monthly">📅 Monthly</span>
+                            <span class="text-gray-300 text-sm">›</span>
+                            <span class="level-pill inactive" id="pill-daily">📆 Daily</span>
+                            <span class="text-gray-300 text-sm">›</span>
+                            <span class="level-pill inactive" id="pill-hourly">🕐 Hourly</span>
+                        </div>
+                        <!-- Selected period label — hidden in monthly mode -->
+                        <div id="selection-context" class="hidden items-center gap-1.5 text-xs pl-1">
+                            <span class="text-[#faa919]">📍</span>
+                            <span id="context-label" class="font-bold text-[#404068]"></span>
+                        </div>
+                    </div>
+                    <!-- Drill buttons -->
+                    <div class="flex items-center gap-2">
+                        <button class="drill-btn" id="btn-reset" onclick="resetToMonthly()"
+                                style="display:none; background:#64748b">↺ Reset</button>
+                        <button class="drill-btn" id="btn-back"  onclick="drillUp()"
+                                style="display:none">← Back</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts: two columns, each with its participation/breakdown + benchmarking below -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- LEFT: Consumption Participation → Consumption Benchmarking -->
+                <div class="flex flex-col gap-6">
+                    <div class="card flex-1">
+                        <h3 class="text-sm font-bold text-gray-500 uppercase tracking-tighter mb-3">
+                            Consumption Participation
+                            <span class="normal-case font-normal text-gray-400 text-xs ml-2" id="cons-subtitle"></span>
+                        </h3>
+                        <div class="mb-2">
+                            <p class="text-[10px] font-bold text-[#404068] uppercase tracking-wider mb-0.5">⚡ Electricity <span class="font-normal text-gray-400">(kWh)</span></p>
+                            <div id="cons-elec-chart"  style="width:100%;height:120px"></div>
+                        </div>
+                        <div class="mb-2">
+                            <p class="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-0.5">💧 Water <span class="font-normal text-gray-400">(kL)</span></p>
+                            <div id="cons-water-chart" style="width:100%;height:120px"></div>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-0.5">🔥 Gas <span class="font-normal text-gray-400">(kg)</span></p>
+                            <div id="cons-gas-chart"   style="width:100%;height:120px"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="mb-3">
+                            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-tighter">
+                                Consumption Benchmarking
+                                <span class="ml-2 text-[10px] font-bold text-[#faa919] bg-[#404068] px-2 py-0.5 rounded-full normal-case tracking-normal">% of Site Consumption</span>
+                            </h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Unit vacant consumption as % of total site consumption · per utility</p>
+                        </div>
+                        <div id="unit-cons-trend-chart" style="width:100%;height:240px"></div>
+                    </div>
+                </div>
+                <!-- RIGHT: Charges Breakdown → Charge Benchmarking -->
+                <div class="flex flex-col gap-6">
+                    <div class="card flex-1">
+                        <h3 class="text-sm font-bold text-gray-500 uppercase tracking-tighter mb-4">
+                            Charges Breakdown (R)
+                            <span class="normal-case font-normal text-gray-400 text-xs ml-2" id="charges-subtitle"></span>
+                        </h3>
+                        <div id="charges-chart" style="width:100%;height:360px"></div>
+                    </div>
+                    <div class="card">
+                        <div class="mb-3">
+                            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-tighter">
+                                Charge Benchmarking
+                                <span class="ml-2 text-[10px] font-bold text-[#faa919] bg-[#404068] px-2 py-0.5 rounded-full normal-case tracking-normal">% of Site Charge</span>
+                            </h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Unit vacant charge as % of total site charge · per utility</p>
+                        </div>
+                        <div id="unit-trend-chart" style="width:100%;height:240px"></div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <script>
+            // ── Shared unit data (mirrors vacancy.html) ──────────────────────
+            const units = [
+                { id: "101A", elec: { cons: 2100, charge: 8500, pct: 32 }, water: { cons: 210, charge: 3200, pct: 24 }, gas: { cons: 80,  charge: 700,  pct: 15 }, totalCharge: 12400 },
+                { id: "201A", elec: { cons: 1800, charge: 7200, pct: 27 }, water: { cons: 180, charge: 2700, pct: 20 }, gas: { cons: 70,  charge: 650,  pct: 14 }, totalCharge: 10550 },
+                { id: "204B", elec: { cons: 1550, charge: 6200, pct: 23 }, water: { cons: 140, charge: 2100, pct: 16 }, gas: { cons: 90,  charge: 900,  pct: 19 }, totalCharge:  9200 },
+                { id: "302B", elec: { cons: 1400, charge: 5600, pct: 21 }, water: { cons: 110, charge: 1650, pct: 12 }, gas: { cons: 60,  charge: 550,  pct: 12 }, totalCharge:  7800 },
+                { id: "402C", elec: { cons: 1200, charge: 4800, pct: 18 }, water: { cons: 120, charge: 1800, pct: 14 }, gas: { cons: 75,  charge: 800,  pct: 17 }, totalCharge:  7400 },
+                { id: "103C", elec: { cons: 1100, charge: 4400, pct: 17 }, water: { cons: 90,  charge: 1350, pct: 10 }, gas: { cons: 45,  charge: 420,  pct:  9 }, totalCharge:  6170 },
+                { id: "105A", elec: { cons: 900,  charge: 3500, pct: 13 }, water: { cons: 60,  charge: 1000, pct:  8 }, gas: { cons: 55,  charge: 600,  pct: 13 }, totalCharge:  5100 },
+                { id: "205D", elec: { cons: 750,  charge: 3000, pct: 11 }, water: { cons: 75,  charge: 1125, pct:  8 }, gas: { cons: 40,  charge: 375,  pct:  8 }, totalCharge:  4500 },
+                { id: "303D", elec: { cons: 550,  charge: 2100, pct:  8 }, water: { cons: 50,  charge: 800,  pct:  6 }, gas: { cons: 30,  charge: 300,  pct:  6 }, totalCharge:  3200 },
+                { id: "401A", elec: { cons: 480,  charge: 1920, pct:  7 }, water: { cons: 48,  charge: 720,  pct:  5 }, gas: { cons: 25,  charge: 235,  pct:  5 }, totalCharge:  2875 },
+                { id: "102B", elec: { cons: 380,  charge: 1520, pct:  6 }, water: { cons: 38,  charge: 570,  pct:  4 }, gas: { cons: 18,  charge: 170,  pct:  4 }, totalCharge:  2260 },
+                { id: "304E", elec: { cons: 290,  charge: 1160, pct:  4 }, water: { cons: 30,  charge: 450,  pct:  3 }, gas: { cons: 12,  charge: 115,  pct:  2 }, totalCharge:  1725 },
+            ];
+
+            // ── Per-unit monthly % trend generators ──────────────────────────
+            // Charge trend — peaks Aug, seasonal noise
+            function genUnitTrend(unit) {
+                const months   = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+                const seasonal = [0.74, 0.70, 0.78, 0.82, 0.87, 0.94, 1.01, 1.14, 1.08, 1.02, 0.96, 1.00];
+                return months.map((m, i) => ({
+                    month: m,
+                    elec:  +(unit.elec.pct  * seasonal[i] * (0.9 + Math.sin(i * 0.9) * 0.1)).toFixed(1),
+                    water: +(unit.water.pct * seasonal[i] * (0.9 + Math.cos(i * 0.7) * 0.1)).toFixed(1),
+                    gas:   +(unit.gas.pct   * seasonal[i] * (0.9 + Math.sin(i * 1.1) * 0.1)).toFixed(1),
+                }));
+            }
+
+            // ── Sub-split helpers ─────────────────────────────────────────────
+            // Electricity → Grid 65% / Solar 22% / Generator 13%
+            function splitElec(arr) {
+                const grid  = arr.map(v => Math.round(v * 0.65));
+                const solar = arr.map(v => Math.round(v * 0.22));
+                const gen   = arr.map((v, i) => Math.max(0, v - grid[i] - solar[i]));
+                return { grid, solar, gen };
+            }
+            // Water → Municipal 76% / Hot Water 15% / Borehole 9%
+            function splitWater(arr) {
+                const mun  = arr.map(v => Math.round(v * 0.76));
+                const hot  = arr.map(v => Math.round(v * 0.15));
+                const bore = arr.map((v, i) => Math.max(0, v - mun[i] - hot[i]));
+                return { mun, hot, bore };
+            }
+
+            // ── Drill-down data generators ────────────────────────────────────
+            function monthlyData(unit) {
+                const base  = [120,132,101,134,90,230,210,320,180,150,110,130].map(v => Math.round(v * unit.totalCharge / 12400));
+                const xData = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+                const elec  = base.map(v => Math.round(v * unit.elec.charge  / unit.totalCharge));
+                const water = base.map(v => Math.round(v * unit.water.charge / unit.totalCharge));
+                const gas   = base.map(v => Math.round(v * unit.gas.charge   / unit.totalCharge));
+                return { xData, base, elec, water, gas,
+                    ...Object.fromEntries(Object.entries(splitElec(elec)).map(([k,v])  => ["elec_"+k,  v])),
+                    ...Object.fromEntries(Object.entries(splitWater(water)).map(([k,v]) => ["water_"+k, v])) };
+            }
+            function dailyData(unit) {
+                const monthIdx = selectedMonth ? selectedMonth.index : 7;
+                const days  = MONTH_DAYS[monthIdx];
+                const xData = Array.from({length: days}, (_,i) => `${i+1}`);
+                const base  = xData.map(() => Math.round(Math.random() * (unit.totalCharge / 5) + unit.totalCharge / 20));
+                const elec  = base.map(v => Math.round(v * unit.elec.charge  / unit.totalCharge));
+                const water = base.map(v => Math.round(v * unit.water.charge / unit.totalCharge));
+                const gas   = base.map(v => Math.round(v * unit.gas.charge   / unit.totalCharge));
+                return { xData, base, elec, water, gas,
+                    ...Object.fromEntries(Object.entries(splitElec(elec)).map(([k,v])  => ["elec_"+k,  v])),
+                    ...Object.fromEntries(Object.entries(splitWater(water)).map(([k,v]) => ["water_"+k, v])) };
+            }
+            function hourlyData(unit) {
+                const xData = Array.from({length:24}, (_,i) => `${i}:00`);
+                const base  = xData.map(() => Math.round(Math.random() * (unit.totalCharge / 40) + unit.totalCharge / 80));
+                const elec  = base.map(v => Math.round(v * unit.elec.charge  / unit.totalCharge));
+                const water = base.map(v => Math.round(v * unit.water.charge / unit.totalCharge));
+                const gas   = base.map(v => Math.round(v * unit.gas.charge   / unit.totalCharge));
+                return { xData, base, elec, water, gas,
+                    ...Object.fromEntries(Object.entries(splitElec(elec)).map(([k,v])  => ["elec_"+k,  v])),
+                    ...Object.fromEntries(Object.entries(splitWater(water)).map(([k,v]) => ["water_"+k, v])) };
+            }
+
+            // ── Constants ─────────────────────────────────────────────────────
+            const YEAR        = 2024;
+            const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+            const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+            const MONTH_DAYS  = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+            // ── State ─────────────────────────────────────────────────────────
+            let currentLevel  = "monthly";
+            let selectedMonth = null;   // { index: 0-11, name: "August" }
+            let selectedDay   = null;   // { number: 1-31 }
+            let unit = null;
+            let unitIndex = 0;
+            let consElecChart, consWaterChart, consGasChart, chrgChart, trendChart, consTrendChart;
+
+            // ── Bootstrap ─────────────────────────────────────────────────────
+            window.onload = () => {
+                const params = new URLSearchParams(window.location.search);
+                const id = params.get("unit") || units[0].id;
+                unitIndex = units.findIndex(u => u.id === id);
+                if (unitIndex < 0) unitIndex = 0;
+                unit = units[unitIndex];
+
+                initCharts();
+                populate();
+
+                window.addEventListener("resize", () => {
+                    consElecChart.resize();
+                    consWaterChart.resize();
+                    consGasChart.resize();
+                    chrgChart.resize();
+                    trendChart.resize();
+                    consTrendChart.resize();
+                });
+            };
+
+            function populate() {
+                unit = units[unitIndex];
+                currentLevel  = "monthly";
+                selectedMonth = null;
+                selectedDay   = null;
+
+                // Header
+                document.getElementById("page-title").textContent = `Vacant Unit — ${unit.id}`;
+                document.title = `Unit ${unit.id} — Vacant Detail`;
+                document.getElementById("unit-position").textContent =
+                    `${unitIndex + 1} / ${units.length}`;
+                document.getElementById("btn-prev").disabled = unitIndex === 0;
+                document.getElementById("btn-next").disabled = unitIndex === units.length - 1;
+
+                // Peak month (highest monthly total — always annual regardless of drill level)
+                const monthly = monthlyData(unit);
+                const peakIdx = monthly.base.indexOf(Math.max(...monthly.base));
+                const months  = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+                document.getElementById("stat-peak-month").textContent = months[peakIdx];
+                document.getElementById("stat-peak-val").textContent   = `R ${monthly.base[peakIdx].toLocaleString()} charge`;
+
+                setLevel("monthly"); // triggers updateCharts → updateStatsAndBenchmarks
+            }
+
+            function navigateUnit(dir) {
+                unitIndex = Math.max(0, Math.min(units.length - 1, unitIndex + dir));
+                // Update URL without reload so Back button still works
+                history.replaceState(null, "", `?unit=${encodeURIComponent(units[unitIndex].id)}`);
+                populate();
+            }
+
+            // ── Level control ────────────────────────────────────────────────
+            const LEVELS = ["monthly", "daily", "hourly"];
+
+            function setLevel(level) {
+                currentLevel = level;
+                LEVELS.forEach(l => {
+                    document.getElementById(`pill-${l}`).className =
+                        "level-pill " + (l === level ? "active" : "inactive");
+                });
+
+                // Button visibility
+                const isMonthly = level === "monthly";
+                const isHourly  = level === "hourly";
+                document.getElementById("btn-back").style.display  = isMonthly ? "none" : "inline-block";
+                document.getElementById("btn-reset").style.display = isMonthly ? "none" : "inline-block";
+
+                // Selection context label
+                const ctx = document.getElementById("selection-context");
+                const lbl = document.getElementById("context-label");
+                if (isMonthly) {
+                    ctx.style.display = "flex";
+                    lbl.textContent   = `${MONTH_SHORT[0]} '${String(YEAR).slice(-2)} – ${MONTH_SHORT[11]} '${String(YEAR).slice(-2)}`;
+                } else if (level === "daily" && selectedMonth) {
+                    ctx.style.display = "flex";
+                    lbl.textContent   = `${selectedMonth.name} ${YEAR}  ·  ${MONTH_DAYS[selectedMonth.index]} days`;
+                } else if (level === "hourly" && selectedMonth && selectedDay) {
+                    ctx.style.display = "flex";
+                    lbl.textContent   = `${selectedDay.number} ${selectedMonth.name} ${YEAR}`;
+                }
+
+                // Chart subtitle
+                let subtitle = `Jan – Dec ${YEAR}`;
+                if (level === "daily"  && selectedMonth) subtitle = `${selectedMonth.name} ${YEAR}`;
+                if (level === "hourly" && selectedMonth && selectedDay)
+                    subtitle = `${selectedDay.number} ${selectedMonth.name} ${YEAR}`;
+                document.getElementById("cons-subtitle").textContent    = subtitle;
+                document.getElementById("charges-subtitle").textContent = subtitle;
+
+                updateCharts();
+            }
+
+            function drillDown(params) {
+                const idx = LEVELS.indexOf(currentLevel);
+                if (idx >= LEVELS.length - 1) return;
+                if (currentLevel === "monthly" && params) {
+                    selectedMonth = { index: params.dataIndex, name: MONTH_NAMES[params.dataIndex] };
+                    selectedDay   = null;
+                } else if (currentLevel === "daily" && params) {
+                    selectedDay = { number: params.dataIndex + 1 };
+                }
+                setLevel(LEVELS[idx + 1]);
+            }
+            function drillUp() {
+                const idx = LEVELS.indexOf(currentLevel);
+                if (idx === 0) return;
+                if (currentLevel === "daily")  selectedMonth = null;
+                if (currentLevel === "hourly") selectedDay   = null;
+                setLevel(LEVELS[idx - 1]);
+            }
+            function resetToMonthly() {
+                selectedMonth = null;
+                selectedDay   = null;
+                setLevel("monthly");
+            }
+
+            // ── Chart init ───────────────────────────────────────────────────
+            function initCharts() {
+                consElecChart  = echarts.init(document.getElementById("cons-elec-chart"));
+                consWaterChart = echarts.init(document.getElementById("cons-water-chart"));
+                consGasChart   = echarts.init(document.getElementById("cons-gas-chart"));
+                chrgChart      = echarts.init(document.getElementById("charges-chart"));
+                trendChart     = echarts.init(document.getElementById("unit-trend-chart"));
+                consTrendChart = echarts.init(document.getElementById("unit-cons-trend-chart"));
+                consElecChart.on("click",  (p) => drillDown(p));
+                consWaterChart.on("click", (p) => drillDown(p));
+                consGasChart.on("click",   (p) => drillDown(p));
+                chrgChart.on("click",      (p) => drillDown(p));
+            }
+
+            function updateCharts() {
+                const data = { monthly: monthlyData, daily: dailyData, hourly: hourlyData }[currentLevel](unit);
+
+                const commonTooltip = {
+                    trigger: "axis",
+                    axisPointer: { type: "shadow" },
+                    backgroundColor: "#404068",
+                    textStyle: { color: "#faa919", fontSize: 11 },
+                };
+                // Compact grid for mini charts — hide x labels on top two, show on bottom
+                const miniGrid = (showX) => ({
+                    left: 10, right: 10,
+                    top: 6, bottom: showX ? 28 : 4,
+                    containLabel: true,
+                });
+                const miniXAxis = (showLabels) => ({
+                    type: "category", data: data.xData,
+                    axisTick: { show: false },
+                    axisLine: { lineStyle: { color: "#e5e7eb" } },
+                    axisLabel: { show: showLabels, fontSize: 8, color: "#9ca3af" },
+                });
+                const miniYAxis = (unit) => ({
+                    type: "value",
+                    axisLabel: { fontSize: 8, color: "#9ca3af",
+                        formatter: (v) => v >= 1000 ? (v/1000).toFixed(0)+"k" : v },
+                    splitLine: { lineStyle: { color: "#f5f5f5" } },
+                    name: unit,
+                    nameTextStyle: { fontSize: 8, color: "#9ca3af" },
+                    nameLocation: "end",
+                });
+
+                const stackTooltip = (unit) => ({
+                    ...commonTooltip,
+                    formatter(params) {
+                        const total = params.reduce((s, p) => s + p.value, 0);
+                        return `<b>${params[0].axisValue}</b><br/>` +
+                            params.map(p => `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:4px"></span>${p.seriesName}: <b>${p.value.toLocaleString()} ${unit}</b>`).join("<br/>") +
+                            `<br/><b style="color:#faa919">Total: ${total.toLocaleString()} ${unit}</b>`;
+                    }
+                });
+                const mkBar = (name, dataKey, color, stack, radius) => ({
+                    name, type: "bar", stack, barWidth: "65%", data: data[dataKey],
+                    itemStyle: { color, borderRadius: radius || [0,0,0,0] },
+                });
+
+                // ⚡ Electricity — Grid / Solar / Generator (kWh)
+                consElecChart.setOption({
+                    tooltip: stackTooltip("kWh"),
+                    legend: { data: ["Grid","Solar","Generator"], top: 0, right: 0, textStyle: { fontSize: 8 }, itemWidth: 10, itemHeight: 6 },
+                    grid: { left: 10, right: 10, top: 20, bottom: 4, containLabel: true },
+                    xAxis: miniXAxis(true),
+                    yAxis: miniYAxis("kWh"),
+                    series: [
+                        mkBar("Grid",      "elec_grid",  "#404068", "elec"),
+                        mkBar("Solar",     "elec_solar", "#f59e0b", "elec"),
+                        mkBar("Generator", "elec_gen",   "#7c3aed", "elec", [3,3,0,0]),
+                    ],
+                }, true);
+
+                // 💧 Water — Municipal / Hot Water / Borehole (kL)
+                consWaterChart.setOption({
+                    tooltip: stackTooltip("kL"),
+                    legend: { data: ["Municipal","Hot Water","Borehole"], top: 0, right: 0, textStyle: { fontSize: 8 }, itemWidth: 10, itemHeight: 6 },
+                    grid: { left: 10, right: 10, top: 20, bottom: 4, containLabel: true },
+                    xAxis: miniXAxis(true),
+                    yAxis: miniYAxis("kL"),
+                    series: [
+                        mkBar("Municipal", "water_mun",  "#3b82f6", "water"),
+                        mkBar("Hot Water", "water_hot",  "#f97316", "water"),
+                        mkBar("Borehole",  "water_bore", "#10b981", "water", [3,3,0,0]),
+                    ],
+                }, true);
+
+                // 🔥 Gas — single series (kg, show x labels)
+                consGasChart.setOption({
+                    tooltip: { ...commonTooltip,
+                        formatter: (p) => `<b>${p[0].axisValue}</b><br/>🔥 <b>${p[0].value.toLocaleString()} kg</b>` },
+                    grid: miniGrid(true),
+                    xAxis: miniXAxis(true),
+                    yAxis: miniYAxis("kg"),
+                    series: [{ type: "bar", data: data.gas, barWidth: "65%",
+                        itemStyle: { color: "#ef4444", borderRadius: [3,3,0,0] } }],
+                }, true);
+
+                // ── Stats + benchmarks driven from current period data ────────
+                updateStatsAndBenchmarks(data);
+
+                // Charges chart — 7 stacked series
+                chrgChart.setOption({
+                    tooltip: { ...commonTooltip,
+                        formatter(params) {
+                            const total = params.reduce((s, p) => s + p.value, 0);
+                            return `<b>${params[0].axisValue}</b><br/>` +
+                                params.map(p => `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:4px"></span>${p.seriesName}: <b>R ${p.value.toLocaleString()}</b>`).join("<br/>") +
+                                `<br/><b style="color:#faa919">Total: R ${total.toLocaleString()}</b>`;
+                        }
+                    },
+                    legend: { data: ["Electricity","Solar","Generator","Water","Hot Water","Borehole","Gas"], bottom: 0, textStyle: { fontSize: 9 }, itemWidth: 10, itemHeight: 8 },
+                    grid: { left: 10, right: 10, top: 10, bottom: 52, containLabel: true },
+                    xAxis: { type: "category", data: data.xData, axisTick: { alignWithLabel: true }, axisLabel: { fontSize: 9 } },
+                    yAxis: { type: "value", axisLabel: { formatter: v => "R " + (v >= 1000 ? (v/1000).toFixed(0)+"k" : v), fontSize: 9 } },
+                    series: [
+                        mkBar("Electricity", "elec_grid",  "#404068", "c"),
+                        mkBar("Solar",       "elec_solar", "#f59e0b", "c"),
+                        mkBar("Generator",   "elec_gen",   "#7c3aed", "c"),
+                        mkBar("Water",       "water_mun",  "#3b82f6", "c"),
+                        mkBar("Hot Water",   "water_hot",  "#f97316", "c"),
+                        mkBar("Borehole",    "water_bore", "#10b981", "c"),
+                        mkBar("Gas",         "gas",        "#ef4444", "c", [4,4,0,0]),
+                    ],
+                }, true);
+            }
+
+            // ── Downloads ────────────────────────────────────────────────────
+            function downloadPDF() {
+                [consElecChart, consWaterChart, consGasChart, chrgChart, trendChart, consTrendChart]
+                    .forEach(c => c.resize());
+                window.print();
+            }
+
+            function downloadReport() {
+                const trend = genUnitTrend(unit);
+                const monthly = monthlyData(unit);
+                const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+                const tableRows = monthNames.map((m, i) => `
+                    <tr>
+                        <td>${m}</td>
+                        <td>R ${monthly.elec[i].toLocaleString()}</td>
+                        <td>R ${monthly.water[i].toLocaleString()}</td>
+                        <td>R ${monthly.gas[i].toLocaleString()}</td>
+                        <td><b>R ${monthly.base[i].toLocaleString()}</b></td>
+                        <td>${trend[i].elec}%</td>
+                        <td>${trend[i].water}%</td>
+                        <td>${trend[i].gas}%</td>
+                    </tr>`).join("");
+
+                const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Vacant Unit Report — ${unit.id}</title>
+  <style>
+    body { font-family: Arial, sans-serif; color: #1e293b; margin: 40px; }
+    h1   { color: #404068; border-bottom: 3px solid #faa919; padding-bottom: 8px; }
+    h2   { color: #404068; margin-top: 32px; font-size: 1rem; text-transform: uppercase; letter-spacing: .05em; }
+    .summary { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin: 20px 0; }
+    .card    { border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
+    .card .label { font-size: 10px; text-transform: uppercase; color: #94a3b8; font-weight: 700; }
+    .card .value { font-size: 1.6rem; font-weight: 800; color: #404068; margin-top: 4px; }
+    .card .sub   { font-size: 11px; color: #64748b; margin-top: 4px; }
+    table  { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+    th     { background: #404068; color: #faa919; padding: 8px 10px; text-align: left; font-size: 11px; text-transform: uppercase; }
+    td     { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; }
+    tr:nth-child(even) td { background: #f8fafc; }
+    .footer { margin-top: 40px; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Vacant Unit Report — ${unit.id}</h1>
+  <p style="color:#64748b;font-size:13px">Generated: ${new Date().toLocaleString()} &nbsp;|&nbsp; Period: Jan – Dec ${YEAR}</p>
+
+  <h2>Summary</h2>
+  <div class="summary">
+    <div class="card"><div class="label">Total Vacancy Charge</div><div class="value">R ${unit.totalCharge.toLocaleString()}</div></div>
+    <div class="card"><div class="label">⚡ Electricity</div><div class="value">R ${unit.elec.charge.toLocaleString()}</div><div class="sub">${unit.elec.cons.toLocaleString()} kWh &nbsp;·&nbsp; ${unit.elec.pct}% of site</div></div>
+    <div class="card"><div class="label">💧 Water</div><div class="value">R ${unit.water.charge.toLocaleString()}</div><div class="sub">${unit.water.cons.toLocaleString()} kL &nbsp;·&nbsp; ${unit.water.pct}% of site</div></div>
+    <div class="card"><div class="label">🔥 Gas</div><div class="value">R ${unit.gas.charge.toLocaleString()}</div><div class="sub">${unit.gas.cons.toLocaleString()} kg &nbsp;·&nbsp; ${unit.gas.pct}% of site</div></div>
+  </div>
+
+  <h2>Monthly Breakdown</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Month</th>
+        <th>Elec Charge</th>
+        <th>Water Charge</th>
+        <th>Gas Charge</th>
+        <th>Total Charge</th>
+        <th>Elec % Site</th>
+        <th>Water % Site</th>
+        <th>Gas % Site</th>
+      </tr>
+    </thead>
+    <tbody>${tableRows}</tbody>
+  </table>
+
+  <div class="footer">WeBill Vacancy Report &nbsp;·&nbsp; Unit ${unit.id} &nbsp;·&nbsp; ${YEAR}</div>
+</body>
+</html>`;
+
+                const btn = document.querySelector(".dl-btn-report");
+                btn.textContent = "⏳ Generating…";
+                btn.disabled = true;
+
+                const container = document.createElement("div");
+                container.style.cssText = "position:fixed;left:-9999px;top:0;width:900px;background:#fff";
+                const styleMatch  = html.match(/<style>([\s\S]*?)<\/style>/);
+                const styleTag    = styleMatch ? `<style>${styleMatch[1]}</style>` : "";
+                const bodyContent = html.replace(/[\s\S]*?<body>/, "").replace(/<\/body>[\s\S]*/, "");
+                container.innerHTML = styleTag + bodyContent;
+                document.body.appendChild(container);
+
+                html2pdf()
+                    .set({
+                        margin:      [15, 15, 15, 15],
+                        filename:    `VacantUnit_${unit.id}_Report.pdf`,
+                        image:       { type: "jpeg", quality: 0.97 },
+                        html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+                        jsPDF:       { unit: "mm", format: "a4", orientation: "portrait" },
+                        pagebreak:   { mode: ["css", "legacy"] },
+                    })
+                    .from(container)
+                    .save()
+                    .then(() => {
+                        document.body.removeChild(container);
+                        btn.textContent = "⬇ Report";
+                        btn.disabled = false;
+                    });
+            }
+
+            // ── Stats + both benchmark charts — driven from current period data ─
+            function updateStatsAndBenchmarks(data) {
+                const n    = data.xData.length;
+                // Stats from actual unit data scaled to period (chart arrays are proportional patterns, not absolute totals)
+                const ps    = currentLevel === "monthly" ? 1 : currentLevel === "daily" ? 1/12 : 1/365;
+                const eTot  = Math.round(unit.elec.charge  * ps);
+                const wTot  = Math.round(unit.water.charge * ps);
+                const gTot  = Math.round(unit.gas.charge   * ps);
+                const eCons = Math.round(unit.elec.cons    * ps);
+                const wCons = Math.round(unit.water.cons   * ps);
+                const gCons = Math.round(unit.gas.cons     * ps);
+
+                // Site annual totals
+                const SA = { eC: 42450, wC: 18200, gC: 6840, eK: 99200, wK: 5480, gK: 1192 };
+                const S   = { eC: SA.eC*ps, wC: SA.wC*ps, gC: SA.gC*ps,
+                              eK: SA.eK*ps, wK: SA.wK*ps, gK: SA.gK*ps };
+
+                // Stat cards
+                const pct = (a, b) => b > 0 ? (a/b*100).toFixed(1)+"%" : "—";
+                document.getElementById("stat-total").textContent            = `R ${(eTot+wTot+gTot).toLocaleString()}`;
+                document.getElementById("stat-elec").textContent             = `R ${eTot.toLocaleString()}`;
+                document.getElementById("stat-water").textContent            = `R ${wTot.toLocaleString()}`;
+                document.getElementById("stat-gas").textContent              = `R ${gTot.toLocaleString()}`;
+                document.getElementById("stat-elec-cons").textContent        = `${eCons.toLocaleString()} kWh`;
+                document.getElementById("stat-water-cons").textContent       = `${wCons.toLocaleString()} kL`;
+                document.getElementById("stat-gas-cons").textContent         = `${gCons.toLocaleString()} kg`;
+                document.getElementById("stat-elec-cons-pct").textContent    = pct(eCons, S.eK);
+                document.getElementById("stat-elec-charge-pct").textContent  = pct(eTot,  S.eC);
+                document.getElementById("stat-water-cons-pct").textContent   = pct(wCons, S.wK);
+                document.getElementById("stat-water-charge-pct").textContent = pct(wTot,  S.wC);
+                document.getElementById("stat-gas-cons-pct").textContent     = pct(gCons, S.gK);
+                document.getElementById("stat-gas-charge-pct").textContent   = pct(gTot,  S.gC);
+
+                // Benchmark charts — per-point % vs site average per data point
+                const ePt = S.eC/n, wPt = S.wC/n, gPt = S.gC/n;
+                const eKPt= S.eK/n, wKPt= S.wK/n, gKPt= S.gK/n;
+                const ecf = unit.elec.cons/unit.elec.charge;
+                const wcf = unit.water.cons/unit.water.charge;
+                const gcf = unit.gas.cons/unit.gas.charge;
+
+                const toP  = (v, d) => +(v/d*100).toFixed(1);
+                const eCgP = data.elec.map(v  => toP(v,        ePt));
+                const wCgP = data.water.map(v => toP(v,        wPt));
+                const gCgP = data.gas.map(v   => toP(v,        gPt));
+                const eKsP = data.elec.map(v  => toP(v*ecf,   eKPt));
+                const wKsP = data.water.map(v => toP(v*wcf,   wKPt));
+                const gKsP = data.gas.map(v   => toP(v*gcf,   gKPt));
+
+                const mkLine = (name, arr, color) => ({
+                    name, type: "line", smooth: true, symbol: "circle",
+                    symbolSize: n > 20 ? 3 : 5,
+                    data: arr,
+                    lineStyle: { color, width: 2 }, itemStyle: { color },
+                    areaStyle: { color: { type:"linear",x:0,y:0,x2:0,y2:1,
+                        colorStops:[{offset:0,color:color+"28"},{offset:1,color:color+"00"}] } },
+                });
+                const benchSeries = { name:"_bench", type:"line",
+                    data: data.xData.map(()=>10),
+                    lineStyle:{color:"#d1d5db",type:"dashed",width:1.5},
+                    symbol:"none", silent:true, legendHoverLink:false, tooltip:{show:false}, z:0 };
+                const labelInterval = n > 20 ? Math.floor(n/12) : 0;
+                const commonOpt = {
+                    backgroundColor: "#fff",
+                    tooltip: { trigger:"axis", backgroundColor:"#404068",
+                        textStyle:{color:"#faa919",fontSize:11},
+                        formatter(p) {
+                            return `<b>${p[0].axisValue}</b><br/>` +
+                                p.filter(x=>x.seriesName!=="__bench" && x.seriesName!=="_bench")
+                                 .map(x=>`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${x.color};margin-right:4px"></span>${x.seriesName}: <b>${x.value}%</b>`).join("<br/>");
+                        }},
+                    legend: { data:["Electricity","Water","Gas"], top:4, right:16, textStyle:{fontSize:10}, itemWidth:14, itemHeight:3 },
+                    grid: { left:10, right:16, top:36, bottom:24, containLabel:true },
+                    xAxis: { type:"category", data:data.xData, boundaryGap:false,
+                        axisTick:{show:false}, axisLabel:{fontSize:n>20?8:10, color:"#9ca3af", interval:labelInterval} },
+                    yAxis: { type:"value", axisLabel:{formatter:"{value}%",fontSize:9,color:"#9ca3af"}, splitLine:{lineStyle:{color:"#f3f4f6"}} },
+                };
+
+                trendChart.setOption({ ...commonOpt, series:[
+                    benchSeries,
+                    mkLine("Electricity", eCgP, "#404068"),
+                    mkLine("Water",       wCgP, "#3b82f6"),
+                    mkLine("Gas",         gCgP, "#ef4444"),
+                ]}, true);
+
+                consTrendChart.setOption({ ...commonOpt, series:[
+                    benchSeries,
+                    mkLine("Electricity", eKsP, "#404068"),
+                    mkLine("Water",       wKsP, "#3b82f6"),
+                    mkLine("Gas",         gKsP, "#ef4444"),
+                ]}, true);
+            }
+        </script>
+    </body>
+</html>

@@ -1,0 +1,3364 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>WeBill Portfolio — Property Map</title>
+        <!-- Tailwind & DaisyUI -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <!-- ECharts -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+        <!-- Leaflet Map -->
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <!-- Leaflet MarkerCluster -->
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+        />
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+        />
+        <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+        <!-- Lucide Icons -->
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+            body {
+                font-family: "Inter", sans-serif;
+                background: #f1f5f9;
+                background-attachment: fixed;
+            }
+            .accent-bar {
+                height: 3px;
+                background: linear-gradient(
+                    90deg,
+                    #2563eb 0%,
+                    #7c3aed 40%,
+                    #06b6d4 70%,
+                    #10b981 100%
+                );
+            }
+            .live-dot::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                border-radius: 9999px;
+                background: #10b981;
+                animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+            }
+            @keyframes ping {
+                75%,
+                100% {
+                    transform: scale(2);
+                    opacity: 0;
+                }
+            }
+            .card {
+                background: rgba(255, 255, 255, 0.85);
+                backdrop-filter: blur(16px);
+                border: 1px solid rgba(226, 232, 240, 0.6);
+                border-radius: 16px;
+                box-shadow:
+                    0 1px 3px rgba(0, 0, 0, 0.04),
+                    0 8px 32px rgba(0, 0, 0, 0.03);
+            }
+            .card:hover {
+                box-shadow:
+                    0 1px 3px rgba(0, 0, 0, 0.04),
+                    0 12px 40px rgba(0, 0, 0, 0.06);
+            }
+            .card-header {
+                padding: 14px 18px;
+                border-bottom: 1px solid #f1f5f9;
+                background: rgba(248, 250, 252, 0.5);
+                border-radius: 16px 16px 0 0;
+            }
+            .kpi-card {
+                background: rgba(255, 255, 255, 0.9);
+                backdrop-filter: blur(12px);
+                border: 1px solid rgba(226, 232, 240, 0.6);
+                border-radius: 14px;
+                position: relative;
+                overflow: hidden;
+                box-shadow:
+                    0 1px 3px rgba(0, 0, 0, 0.04),
+                    0 4px 16px rgba(0, 0, 0, 0.02);
+            }
+            .kpi-card::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                border-radius: 14px 14px 0 0;
+            }
+            .kpi-card.kpi-blue::before {
+                background: linear-gradient(90deg, #3b82f6, #6366f1);
+            }
+            .kpi-card.kpi-dark::before {
+                background: linear-gradient(90deg, #334155, #475569);
+            }
+            .kpi-card.kpi-rose::before {
+                background: linear-gradient(90deg, #f43f5e, #e11d48);
+            }
+            .kpi-card.kpi-amber::before {
+                background: linear-gradient(90deg, #f59e0b, #d97706);
+            }
+            .kpi-card.kpi-emerald::before {
+                background: linear-gradient(90deg, #10b981, #059669);
+            }
+            .btn-action {
+                transition: all 0.2s;
+                font-weight: 800;
+                letter-spacing: 0.03em;
+            }
+            .btn-action:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+            .btn-action:active {
+                transform: translateY(0);
+            }
+            .custom-scrollbar::-webkit-scrollbar {
+                width: 4px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 4px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: #94a3b8;
+            }
+            .value-update {
+                animation: valuePulse 2s ease;
+            }
+            @keyframes valuePulse {
+                0% {
+                    color: #10b981;
+                }
+                100% {
+                    color: inherit;
+                }
+            }
+            .section-title {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 13px;
+                font-weight: 800;
+                color: #1e293b;
+                letter-spacing: -0.02em;
+            }
+            .section-title i {
+                flex-shrink: 0;
+            }
+            .progress-bar {
+                height: 6px;
+                background: #f1f5f9;
+                border-radius: 999px;
+                overflow: hidden;
+            }
+            .progress-bar > div {
+                height: 100%;
+                border-radius: 999px;
+                transition: width 1s ease;
+            }
+            .toast-card {
+                background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            }
+
+            /* ── Map ── */
+            #portfolio-map {
+                width: 100%;
+                height: 100%;
+                border-radius: 0;
+                z-index: 1;
+            }
+            .leaflet-popup-content-wrapper {
+                border-radius: 14px !important;
+                padding: 0 !important;
+                overflow: hidden;
+                box-shadow:
+                    0 12px 40px rgba(0, 0, 0, 0.15),
+                    0 2px 8px rgba(0, 0, 0, 0.08) !important;
+            }
+            .leaflet-popup-content {
+                margin: 0 !important;
+                min-width: 260px;
+                font-family: "Inter", sans-serif;
+            }
+            .leaflet-popup-tip {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+            }
+            .map-popup-header {
+                padding: 12px 14px;
+                background: #404068;
+                color: #faa919;
+            }
+            .map-popup-header h4 {
+                font-size: 13px;
+                font-weight: 600;
+                letter-spacing: -0.02em;
+                margin: 0;
+                line-height: 1.3;
+                color: #faa919;
+            }
+            .map-popup-header span {
+                font-size: 9px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                opacity: 0.7;
+                display: block;
+                margin-top: 2px;
+                color: #faa919;
+            }
+            .map-popup-body {
+                padding: 10px 14px 14px;
+                background: white;
+            }
+            .map-popup-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 5px 0;
+                font-size: 11px;
+            }
+            .map-popup-row:not(:last-child) {
+                border-bottom: 1px solid #f1f5f9;
+            }
+            .map-popup-row .label {
+                color: #94a3b8;
+                font-weight: 700;
+                font-size: 9px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+            .map-popup-row .value {
+                font-weight: 800;
+                color: #1e293b;
+            }
+            .map-popup-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 2px 8px;
+                border-radius: 6px;
+                font-size: 9px;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+            }
+            .badge-online {
+                background: #ecfdf5;
+                color: #059669;
+            }
+            .badge-offline {
+                background: #fef2f2;
+                color: #dc2626;
+            }
+            .badge-warning {
+                background: #fffbeb;
+                color: #d97706;
+            }
+            .property-marker {
+                width: 32px;
+                height: 32px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50% 50% 50% 0;
+                transform: rotate(-45deg);
+                box-shadow:
+                    0 4px 12px rgba(0, 0, 0, 0.2),
+                    0 1px 3px rgba(0, 0, 0, 0.1);
+                border: 2px solid white;
+                transition: transform 0.2s;
+            }
+            .property-marker:hover {
+                transform: rotate(-45deg) scale(1.15);
+            }
+            .property-marker .marker-inner {
+                transform: rotate(45deg);
+                font-size: 13px;
+                line-height: 1;
+            }
+            .marker-green {
+                background: linear-gradient(135deg, #10b981, #059669);
+            }
+            .marker-red {
+                background: linear-gradient(135deg, #f43f5e, #e11d48);
+            }
+            .marker-amber {
+                background: linear-gradient(135deg, #f59e0b, #d97706);
+            }
+            .marker-blue {
+                background: linear-gradient(135deg, #3b82f6, #2563eb);
+            }
+            .marker-cluster-small {
+                background: rgba(59, 130, 246, 0.2) !important;
+            }
+            .marker-cluster-small div {
+                background: rgba(59, 130, 246, 0.7) !important;
+                color: white !important;
+                font-weight: 800 !important;
+                font-family: "Inter", sans-serif !important;
+            }
+            .marker-cluster-medium {
+                background: rgba(245, 158, 11, 0.2) !important;
+            }
+            .marker-cluster-medium div {
+                background: rgba(245, 158, 11, 0.7) !important;
+                color: white !important;
+                font-weight: 800 !important;
+                font-family: "Inter", sans-serif !important;
+            }
+            .marker-cluster-large {
+                background: rgba(244, 63, 94, 0.2) !important;
+            }
+            .marker-cluster-large div {
+                background: rgba(244, 63, 94, 0.7) !important;
+                color: white !important;
+                font-weight: 800 !important;
+                font-family: "Inter", sans-serif !important;
+            }
+            .map-legend {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(8px);
+                padding: 12px 16px;
+                border-radius: 12px;
+                border: 1px solid #e2e8f0;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            }
+            .map-legend h4 {
+                font-size: 10px;
+                font-weight: 900;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                color: #475569;
+                margin: 0 0 8px 0;
+            }
+            .map-legend-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 10px;
+                font-weight: 600;
+                color: #64748b;
+                padding: 2px 0;
+            }
+            .map-legend-dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                flex-shrink: 0;
+            }
+
+            /* ── Map Search (overlay on map) ── */
+            .map-search-wrapper {
+                position: relative;
+                width: 360px;
+            }
+            .map-search-input {
+                width: 100%;
+                padding: 10px 38px 10px 36px;
+                border-radius: 12px;
+                border: 1.5px solid rgba(226, 232, 240, 0.8);
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(8px);
+                font-family: "Inter", sans-serif;
+                font-size: 12px;
+                font-weight: 600;
+                color: #1e293b;
+                outline: none;
+                transition: all 0.2s;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            }
+            .map-search-input::placeholder {
+                color: #94a3b8;
+                font-weight: 500;
+            }
+            .map-search-input:focus {
+                border-color: #3b82f6;
+                box-shadow:
+                    0 0 0 3px rgba(59, 130, 246, 0.1),
+                    0 2px 8px rgba(0, 0, 0, 0.06);
+            }
+            .map-search-icon {
+                position: absolute;
+                left: 11px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 15px;
+                height: 15px;
+                color: #94a3b8;
+                pointer-events: none;
+                transition: color 0.2s;
+            }
+            .map-search-input:focus ~ .map-search-icon {
+                color: #3b82f6;
+            }
+            .map-search-clear {
+                position: absolute;
+                right: 8px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 22px;
+                height: 22px;
+                border-radius: 6px;
+                border: none;
+                background: #f1f5f9;
+                color: #64748b;
+                font-size: 10px;
+                font-weight: 800;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                opacity: 0;
+                pointer-events: none;
+                transition: all 0.2s;
+            }
+            .map-search-clear:hover {
+                background: #e2e8f0;
+                color: #1e293b;
+            }
+            .map-search-clear.visible {
+                opacity: 1;
+                pointer-events: auto;
+            }
+            .map-search-dropdown {
+                position: absolute;
+                top: calc(100% + 6px);
+                left: 0;
+                right: 0;
+                background: rgba(255, 255, 255, 0.98);
+                backdrop-filter: blur(12px);
+                border-radius: 14px;
+                border: 1.5px solid #e2e8f0;
+                box-shadow:
+                    0 12px 40px rgba(0, 0, 0, 0.12),
+                    0 2px 8px rgba(0, 0, 0, 0.06);
+                max-height: 340px;
+                overflow-y: auto;
+                opacity: 0;
+                transform: translateY(-6px);
+                pointer-events: none;
+                transition: all 0.2s;
+                z-index: 1000;
+            }
+            .map-search-dropdown.open {
+                opacity: 1;
+                transform: translateY(0);
+                pointer-events: auto;
+            }
+            .map-search-dropdown::-webkit-scrollbar {
+                width: 4px;
+            }
+            .map-search-dropdown::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            .map-search-dropdown::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 4px;
+            }
+            .map-search-item {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 10px 14px;
+                cursor: pointer;
+                transition: background 0.15s;
+                border-bottom: 1px solid #f8fafc;
+            }
+            .map-search-item:last-child {
+                border-bottom: none;
+            }
+            .map-search-item:hover,
+            .map-search-item.active {
+                background: #eff6ff;
+            }
+            .map-search-item-dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                flex-shrink: 0;
+                margin-top: 2px;
+            }
+            .map-search-item-info {
+                flex: 1;
+                min-width: 0;
+            }
+            .map-search-item-name {
+                font-size: 12px;
+                font-weight: 700;
+                color: #1e293b;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .map-search-item-name mark {
+                background: #fef08a;
+                color: inherit;
+                border-radius: 2px;
+                padding: 0 1px;
+                font-weight: 800;
+            }
+            .map-search-item-meta {
+                font-size: 10px;
+                font-weight: 500;
+                color: #94a3b8;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .map-search-item-badge {
+                font-size: 8px;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                padding: 2px 7px;
+                border-radius: 5px;
+                flex-shrink: 0;
+            }
+            .map-search-empty {
+                padding: 20px;
+                text-align: center;
+                font-size: 12px;
+                color: #94a3b8;
+                font-weight: 500;
+            }
+            .map-search-hint {
+                padding: 8px 14px 4px;
+                font-size: 9px;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                color: #94a3b8;
+            }
+
+            /* ── Map overlay controls ── */
+            .map-overlay-top {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 800;
+                padding: 16px 20px;
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 16px;
+                pointer-events: none;
+            }
+            .map-overlay-top > * {
+                pointer-events: auto;
+            }
+            .map-header-card {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(12px);
+                border-radius: 14px;
+                border: 1px solid rgba(226, 232, 240, 0.7);
+                padding: 12px 18px;
+                box-shadow:
+                    0 4px 20px rgba(0, 0, 0, 0.08),
+                    0 1px 3px rgba(0, 0, 0, 0.04);
+            }
+            .map-stat-chip {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(8px);
+                border-radius: 10px;
+                border: 1px solid rgba(226, 232, 240, 0.7);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+                font-size: 12px;
+                font-weight: 800;
+                color: #1e293b;
+                cursor: pointer;
+                user-select: none;
+                transition: box-shadow 0.15s, transform 0.1s, opacity 0.15s;
+            }
+            .map-stat-chip:hover {
+                box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+                transform: translateY(-1px);
+            }
+            .map-stat-chip.active {
+                outline: 2px solid #faa919;
+                outline-offset: 1px;
+                box-shadow: 0 0 0 3px rgba(250,169,25,0.25), 0 2px 8px rgba(0,0,0,0.08);
+            }
+            .map-stat-chip.dimmed {
+                opacity: 0.45;
+            }
+            .map-stat-chip .dot {
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                flex-shrink: 0;
+            }
+
+            /* ── Property detail panel ── */
+            .property-panel {
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                width: 520px;
+                max-width: 100vw;
+                background: rgba(255, 255, 255, 0.97);
+                backdrop-filter: blur(20px);
+                border-left: 1px solid #e2e8f0;
+                box-shadow: -8px 0 40px rgba(0, 0, 0, 0.1);
+                z-index: 900;
+                display: flex;
+                flex-direction: column;
+                transform: translateX(100%);
+                transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+                overflow: hidden;
+            }
+            .property-panel.open {
+                transform: translateX(0);
+            }
+            .panel-header {
+                padding: 16px 20px;
+                border-bottom: 1px solid #e2e8f0;
+                background: #52527a;
+                color: #faa919;
+                flex-shrink: 0;
+            }
+            .panel-close {
+                width: 30px;
+                height: 30px;
+                border-radius: 8px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.2s;
+                font-size: 14px;
+                font-weight: 700;
+            }
+            .panel-close:hover {
+                background: rgba(255, 255, 255, 0.2);
+            }
+            .panel-stats {
+                padding: 14px 20px;
+                border-bottom: 1px solid #f1f5f9;
+                background: #f8fafc;
+                flex-shrink: 0;
+            }
+            .panel-tabs {
+                display: flex;
+                gap: 2px;
+                padding: 8px 20px 0;
+                background: #f8fafc;
+                border-bottom: 1px solid #e2e8f0;
+                flex-shrink: 0;
+            }
+            .panel-tab {
+                padding: 10px 16px;
+                font-size: 11px;
+                font-weight: 700;
+                color: #64748b;
+                cursor: pointer;
+                border-bottom: 2px solid transparent;
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                white-space: nowrap;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                background: none;
+                border-top: none;
+                border-left: none;
+                border-right: none;
+            }
+            .panel-tab:hover {
+                color: #3b82f6;
+            }
+            .panel-tab.active {
+                color: #2563eb;
+                border-bottom-color: #2563eb;
+                background: white;
+                border-radius: 8px 8px 0 0;
+            }
+            .panel-tab i,
+            .panel-tab svg {
+                width: 14px;
+                height: 14px;
+            }
+            .panel-body {
+                flex: 1;
+                overflow: hidden;
+                background: white;
+                display: flex;
+                flex-direction: column;
+            }
+            .panel-tab-content {
+                display: none;
+                padding: 0;
+            }
+            .panel-tab-content.active {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                overflow-y: auto;
+            }
+            .gen-running {
+                animation: genPulse 2s ease-in-out infinite;
+            }
+            @keyframes genPulse {
+                0%,
+                100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.7;
+                }
+            }
+
+            /* panel stat mini cards */
+            .stat-mini {
+                padding: 8px 10px;
+                border-radius: 10px;
+                border: 1px solid #f1f5f9;
+                background: white;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+            }
+            .stat-mini-label {
+                font-size: 8px;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                color: #94a3b8;
+                margin-bottom: 2px;
+            }
+            .stat-mini-value {
+                font-size: 15px;
+                font-weight: 900;
+                color: #1e293b;
+                letter-spacing: -0.02em;
+            }
+
+            /* ── Portfolio aggregate KPIs (shown in panel portfolio tab) ── */
+            table thead tr {
+                border-bottom: 1px solid #f1f5f9;
+            }
+            table tbody tr {
+                border-bottom: 1px solid #f8fafc;
+            }
+
+            @media (max-width: 640px) {
+                .property-panel {
+                    width: 100vw;
+                }
+                .map-overlay-top {
+                    flex-direction: column;
+                    padding: 10px;
+                }
+                .map-search-wrapper {
+                    width: 100%;
+                }
+            }
+        </style>
+    </head>
+
+    <body class="text-slate-900 overflow-hidden h-screen flex flex-col">
+        <!-- Gradient Accent Bar -->
+        <!-- COMPACT HEADER -->
+        <header
+            class="sticky top-0 z-[950] shrink-0 rounded-t-2xl"
+            style="
+                background: #404068;
+                box-shadow:
+                    0 1px 3px rgba(0, 0, 0, 0.04),
+                    0 4px 20px rgba(0, 0, 0, 0.02);
+            "
+        >
+            <div class="flex items-center justify-between px-4 md:px-6 py-3">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg"
+                        style="background: #faa919;"
+                    >
+                        <i
+                            data-lucide="layout-dashboard"
+                            class="w-5 h-5"
+                            style="color: #404068;"
+                        ></i>
+                    </div>
+                    <div>
+                        <h1
+                            class="font-semibold text-xl tracking-tight leading-none"
+                            style="color: #faa919;"
+                        >
+                            WeBill Portfolio
+                        </h1>
+                        <span
+                            class="text-[9px] font-bold uppercase tracking-widest"
+                            style="color: #faa919; opacity: 0.7;"
+                            >Property Management System</span
+                        >
+                    </div>
+                </div>
+                <div class="flex flex-col items-end gap-2">
+                    <!-- Row 1: Organisation / address search -->
+                    <div class="map-search-wrapper" id="org-search-wrapper" style="margin: 0; width: 360px;">
+                        <input
+                            type="text"
+                            id="org-search-input"
+                            class="map-search-input"
+                            placeholder="Search organisation or address..."
+                            autocomplete="off"
+                            spellcheck="false"
+                            style="padding-right: 90px;"
+                        />
+                        <svg
+                            class="map-search-icon"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                        <button
+                            id="org-search-btn"
+                            onclick="handleOrgSearch()"
+                            disabled
+                            title="Search"
+                            style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); height: 26px; padding: 0 10px; border-radius: 8px; border: none; background: #9ca3af; color: #fff; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; cursor: not-allowed; display: flex; align-items: center; gap: 4px; transition: background 0.2s, color 0.2s;"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            Search
+                        </button>
+                    </div>
+                    <!-- Row 2: Stat chips + Property search (search aligned right with org search above) -->
+                    <div class="flex items-center gap-3">
+                        <div id="chip-online" class="map-stat-chip" style="background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.2);" onclick="applyStatusFilter('online')">
+                            <span class="dot bg-emerald-500"></span>
+                            <span id="map-stat-online" style="color: #fff;">0</span>
+                            <span style="color: rgba(255,255,255,0.6); font-size: 9px; font-weight: 700;">Normal</span>
+                        </div>
+                        <div id="chip-warning" class="map-stat-chip" style="background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.2);" onclick="applyStatusFilter('warning')">
+                            <span class="dot bg-amber-500"></span>
+                            <span id="map-stat-warning" style="color: #fff;">0</span>
+                            <span style="color: rgba(255,255,255,0.6); font-size: 9px; font-weight: 700;">Meters Offline</span>
+                        </div>
+                        <div id="chip-offline" class="map-stat-chip" style="background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.2);" onclick="applyStatusFilter('offline')">
+                            <span class="dot bg-rose-500"></span>
+                            <span id="map-stat-offline" style="color: #fff;">0</span>
+                            <span style="color: rgba(255,255,255,0.6); font-size: 9px; font-weight: 700;">Alerts</span>
+                        </div>
+                        <div id="chip-reset" class="map-stat-chip" style="background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.2); display: none;" onclick="resetStatusFilter()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            <span style="color: rgba(255,255,255,0.8); font-size: 9px; font-weight: 700;">Reset</span>
+                        </div>
+                        <div class="map-search-wrapper" id="map-search-wrapper" style="margin: 0;">
+                            <input
+                                type="text"
+                                id="map-search-input"
+                                class="map-search-input"
+                                placeholder="Search property..."
+                                autocomplete="off"
+                                spellcheck="false"
+                            />
+                            <svg
+                                class="map-search-icon"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2.5"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <circle cx="11" cy="11" r="8" />
+                                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+                            <button
+                                id="map-search-clear"
+                                class="map-search-clear"
+                                title="Clear search"
+                            >
+                                ✕
+                            </button>
+                            <div
+                                id="map-search-dropdown"
+                                class="map-search-dropdown"
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN: Full-page Map -->
+        <main class="flex-1 relative overflow-hidden">
+            <!-- Map container (fills all available space) -->
+            <div id="portfolio-map" class="absolute inset-0"></div>
+
+
+            <!-- ─── PROPERTY DETAIL PANEL (slides in from right) ─── -->
+            <div id="property-panel" class="property-panel">
+                <!-- Panel Header -->
+                <div class="panel-header">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span
+                                id="panel-status-badge"
+                                class="map-popup-badge badge-online"
+                                >online</span
+                            >
+                            <span
+                                id="panel-prop-type"
+                                class="text-[9px] font-bold text-white/60 uppercase tracking-wider"
+                                >Commercial</span
+                            >
+                        </div>
+                        <button
+                            class="panel-close"
+                            onclick="closePropertyPanel()"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                    <h3
+                        id="panel-prop-name"
+                        class="text-lg font-black tracking-tight leading-tight"
+                    >
+                        Property Name
+                    </h3>
+                    <p
+                        id="panel-prop-address"
+                        class="text-[10px] font-medium text-white/60 mt-1"
+                    >
+                        Address
+                    </p>
+                    <p
+                        id="panel-prop-id"
+                        class="text-[9px] font-bold text-white/40 mt-0.5 uppercase tracking-wider"
+                    >
+                        PROP-001
+                    </p>
+                </div>
+
+                <!-- Sub-tabs -->
+                <div class="panel-tabs" id="panel-tabs">
+                    <button
+                        class="panel-tab active"
+                        data-panel-tab="offline"
+                        onclick="switchPanelTab('offline')"
+                    >
+                        Offline (<span id="tab-offline-count">0</span>)
+                    </button>
+                    <button
+                        class="panel-tab"
+                        data-panel-tab="alerts"
+                        onclick="switchPanelTab('alerts')"
+                    >
+                        Alerts (<span id="tab-alerts-count">0</span>)
+                    </button>
+                    <button
+                        class="panel-tab"
+                        data-panel-tab="revenue"
+                        onclick="switchPanelTab('revenue')"
+                    >
+                        Revenue
+                    </button>
+                    <button
+                        class="panel-tab"
+                        data-panel-tab="consumption"
+                        onclick="switchPanelTab('consumption')"
+                    >
+                        Consumption
+                    </button>
+                    <button
+                        class="panel-tab"
+                        data-panel-tab="wf"
+                        onclick="switchPanelTab('wf')"
+                    >
+                        WF
+                    </button>
+                </div>
+
+                <!-- Panel Body (scrollable) -->
+                <div class="panel-body custom-scrollbar" id="panel-body">
+                    <!-- ─── OFFLINE TAB ─── -->
+                    <div
+                        id="panel-content-offline"
+                        class="panel-tab-content active"
+                    >
+                        <div style="padding:16px;display:flex;gap:12px;flex-shrink:0">
+                            <div style="flex:1;padding:16px;border-radius:12px;background:#fef2f2;border:1px solid #fecaca;text-align:center">
+                                <div style="font-size:9px;font-weight:800;color:#dc2626;text-transform:uppercase;letter-spacing:0.06em">Meters Off Line</div>
+                                <div id="panel-offline-count" style="font-size:28px;font-weight:900;color:#dc2626;margin-top:4px">0</div>
+                            </div>
+                            <div style="flex:1;padding:16px;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa;text-align:center">
+                                <div style="font-size:9px;font-weight:800;color:#d97706;text-transform:uppercase;letter-spacing:0.06em">Meters Not Communicating</div>
+                                <div id="panel-notcomm-count" style="font-size:28px;font-weight:900;color:#d97706;margin-top:4px">0</div>
+                            </div>
+                        </div>
+                        <div style="flex:1;overflow-y:auto;padding:0 16px 16px" class="custom-scrollbar">
+                            <table id="offline-meters-table" style="width:100%;border-collapse:separate;border-spacing:0;font-size:10px;font-family:Inter,sans-serif">
+                                <thead style="position:sticky;top:0;z-index:1">
+                                    <tr style="background:#404068;text-transform:uppercase;letter-spacing:0.06em;font-weight:800;color:#faa919;font-size:8px">
+                                        <th style="padding:8px 6px;text-align:left;background:#404068">Meter No.</th>
+                                        <th style="padding:8px 6px;text-align:left;background:#404068">Type</th>
+                                        <th style="padding:8px 6px;text-align:left;background:#404068">Consumer</th>
+                                        <th style="padding:8px 6px;text-align:left;background:#404068">Alert</th>
+                                        <th style="padding:8px 6px;text-align:center;background:#404068">Hours</th>
+                                        <th style="padding:8px 6px;text-align:center;background:#404068">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="offline-meters-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ─── ALERTS TAB ─── -->
+                    <div id="panel-content-alerts" class="panel-tab-content">
+                        <div style="padding:16px;display:flex;gap:12px;flex-shrink:0">
+                            <div style="flex:1;padding:16px;border-radius:12px;background:#eff6ff;border:1px solid #bfdbfe;text-align:center">
+                                <div style="font-size:9px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:0.06em">Water Alerts</div>
+                                <div id="panel-water-alerts-count" style="font-size:28px;font-weight:900;color:#2563eb;margin-top:4px">0</div>
+                            </div>
+                            <div style="flex:1;padding:16px;border-radius:12px;background:#faf5ff;border:1px solid #e9d5ff;text-align:center">
+                                <div style="font-size:9px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:0.06em">Tickets</div>
+                                <div id="panel-tickets-count" style="font-size:28px;font-weight:900;color:#7c3aed;margin-top:4px">0</div>
+                            </div>
+                        </div>
+
+                        <!-- Water Alerts Table -->
+                        <div style="padding:0 16px 8px">
+                            <div style="font-size:9px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Water Alerts</div>
+                            <div style="overflow-y:auto;max-height:200px" class="custom-scrollbar">
+                                <table style="width:100%;border-collapse:separate;border-spacing:0;font-size:10px;font-family:Inter,sans-serif">
+                                    <thead style="position:sticky;top:0;z-index:1">
+                                        <tr style="background:#404068;text-transform:uppercase;letter-spacing:0.06em;font-weight:800;color:#faa919;font-size:8px">
+                                            <th style="padding:8px 6px;text-align:left;background:#404068">Meter No.</th>
+                                            <th style="padding:8px 6px;text-align:left;background:#404068">Unit / Consumer</th>
+                                            <th style="padding:8px 6px;text-align:left;background:#404068">Type</th>
+                                            <th style="padding:8px 6px;text-align:left;background:#404068">First Alert</th>
+                                            <th style="padding:8px 6px;text-align:center;background:#404068">Hours</th>
+                                            <th style="padding:8px 6px;text-align:center;background:#404068">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="alerts-water-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Tickets Table -->
+                        <div style="padding:0 16px 16px">
+                            <div style="font-size:9px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Tickets</div>
+                            <div style="overflow-y:auto;max-height:200px" class="custom-scrollbar">
+                                <table style="width:100%;border-collapse:separate;border-spacing:0;font-size:10px;font-family:Inter,sans-serif">
+                                    <thead style="position:sticky;top:0;z-index:1">
+                                        <tr style="background:#404068;text-transform:uppercase;letter-spacing:0.06em;font-weight:800;color:#faa919;font-size:8px">
+                                            <th style="padding:8px 6px;text-align:left;background:#404068">Meter No.</th>
+                                            <th style="padding:8px 6px;text-align:left;background:#404068">Unit / Consumer</th>
+                                            <th style="padding:8px 6px;text-align:left;background:#404068">Date / Time</th>
+                                            <th style="padding:8px 6px;text-align:center;background:#404068">Elapsed</th>
+                                            <th style="padding:8px 6px;text-align:left;background:#404068">Subject</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="alerts-tickets-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ─── REVENUE TAB ─── -->
+                    <div id="panel-content-revenue" class="panel-tab-content">
+                        <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+
+                            <!-- Total Monthly Revenue -->
+                            <div style="padding:16px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0">
+                                <div style="font-size:9px;font-weight:800;color:#404068;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Monthly Revenue</div>
+                                <div id="rev-total" style="font-size:28px;font-weight:900;color:#334155">R 0</div>
+                                <div style="display:flex;gap:12px;margin-top:12px">
+                                    <div style="flex:1;padding:10px;border-radius:8px;background:#eff6ff;text-align:center">
+                                        <div style="font-size:8px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:0.06em">Prepaid</div>
+                                        <div id="rev-prepaid" style="font-size:14px;font-weight:900;color:#2563eb;margin-top:2px">R 0</div>
+                                    </div>
+                                    <div style="flex:1;padding:10px;border-radius:8px;background:#faf5ff;text-align:center">
+                                        <div style="font-size:8px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:0.06em">Postpaid</div>
+                                        <div id="rev-postpaid" style="font-size:14px;font-weight:900;color:#7c3aed;margin-top:2px">R 0</div>
+                                    </div>
+                                    <div style="flex:1;padding:10px;border-radius:8px;background:#f0fdf4;text-align:center">
+                                        <div style="font-size:8px;font-weight:800;color:#059669;text-transform:uppercase;letter-spacing:0.06em">Wallet</div>
+                                        <div id="rev-wallet" style="font-size:14px;font-weight:900;color:#059669;margin-top:2px">R 0</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Recovery -->
+                            <div style="padding:16px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0">
+                                <div style="font-size:9px;font-weight:800;color:#404068;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Recovery</div>
+                                <div style="display:flex;gap:12px">
+                                    <div style="flex:1;text-align:center">
+                                        <div style="font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">This Month to Date</div>
+                                        <div id="rev-recovery-current" style="font-size:24px;font-weight:900;margin-top:2px">0%</div>
+                                        <div id="rev-recovery-bar-current" style="height:6px;border-radius:999px;background:#e2e8f0;margin-top:6px;overflow:hidden"><div style="height:100%;border-radius:999px;width:0%;transition:width 0.6s" id="rev-recovery-fill-current"></div></div>
+                                    </div>
+                                    <div style="flex:1;text-align:center">
+                                        <div style="font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Average Recovery</div>
+                                        <div id="rev-recovery-avg" style="font-size:24px;font-weight:900;color:#64748b;margin-top:2px">0%</div>
+                                        <div style="height:6px;border-radius:999px;background:#e2e8f0;margin-top:6px;overflow:hidden"><div style="height:100%;border-radius:999px;width:0%;transition:width 0.6s" id="rev-recovery-fill-avg"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bills to Approve -->
+                            <div style="padding:16px;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa;display:flex;align-items:center;justify-content:space-between">
+                                <div>
+                                    <div style="font-size:9px;font-weight:800;color:#d97706;text-transform:uppercase;letter-spacing:0.06em">Postpaid Bills to Approve</div>
+                                    <div style="font-size:10px;color:#92400e;margin-top:2px">Pending review</div>
+                                </div>
+                                <div id="rev-bills-approve" style="font-size:28px;font-weight:900;color:#d97706">0</div>
+                            </div>
+
+                            <!-- Bills in Arrears -->
+                            <div style="padding:16px;border-radius:12px;background:#fef2f2;border:1px solid #fecaca">
+                                <div style="font-size:9px;font-weight:800;color:#404068;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Bills in Arrears</div>
+                                <div style="display:flex;gap:12px">
+                                    <div style="flex:1;text-align:center">
+                                        <div style="font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Total Bills</div>
+                                        <div id="rev-arrears-count" style="font-size:28px;font-weight:900;color:#dc2626;margin-top:2px">0</div>
+                                    </div>
+                                    <div style="flex:1;text-align:center">
+                                        <div style="font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Total Amount</div>
+                                        <div id="rev-arrears-amount" style="font-size:28px;font-weight:900;color:#dc2626;margin-top:2px">R 0</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Monthly Costs -->
+                            <div style="padding:16px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0">
+                                <div style="font-size:9px;font-weight:800;color:#404068;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Monthly Costs</div>
+                                <div style="display:flex;flex-direction:column;gap:8px">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:white;border:1px solid #f1f5f9">
+                                        <span style="font-size:10px;font-weight:700;color:#64748b">Water</span>
+                                        <span id="rev-cost-water" style="font-size:12px;font-weight:900;color:#334155">R 0</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:white;border:1px solid #f1f5f9">
+                                        <span style="font-size:10px;font-weight:700;color:#64748b">Sewage</span>
+                                        <span id="rev-cost-sewage" style="font-size:12px;font-weight:900;color:#334155">R 0</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:white;border:1px solid #f1f5f9">
+                                        <span style="font-size:10px;font-weight:700;color:#64748b">Electricity</span>
+                                        <span id="rev-cost-electricity" style="font-size:12px;font-weight:900;color:#334155">R 0</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:white;border:1px solid #f1f5f9">
+                                        <span style="font-size:10px;font-weight:700;color:#64748b">Gas</span>
+                                        <span id="rev-cost-gas" style="font-size:12px;font-weight:900;color:#334155">R 0</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- ─── CONSUMPTION TAB ─── -->
+                    <div id="panel-content-consumption" class="panel-tab-content">
+                        <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+
+                            <!-- Total kWh -->
+                            <div style="padding:16px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0">
+                                <div style="font-size:9px;font-weight:800;color:#404068;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Total kWh</div>
+                                <div id="cons-kwh-total" style="font-size:28px;font-weight:900;color:#334155">0</div>
+                                <div style="display:flex;gap:12px;margin-top:12px">
+                                    <div style="flex:1;padding:10px;border-radius:8px;background:#fef9c3;text-align:center">
+                                        <div style="font-size:8px;font-weight:800;color:#a16207;text-transform:uppercase;letter-spacing:0.06em">Electricity</div>
+                                        <div id="cons-kwh-elec" style="font-size:14px;font-weight:900;color:#a16207;margin-top:2px">0</div>
+                                    </div>
+                                    <div style="flex:1;padding:10px;border-radius:8px;background:#fee2e2;text-align:center">
+                                        <div style="font-size:8px;font-weight:800;color:#b91c1c;text-transform:uppercase;letter-spacing:0.06em">Generator</div>
+                                        <div id="cons-kwh-gen" style="font-size:14px;font-weight:900;color:#b91c1c;margin-top:2px">0</div>
+                                    </div>
+                                    <div style="flex:1;padding:10px;border-radius:8px;background:#dcfce7;text-align:center">
+                                        <div style="font-size:8px;font-weight:800;color:#15803d;text-transform:uppercase;letter-spacing:0.06em">Solar</div>
+                                        <div id="cons-kwh-solar" style="font-size:14px;font-weight:900;color:#15803d;margin-top:2px">0</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Total kL -->
+                            <div style="padding:16px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0">
+                                <div style="font-size:9px;font-weight:800;color:#404068;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Total kL</div>
+                                <div id="cons-kl-total" style="font-size:28px;font-weight:900;color:#334155">0</div>
+                                <div style="display:flex;gap:12px;margin-top:12px">
+                                    <div style="flex:1;padding:10px;border-radius:8px;background:#dbeafe;text-align:center">
+                                        <div style="font-size:8px;font-weight:800;color:#1d4ed8;text-transform:uppercase;letter-spacing:0.06em">Water</div>
+                                        <div id="cons-kl-water" style="font-size:14px;font-weight:900;color:#1d4ed8;margin-top:2px">0</div>
+                                    </div>
+                                    <div style="flex:1;padding:10px;border-radius:8px;background:#e0e7ff;text-align:center">
+                                        <div style="font-size:8px;font-weight:800;color:#4338ca;text-transform:uppercase;letter-spacing:0.06em">Borehole</div>
+                                        <div id="cons-kl-borehole" style="font-size:14px;font-weight:900;color:#4338ca;margin-top:2px">0</div>
+                                    </div>
+                                    <div style="flex:1;padding:10px;border-radius:8px;background:#fce7f3;text-align:center">
+                                        <div style="font-size:8px;font-weight:800;color:#be185d;text-transform:uppercase;letter-spacing:0.06em">Hot Water</div>
+                                        <div id="cons-kl-hotwater" style="font-size:14px;font-weight:900;color:#be185d;margin-top:2px">0</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Total Gas -->
+                            <div style="padding:16px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between">
+                                <div>
+                                    <div style="font-size:9px;font-weight:800;color:#404068;text-transform:uppercase;letter-spacing:0.06em">Total Gas Consumption</div>
+                                    <div style="font-size:8px;color:#64748b;margin-top:2px">m³</div>
+                                </div>
+                                <div id="cons-gas-total" style="font-size:28px;font-weight:900;color:#334155">0</div>
+                            </div>
+
+                            <!-- Max Demand -->
+                            <div style="padding:16px;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa">
+                                <div style="font-size:9px;font-weight:800;color:#404068;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Current Max Demand</div>
+                                <div style="display:flex;align-items:baseline;gap:6px">
+                                    <div id="cons-md-kva" style="font-size:28px;font-weight:900;color:#d97706">0</div>
+                                    <div style="font-size:11px;font-weight:700;color:#92400e">kVA</div>
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:4px;margin-top:10px;padding:10px;border-radius:8px;background:white;border:1px solid #fef3c7">
+                                    <div style="display:flex;justify-content:space-between">
+                                        <span style="font-size:9px;font-weight:700;color:#64748b">Date & Time</span>
+                                        <span id="cons-md-datetime" style="font-size:9px;font-weight:900;color:#334155">—</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between">
+                                        <span style="font-size:9px;font-weight:700;color:#64748b">Meter</span>
+                                        <span id="cons-md-meter" style="font-size:9px;font-weight:900;color:#334155">—</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Power Factor -->
+                            <div style="padding:16px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0">
+                                <div style="font-size:9px;font-weight:800;color:#404068;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Power Factor</div>
+                                <div style="display:flex;gap:12px">
+                                    <div style="flex:1;text-align:center">
+                                        <div style="font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Current Avg PF</div>
+                                        <div id="cons-pf-current" style="font-size:24px;font-weight:900;margin-top:2px">0</div>
+                                        <div id="cons-pf-bar-current" style="height:6px;border-radius:999px;background:#e2e8f0;margin-top:6px;overflow:hidden"><div style="height:100%;border-radius:999px;width:0%;transition:width 0.6s" id="cons-pf-fill-current"></div></div>
+                                    </div>
+                                    <div style="flex:1;text-align:center">
+                                        <div style="font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Overall Avg PF</div>
+                                        <div id="cons-pf-overall" style="font-size:24px;font-weight:900;margin-top:2px">0</div>
+                                        <div id="cons-pf-bar-overall" style="height:6px;border-radius:999px;background:#e2e8f0;margin-top:6px;overflow:hidden"><div style="height:100%;border-radius:999px;width:0%;transition:width 0.6s" id="cons-pf-fill-overall"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- ─── WF TAB ─── -->
+                    <div id="panel-content-wf" class="panel-tab-content">
+                        <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+
+                            <!-- Instructions -->
+                            <div style="padding:16px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0">
+                                <div style="font-size:9px;font-weight:800;color:#404068;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">Instructions</div>
+                                <div style="display:flex;gap:12px">
+                                    <div style="flex:1;padding:12px;border-radius:8px;background:#fff7ed;border:1px solid #fed7aa;text-align:center">
+                                        <div style="font-size:8px;font-weight:800;color:#92400e;text-transform:uppercase;letter-spacing:0.06em">In QC</div>
+                                        <div id="wf-qc" style="font-size:28px;font-weight:900;color:#d97706;margin-top:4px">0</div>
+                                    </div>
+                                    <div style="flex:1;padding:12px;border-radius:8px;background:#fef2f2;border:1px solid #fecaca;text-align:center">
+                                        <div style="font-size:8px;font-weight:800;color:#991b1b;text-transform:uppercase;letter-spacing:0.06em">Outstanding</div>
+                                        <div id="wf-outstanding" style="font-size:28px;font-weight:900;color:#dc2626;margin-top:4px">0</div>
+                                    </div>
+                                    <div style="flex:1;padding:12px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0;text-align:center">
+                                        <div style="font-size:8px;font-weight:800;color:#166534;text-transform:uppercase;letter-spacing:0.06em">Completed</div>
+                                        <div id="wf-completed" style="font-size:28px;font-weight:900;color:#16a34a;margin-top:4px">0</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Agents -->
+                            <div style="padding:16px;border-radius:12px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:space-between">
+                                <div>
+                                    <div style="font-size:9px;font-weight:800;color:#1d4ed8;text-transform:uppercase;letter-spacing:0.06em">Agents</div>
+                                    <div style="font-size:10px;color:#1e40af;margin-top:2px">Assigned to this property</div>
+                                </div>
+                                <div id="wf-agents" style="font-size:28px;font-weight:900;color:#1d4ed8">0</div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Notification Toast -->
+        <div
+            id="toast"
+            class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[999] transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none"
+        >
+            <div
+                class="toast-card text-white px-6 py-3.5 rounded-2xl flex items-center gap-3"
+            >
+                <div
+                    class="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center"
+                >
+                    <i
+                        data-lucide="check-circle"
+                        class="text-emerald-400 w-4 h-4"
+                    ></i>
+                </div>
+                <span id="toast-message" class="text-sm font-bold"
+                    >Action successful</span
+                >
+            </div>
+        </div>
+
+        <script>
+            /* ══════════════════════════════════════════════
+               §1  STATE
+               ══════════════════════════════════════════════ */
+            let prepaidValue = 1450280;
+            let walletValue = 892400;
+            let demandPercent = 78;
+            let charts = {};
+            let portfolioMap = null;
+            let propertyMarkers = {};
+            let mapClusterGroup = null;
+            let searchActiveIndex = -1;
+            let selectedProperty = null;
+            let activePanelTab = "portfolio";
+
+            /* ══════════════════════════════════════════════
+               §2  PROPERTY DATA  (100 sites across SA)
+               ══════════════════════════════════════════════ */
+            function generatePropertyData() {
+                const regions = [
+                    {
+                        province: "Gauteng",
+                        city: "Johannesburg CBD",
+                        lat: -26.2041,
+                        lng: 28.0473,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Sandton",
+                        lat: -26.1076,
+                        lng: 28.0567,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Randburg",
+                        lat: -26.0936,
+                        lng: 27.9833,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Midrand",
+                        lat: -25.9881,
+                        lng: 28.1227,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Centurion",
+                        lat: -25.8603,
+                        lng: 28.1894,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Pretoria East",
+                        lat: -25.7479,
+                        lng: 28.2293,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Pretoria CBD",
+                        lat: -25.7461,
+                        lng: 28.1881,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Roodepoort",
+                        lat: -26.1625,
+                        lng: 27.8727,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Boksburg",
+                        lat: -26.2125,
+                        lng: 28.2625,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Alberton",
+                        lat: -26.2681,
+                        lng: 28.1228,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Kempton Park",
+                        lat: -26.1,
+                        lng: 28.2333,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Benoni",
+                        lat: -26.1883,
+                        lng: 28.3206,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Soweto",
+                        lat: -26.2485,
+                        lng: 27.8546,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Fourways",
+                        lat: -26.0227,
+                        lng: 28.0125,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Bryanston",
+                        lat: -26.0594,
+                        lng: 28.0222,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Rosebank",
+                        lat: -26.1456,
+                        lng: 28.0427,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Melrose Arch",
+                        lat: -26.1371,
+                        lng: 28.0681,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Bedfordview",
+                        lat: -26.1828,
+                        lng: 28.1306,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Germiston",
+                        lat: -26.2167,
+                        lng: 28.1667,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Springs",
+                        lat: -26.25,
+                        lng: 28.4333,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Vanderbijlpark",
+                        lat: -26.7078,
+                        lng: 27.8378,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Vereeniging",
+                        lat: -26.6736,
+                        lng: 27.9261,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Krugersdorp",
+                        lat: -26.0861,
+                        lng: 27.7697,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Rivonia",
+                        lat: -26.0586,
+                        lng: 28.0603,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Lonehill",
+                        lat: -26.0217,
+                        lng: 28.0392,
+                    },
+                    {
+                        province: "Western Cape",
+                        city: "Cape Town CBD",
+                        lat: -33.9249,
+                        lng: 18.4241,
+                    },
+                    {
+                        province: "Western Cape",
+                        city: "Stellenbosch",
+                        lat: -33.9346,
+                        lng: 18.8667,
+                    },
+                    {
+                        province: "Western Cape",
+                        city: "Paarl",
+                        lat: -33.7342,
+                        lng: 18.9725,
+                    },
+                    {
+                        province: "Western Cape",
+                        city: "Bellville",
+                        lat: -33.9,
+                        lng: 18.63,
+                    },
+                    {
+                        province: "Western Cape",
+                        city: "Tyger Valley",
+                        lat: -33.8756,
+                        lng: 18.6339,
+                    },
+                    {
+                        province: "Western Cape",
+                        city: "Sea Point",
+                        lat: -33.9183,
+                        lng: 18.3886,
+                    },
+                    {
+                        province: "Western Cape",
+                        city: "Century City",
+                        lat: -33.8894,
+                        lng: 18.5114,
+                    },
+                    {
+                        province: "Western Cape",
+                        city: "Claremont",
+                        lat: -33.9836,
+                        lng: 18.4678,
+                    },
+                    {
+                        province: "Western Cape",
+                        city: "Somerset West",
+                        lat: -34.0833,
+                        lng: 18.85,
+                    },
+                    {
+                        province: "Western Cape",
+                        city: "Muizenberg",
+                        lat: -34.1078,
+                        lng: 18.4722,
+                    },
+                    {
+                        province: "Western Cape",
+                        city: "George",
+                        lat: -33.9631,
+                        lng: 22.4619,
+                    },
+                    {
+                        province: "Western Cape",
+                        city: "Knysna",
+                        lat: -34.0356,
+                        lng: 23.0488,
+                    },
+                    {
+                        province: "Western Cape",
+                        city: "Mossel Bay",
+                        lat: -34.1831,
+                        lng: 22.1456,
+                    },
+                    {
+                        province: "KwaZulu-Natal",
+                        city: "Durban CBD",
+                        lat: -29.8587,
+                        lng: 31.0218,
+                    },
+                    {
+                        province: "KwaZulu-Natal",
+                        city: "Umhlanga",
+                        lat: -29.7228,
+                        lng: 31.0853,
+                    },
+                    {
+                        province: "KwaZulu-Natal",
+                        city: "Pietermaritzburg",
+                        lat: -29.6006,
+                        lng: 30.3794,
+                    },
+                    {
+                        province: "KwaZulu-Natal",
+                        city: "Ballito",
+                        lat: -29.5394,
+                        lng: 31.2139,
+                    },
+                    {
+                        province: "KwaZulu-Natal",
+                        city: "Pinetown",
+                        lat: -29.8167,
+                        lng: 30.85,
+                    },
+                    {
+                        province: "KwaZulu-Natal",
+                        city: "Hillcrest",
+                        lat: -29.7747,
+                        lng: 30.7567,
+                    },
+                    {
+                        province: "KwaZulu-Natal",
+                        city: "Amanzimtoti",
+                        lat: -30.0578,
+                        lng: 30.8783,
+                    },
+                    {
+                        province: "KwaZulu-Natal",
+                        city: "Richards Bay",
+                        lat: -28.783,
+                        lng: 32.0377,
+                    },
+                    {
+                        province: "KwaZulu-Natal",
+                        city: "Newcastle",
+                        lat: -27.7573,
+                        lng: 29.9318,
+                    },
+                    {
+                        province: "KwaZulu-Natal",
+                        city: "Port Shepstone",
+                        lat: -30.7414,
+                        lng: 30.4533,
+                    },
+                    {
+                        province: "Eastern Cape",
+                        city: "Port Elizabeth",
+                        lat: -33.918,
+                        lng: 25.5701,
+                    },
+                    {
+                        province: "Eastern Cape",
+                        city: "East London",
+                        lat: -33.0292,
+                        lng: 27.8546,
+                    },
+                    {
+                        province: "Eastern Cape",
+                        city: "Makhanda",
+                        lat: -33.3113,
+                        lng: 26.5225,
+                    },
+                    {
+                        province: "Eastern Cape",
+                        city: "Jeffreys Bay",
+                        lat: -33.9313,
+                        lng: 24.9225,
+                    },
+                    {
+                        province: "Eastern Cape",
+                        city: "Uitenhage",
+                        lat: -33.7667,
+                        lng: 25.4,
+                    },
+                    {
+                        province: "Eastern Cape",
+                        city: "King Williams Town",
+                        lat: -32.8811,
+                        lng: 27.3947,
+                    },
+                    {
+                        province: "Free State",
+                        city: "Bloemfontein",
+                        lat: -29.0852,
+                        lng: 26.1596,
+                    },
+                    {
+                        province: "Free State",
+                        city: "Welkom",
+                        lat: -27.9744,
+                        lng: 26.7358,
+                    },
+                    {
+                        province: "Free State",
+                        city: "Kroonstad",
+                        lat: -27.6506,
+                        lng: 27.2314,
+                    },
+                    {
+                        province: "Free State",
+                        city: "Bethlehem",
+                        lat: -28.2308,
+                        lng: 28.3072,
+                    },
+                    {
+                        province: "Free State",
+                        city: "Sasolburg",
+                        lat: -26.8117,
+                        lng: 27.8278,
+                    },
+                    {
+                        province: "Free State",
+                        city: "Parys",
+                        lat: -26.9006,
+                        lng: 27.4575,
+                    },
+                    {
+                        province: "Limpopo",
+                        city: "Polokwane",
+                        lat: -23.9045,
+                        lng: 29.4689,
+                    },
+                    {
+                        province: "Limpopo",
+                        city: "Tzaneen",
+                        lat: -23.8333,
+                        lng: 30.1667,
+                    },
+                    {
+                        province: "Limpopo",
+                        city: "Mokopane",
+                        lat: -24.2,
+                        lng: 29.0,
+                    },
+                    {
+                        province: "Limpopo",
+                        city: "Musina",
+                        lat: -22.3453,
+                        lng: 30.0456,
+                    },
+                    {
+                        province: "Limpopo",
+                        city: "Lephalale",
+                        lat: -23.6847,
+                        lng: 27.6942,
+                    },
+                    {
+                        province: "Limpopo",
+                        city: "Thohoyandou",
+                        lat: -22.95,
+                        lng: 30.4833,
+                    },
+                    {
+                        province: "Mpumalanga",
+                        city: "Nelspruit",
+                        lat: -25.4753,
+                        lng: 30.9694,
+                    },
+                    {
+                        province: "Mpumalanga",
+                        city: "Witbank",
+                        lat: -25.8714,
+                        lng: 29.2339,
+                    },
+                    {
+                        province: "Mpumalanga",
+                        city: "Secunda",
+                        lat: -26.5167,
+                        lng: 29.1667,
+                    },
+                    {
+                        province: "Mpumalanga",
+                        city: "White River",
+                        lat: -25.3333,
+                        lng: 31.0167,
+                    },
+                    {
+                        province: "Mpumalanga",
+                        city: "Middelburg",
+                        lat: -25.7744,
+                        lng: 29.4622,
+                    },
+                    {
+                        province: "Mpumalanga",
+                        city: "Barberton",
+                        lat: -25.7833,
+                        lng: 31.05,
+                    },
+                    {
+                        province: "North West",
+                        city: "Rustenburg",
+                        lat: -25.6744,
+                        lng: 27.2422,
+                    },
+                    {
+                        province: "North West",
+                        city: "Potchefstroom",
+                        lat: -26.7145,
+                        lng: 27.0986,
+                    },
+                    {
+                        province: "North West",
+                        city: "Klerksdorp",
+                        lat: -26.8667,
+                        lng: 26.6667,
+                    },
+                    {
+                        province: "North West",
+                        city: "Mahikeng",
+                        lat: -25.8653,
+                        lng: 25.6442,
+                    },
+                    {
+                        province: "North West",
+                        city: "Brits",
+                        lat: -25.6333,
+                        lng: 27.7833,
+                    },
+                    {
+                        province: "North West",
+                        city: "Hartbeespoort",
+                        lat: -25.7472,
+                        lng: 27.89,
+                    },
+                    {
+                        province: "Northern Cape",
+                        city: "Kimberley",
+                        lat: -28.7323,
+                        lng: 24.7623,
+                    },
+                    {
+                        province: "Northern Cape",
+                        city: "Upington",
+                        lat: -28.4478,
+                        lng: 21.2561,
+                    },
+                    {
+                        province: "Northern Cape",
+                        city: "Springbok",
+                        lat: -29.6642,
+                        lng: 17.8836,
+                    },
+                    {
+                        province: "Northern Cape",
+                        city: "Kathu",
+                        lat: -27.7,
+                        lng: 23.05,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Edenvale",
+                        lat: -26.1414,
+                        lng: 28.1528,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Sunninghill",
+                        lat: -26.0367,
+                        lng: 28.0633,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Woodmead",
+                        lat: -26.05,
+                        lng: 28.0833,
+                    },
+                    {
+                        province: "Western Cape",
+                        city: "Camps Bay",
+                        lat: -33.9506,
+                        lng: 18.3797,
+                    },
+                    {
+                        province: "Western Cape",
+                        city: "Constantia",
+                        lat: -34.025,
+                        lng: 18.4292,
+                    },
+                    {
+                        province: "Western Cape",
+                        city: "Hout Bay",
+                        lat: -34.0431,
+                        lng: 18.3533,
+                    },
+                    {
+                        province: "KwaZulu-Natal",
+                        city: "Westville",
+                        lat: -29.8333,
+                        lng: 30.9167,
+                    },
+                    {
+                        province: "KwaZulu-Natal",
+                        city: "Scottburgh",
+                        lat: -30.2917,
+                        lng: 30.7539,
+                    },
+                    {
+                        province: "Eastern Cape",
+                        city: "Cradock",
+                        lat: -32.1756,
+                        lng: 25.6175,
+                    },
+                    {
+                        province: "Eastern Cape",
+                        city: "Queenstown",
+                        lat: -31.8979,
+                        lng: 26.8753,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Modderfontein",
+                        lat: -26.0917,
+                        lng: 28.1583,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Greenstone",
+                        lat: -26.1333,
+                        lng: 28.2,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Glen Marais",
+                        lat: -26.1167,
+                        lng: 28.2167,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Kyalami",
+                        lat: -25.9897,
+                        lng: 28.0758,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Waterfall City",
+                        lat: -26.0167,
+                        lng: 28.1083,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Irene",
+                        lat: -25.875,
+                        lng: 28.2167,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Montana",
+                        lat: -25.69,
+                        lng: 28.2014,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Menlyn",
+                        lat: -25.7833,
+                        lng: 28.2833,
+                    },
+                    {
+                        province: "Gauteng",
+                        city: "Hatfield",
+                        lat: -25.7486,
+                        lng: 28.2386,
+                    },
+                ];
+
+                const propertyNames = [
+                    "Highveld Business Park",
+                    "Table Mountain Centre",
+                    "Umhlanga Ridge Mall",
+                    "Garden Route Estate",
+                    "Karoo Sun Plaza",
+                    "Waterberg Lodge",
+                    "Soweto Gateway Hub",
+                    "Sandton City Towers",
+                    "V&A Waterfront Depot",
+                    "Kruger Business Park",
+                    "Centurion Lake Estate",
+                    "Drakensberg View Complex",
+                    "Midrand Tech Hub",
+                    "Fourways Crossing",
+                    "Bryanston Manor",
+                    "Rosebank Corner",
+                    "Melrose Quarter",
+                    "Bedfordview Heights",
+                    "Germiston Lakeside",
+                    "Springs Mall Centre",
+                    "Vanderbijlpark Plaza",
+                    "Vereeniging Gateway",
+                    "Krugersdorp West Park",
+                    "Rivonia Junction",
+                    "Lonehill Village",
+                    "Cape Quarter District",
+                    "Stellenbosch Vineyards",
+                    "Paarl Valley Centre",
+                    "Bellville Business Hub",
+                    "Tyger Valley Complex",
+                    "Sea Point Promenade",
+                    "Century City Square",
+                    "Claremont Quarter",
+                    "Somerset Lifestyle",
+                    "Muizenberg Beach Centre",
+                    "George Business Park",
+                    "Knysna Quays",
+                    "Mossel Bay Harbour",
+                    "Durban Beachfront Tower",
+                    "Umhlanga Pier Centre",
+                    "PMB Heritage Hub",
+                    "Ballito Junction",
+                    "Pinetown Industrial",
+                    "Hillcrest Corner",
+                    "Toti Promenade",
+                    "Richards Bay Port Hub",
+                    "Newcastle Civic Centre",
+                    "Shepstone Coast Mall",
+                    "PE Boardwalk Centre",
+                    "East London Hub",
+                    "Makhanda Civic Complex",
+                    "JBay Surf Centre",
+                    "Uitenhage Works",
+                    "King Williams Campus",
+                    "Bloemfontein Central",
+                    "Welkom Gold Centre",
+                    "Kroonstad Business Park",
+                    "Bethlehem Valley Mall",
+                    "Sasolburg Tech Park",
+                    "Parys Riverside",
+                    "Polokwane Gateway",
+                    "Tzaneen Agri Hub",
+                    "Mokopane Centre",
+                    "Musina Border Hub",
+                    "Lephalale Power Hub",
+                    "Thohoyandou Market",
+                    "Nelspruit Lowveld",
+                    "Witbank Coal Centre",
+                    "Secunda Petro Hub",
+                    "White River Estate",
+                    "Middelburg Steel Mall",
+                    "Barberton Gold Hub",
+                    "Rustenburg Platinum",
+                    "Potchefstroom Campus",
+                    "Klerksdorp Gold Mall",
+                    "Mahikeng Capital Hub",
+                    "Brits Crossing",
+                    "Hartbeespoort Dam Village",
+                    "Kimberley Diamond Centre",
+                    "Upington Solar Hub",
+                    "Springbok Copper Centre",
+                    "Kathu Iron Hub",
+                    "Edenvale Civic",
+                    "Sunninghill Tech",
+                    "Woodmead Retail Hub",
+                    "Camps Bay Luxe",
+                    "Constantia Wine Estate",
+                    "Hout Bay Marina",
+                    "Westville Ridge",
+                    "Scottburgh Coastal",
+                    "Cradock Karoo Hub",
+                    "Queenstown Frontier",
+                    "Modderfontein Works",
+                    "Greenstone Mall",
+                    "Glen Marais Park",
+                    "Kyalami Business Estate",
+                    "Waterfall Corporate",
+                    "Irene Country Lodge",
+                    "Montana Tuine",
+                    "Menlyn Maine",
+                    "Hatfield Square",
+                ];
+
+                const streetNames = [
+                    "Mandela Ave",
+                    "Rivonia Rd",
+                    "Oxford St",
+                    "Voortrekker Rd",
+                    "Jan Smuts Ave",
+                    "Commissioner St",
+                    "Church St",
+                    "Long St",
+                    "Bree St",
+                    "Kloof St",
+                    "Victoria Embankment",
+                    "Marine Dr",
+                    "West St",
+                    "Smith St",
+                    "Aliwal St",
+                    "Main Rd",
+                    "Beyers Naude Dr",
+                    "William Nicol Dr",
+                    "Witkoppen Rd",
+                    "Republic Rd",
+                    "Hendrik Verwoerd Dr",
+                    "Lynnwood Rd",
+                    "Burnett St",
+                    "Atterbury Rd",
+                    "Zambezi Dr",
+                    "Malibongwe Dr",
+                    "Cedar Rd",
+                    "Glenwood Dr",
+                    "Pretoria Main Rd",
+                    "Durban Rd",
+                    "Adderley St",
+                    "Strand St",
+                    "Heerengracht Ave",
+                    "Loop St",
+                    "Wale St",
+                    "Darling St",
+                    "Roeland St",
+                    "Buitenkant St",
+                    "Canterbury St",
+                    "Kildare Rd",
+                    "Klipfontein Rd",
+                    "Lansdowne Rd",
+                    "Musgrave Rd",
+                    "Windermere Rd",
+                    "Innes Rd",
+                    "Florida Rd",
+                    "Umgeni Rd",
+                    "Argyle Rd",
+                    "Ridge Rd",
+                    "Essenwood Rd",
+                ];
+
+                const postalCodeRanges = {
+                    Gauteng: [1600, 2199],
+                    "Western Cape": [7100, 8099],
+                    "KwaZulu-Natal": [3600, 4399],
+                    "Eastern Cape": [5200, 6499],
+                    "Free State": [9300, 9899],
+                    Limpopo: [600, 999],
+                    Mpumalanga: [1000, 1399],
+                    "North West": [2500, 2999],
+                    "Northern Cape": [8300, 8899],
+                };
+
+                const propertyTypes = [
+                    "Commercial",
+                    "Industrial",
+                    "Residential Estate",
+                    "Mixed Use",
+                    "Retail Centre",
+                    "Office Park",
+                    "Hospitality",
+                    "Healthcare",
+                    "Educational",
+                    "Logistics Hub",
+                    "Government",
+                ];
+                const statuses = [
+                    "online",
+                    "online",
+                    "online",
+                    "online",
+                    "online",
+                    "online",
+                    "online",
+                    "warning",
+                    "warning",
+                    "offline",
+                ];
+                const utilities = [
+                    "Eskom",
+                    "CoJ",
+                    "Municipality",
+                    "City Power",
+                ];
+
+                const orgNames = [
+                    "Acme Properties", "Sunstone Group", "BlueSky Holdings", "Meridian Estates",
+                    "Horizon Realty", "Cape & Coast Investments", "Pinnacle Asset Management",
+                    "Ubuntu Property Fund", "Savanna Capital", "Gateway Developments",
+                    "Prestige Real Estate", "Nkosi Group", "Baobab Holdings", "Silverleaf Properties",
+                ];
+
+                const shuffledNames = [...propertyNames];
+                for (let i = shuffledNames.length - 1; i > 0; i--) {
+                    const j = (i * 7 + 3) % (i + 1);
+                    [shuffledNames[i], shuffledNames[j]] = [
+                        shuffledNames[j],
+                        shuffledNames[i],
+                    ];
+                }
+
+                return regions.map((r, i) => {
+                    const jitterLat = (Math.random() - 0.5) * 0.02;
+                    const jitterLng = (Math.random() - 0.5) * 0.02;
+                    const status = statuses[i % statuses.length];
+                    const propType = propertyTypes[i % propertyTypes.length];
+                    const meterCount = Math.floor(Math.random() * 40) + 5;
+                    const consumption = Math.floor(Math.random() * 4500) + 500;
+                    const billing = Math.floor(Math.random() * 450000) + 25000;
+                    const recovery = Math.floor(Math.random() * 20) + 78;
+                    const waterUsage = Math.floor(Math.random() * 800) + 50;
+                    const offMeters =
+                        status === "offline"
+                            ? Math.floor(Math.random() * 5) + 1
+                            : status === "warning"
+                              ? Math.floor(Math.random() * 3) + 1
+                              : 0;
+
+                    const streetNum = Math.floor(Math.random() * 300) + 1;
+                    const street = streetNames[i % streetNames.length];
+                    const [pcMin, pcMax] = postalCodeRanges[r.province] || [
+                        1000, 9999,
+                    ];
+                    const postalCode =
+                        Math.floor(Math.random() * (pcMax - pcMin)) + pcMin;
+                    const address = `${streetNum} ${street}, ${r.city}, ${postalCode}`;
+
+                    const electricityMeters = Math.floor(Math.random() * 15) + 2;
+                    const waterMeterCount = Math.floor(Math.random() * 10) + 1;
+                    const gasMeters = Math.random() > 0.4 ? Math.floor(Math.random() * 5) + 1 : 0;
+                    const generatorMeters = Math.random() > 0.5 ? Math.floor(Math.random() * 3) + 1 : 0;
+                    const boreholeMeters = Math.random() > 0.6 ? Math.floor(Math.random() * 2) + 1 : 0;
+                    const hasSolar = Math.random() > 0.5;
+                    const consumers = Math.floor(Math.random() * 200) + 10;
+                    const alertCount = status === "offline" ? Math.floor(Math.random() * 8) + 1 : 0;
+                    const alertHoursAgo = alertCount > 0 ? Math.floor(Math.random() * 72) + 1 : 0;
+                    const metersOffline = offMeters;
+                    const metersNotComm = status !== "online" ? Math.floor(Math.random() * 4) + 1 : (Math.random() > 0.7 ? Math.floor(Math.random() * 2) + 1 : 0);
+                    const waterAlerts = Math.floor(Math.random() * 6);
+                    const tickets = Math.floor(Math.random() * 4);
+                    const revPrepaid = Math.floor(billing * (0.3 + Math.random() * 0.1));
+                    const revPostpaid = Math.floor(billing * (0.45 + Math.random() * 0.1));
+                    const revWallet = billing - revPrepaid - revPostpaid;
+                    const billsToApprove = Math.floor(Math.random() * 15);
+                    const recoveryAvg = Math.floor(Math.random() * 12) + 82;
+                    const arrearsCount = Math.floor(Math.random() * 25) + 1;
+                    const arrearsAmount = Math.floor(Math.random() * 250000) + 15000;
+                    // Consumption data
+                    const kwhElectricity = Math.floor(Math.random() * 80000) + 5000;
+                    const kwhGenerator = generatorMeters > 0 ? Math.floor(Math.random() * 15000) + 1000 : 0;
+                    const kwhSolar = hasSolar ? Math.floor(Math.random() * 25000) + 2000 : 0;
+                    const klWater = Math.floor(Math.random() * 3000) + 200;
+                    const klBorehole = boreholeMeters > 0 ? Math.floor(Math.random() * 800) + 50 : 0;
+                    const klHotWater = Math.floor(Math.random() * 600) + 30;
+                    const gasConsumption = gasMeters > 0 ? Math.floor(Math.random() * 5000) + 200 : 0;
+                    const maxDemandKva = Math.floor(Math.random() * 400) + 50;
+                    const maxDemandDate = new Date(Date.now() - Math.floor(Math.random() * 15) * 86400000);
+                    const maxDemandMeter = `EM-${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, '0')}`;
+                    const pfCurrent = +(Math.random() * 0.15 + 0.82).toFixed(2);
+                    const pfOverall = +(Math.random() * 0.08 + 0.87).toFixed(2);
+
+                    // Workforce data
+                    const wfQc = Math.floor(Math.random() * 8);
+                    const wfOutstanding = Math.floor(Math.random() * 12) + 1;
+                    const wfCompleted = Math.floor(Math.random() * 30) + 5;
+                    const wfAgents = Math.floor(Math.random() * 6) + 1;
+
+                    const costWater = Math.floor(Math.random() * 80000) + 10000;
+                    const costSewage = Math.floor(Math.random() * 30000) + 5000;
+                    const costElectricity = Math.floor(Math.random() * 120000) + 20000;
+                    const costGas = Math.floor(Math.random() * 20000) + 2000;
+
+                    const providerPool = ["City of Johannesburg", "Eskom", "City Power", "Rand Water", "Johannesburg Water", "Tshwane Municipality", "Cape Town Municipality", "eThekwini Municipality"];
+                    const numProviders = Math.floor(Math.random() * 2) + 1;
+                    const providers = [];
+                    const startIdx = i % providerPool.length;
+                    for (let pi = 0; pi < numProviders; pi++) {
+                        providers.push(providerPool[(startIdx + pi) % providerPool.length]);
+                    }
+
+                    return {
+                        id: `PROP-${String(i + 1).padStart(3, "0")}`,
+                        name: shuffledNames[i] || `${r.city} ${propType}`,
+                        org: orgNames[i % orgNames.length],
+                        address,
+                        city: r.city,
+                        province: r.province,
+                        lat: r.lat + jitterLat,
+                        lng: r.lng + jitterLng,
+                        type: propType,
+                        status,
+                        meters: meterCount,
+                        offlineMeters: offMeters,
+                        consumption,
+                        billing,
+                        recovery,
+                        waterUsage,
+                        utility: utilities[i % utilities.length],
+                        electricityMeters,
+                        waterMeters: waterMeterCount,
+                        gasMeters,
+                        generatorMeters,
+                        boreholeMeters,
+                        hasSolar,
+                        consumers,
+                        alertCount,
+                        alertHoursAgo,
+                        metersOffline,
+                        metersNotComm,
+                        waterAlerts,
+                        tickets,
+                        revPrepaid,
+                        revPostpaid,
+                        revWallet,
+                        billsToApprove,
+                        recoveryAvg,
+                        arrearsCount,
+                        arrearsAmount,
+                        costWater,
+                        costSewage,
+                        costElectricity,
+                        costGas,
+                        kwhElectricity,
+                        kwhGenerator,
+                        kwhSolar,
+                        klWater,
+                        klBorehole,
+                        klHotWater,
+                        gasConsumption,
+                        maxDemandKva,
+                        maxDemandDate,
+                        maxDemandMeter,
+                        pfCurrent,
+                        pfOverall,
+                        wfQc,
+                        wfOutstanding,
+                        wfCompleted,
+                        wfAgents,
+                        providers,
+                    };
+                });
+            }
+
+            const propertyData = generatePropertyData();
+
+            /* ══════════════════════════════════════════════
+               §3  BOOT
+               ══════════════════════════════════════════════ */
+            window.onload = () => {
+                lucide.createIcons();
+                initMap();
+                updateMapStats();
+                startLiveSimulations();
+            };
+
+            /* ══════════════════════════════════════════════
+               §4  UI HELPERS
+               ══════════════════════════════════════════════ */
+            function showToast(message) {
+                const toast = document.getElementById("toast");
+                const msgEl = document.getElementById("toast-message");
+                msgEl.innerText = message;
+                toast.classList.remove("translate-y-20", "opacity-0");
+                toast.classList.add("translate-y-0", "opacity-100");
+                setTimeout(() => {
+                    toast.classList.add("translate-y-20", "opacity-0");
+                    toast.classList.remove("translate-y-0", "opacity-100");
+                }, 3000);
+            }
+
+            function triggerAudit(meterId) {
+                showToast(`Audit scheduled for ${meterId}`);
+            }
+            function reconnectMeter(meterId) {
+                showToast(`Reconnection command sent to ${meterId}`);
+            }
+            function reconnectAllMeters() {
+                showToast(
+                    `Bulk reconnect command broadcast to all offline meters`,
+                );
+            }
+            function scheduleAuditForAll() {
+                showToast(
+                    `Technical audit dispatch confirmed for all offline points`,
+                );
+            }
+
+            /* ══════════════════════════════════════════════
+               §5  PROPERTY PANEL
+               ══════════════════════════════════════════════ */
+            function loadAndViewProperty(propertyId, btnEl) {
+                // Replace popup body with loading spinner
+                const popupBody = btnEl.closest('.map-popup-body');
+                if (popupBody) {
+                    popupBody.innerHTML = `
+                        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;gap:12px">
+                            <span class="loading loading-spinner loading-lg" style="color:#404068"></span>
+                            <span style="font-size:11px;font-weight:700;color:#94a3b8">Loading property data…</span>
+                        </div>
+                    `;
+                    // Simulate fetch delay then open panel
+                    setTimeout(() => {
+                        openPropertyPanel(propertyId, function onDrawerRendered() {
+                            if (portfolioMap) portfolioMap.closePopup();
+                        });
+                    }, 1500);
+                }
+            }
+
+            function openPropertyPanel(propertyId, onRendered) {
+                const p = propertyData.find((x) => x.id === propertyId);
+                if (!p) return;
+                selectedProperty = p;
+
+                // Zoom in on the marker as the drawer opens
+                if (portfolioMap) {
+                    portfolioMap.flyTo([p.lat, p.lng], 15, { duration: 1.0 });
+                }
+
+                // Header
+                document.getElementById("panel-prop-name").textContent = p.name;
+                document.getElementById("panel-prop-address").textContent =
+                    p.address;
+                document.getElementById("panel-prop-id").textContent =
+                    `${p.id} · ${p.province}`;
+                document.getElementById("panel-prop-type").textContent = p.type;
+
+                const badge = document.getElementById("panel-status-badge");
+                badge.textContent = p.status;
+                badge.className = `map-popup-badge badge-${p.status}`;
+
+
+
+                // Open panel
+                document.getElementById("property-panel").classList.add("open");
+
+                // Update tab counts
+                document.getElementById("tab-offline-count").textContent = p.offlineMeters;
+                document.getElementById("tab-alerts-count").textContent = p.waterAlerts + p.tickets;
+                document.getElementById("panel-water-alerts-count").textContent = p.waterAlerts;
+                document.getElementById("panel-tickets-count").textContent = p.tickets;
+                populateAlertsTab(p);
+                document.getElementById("panel-offline-count").textContent = p.metersOffline;
+                document.getElementById("panel-notcomm-count").textContent = p.metersNotComm;
+
+                // Populate offline meters table
+                populateOfflineTable(p);
+
+                // Populate revenue tab
+                populateRevenueTab(p);
+                populateConsumptionTab(p);
+                populateWfTab(p);
+
+                // Disable offline tab if no meters offline
+                const offlineTab = document.querySelector('[data-panel-tab="offline"]');
+                const totalAlerts = p.waterAlerts + p.tickets;
+                const alertsTab = document.querySelector('[data-panel-tab="alerts"]');
+
+                if (p.offlineMeters === 0) {
+                    offlineTab.disabled = true;
+                    offlineTab.style.opacity = '0.4';
+                    offlineTab.style.cursor = 'not-allowed';
+                } else {
+                    offlineTab.disabled = false;
+                    offlineTab.style.opacity = '';
+                    offlineTab.style.cursor = '';
+                }
+
+                if (totalAlerts === 0) {
+                    alertsTab.disabled = true;
+                    alertsTab.style.opacity = '0.4';
+                    alertsTab.style.cursor = 'not-allowed';
+                } else {
+                    alertsTab.disabled = false;
+                    alertsTab.style.opacity = '';
+                    alertsTab.style.cursor = '';
+                }
+
+                // Pick first enabled tab
+                if (p.offlineMeters > 0) {
+                    switchPanelTab("offline");
+                } else if (totalAlerts > 0) {
+                    switchPanelTab("alerts");
+                } else {
+                    switchPanelTab("revenue");
+                }
+
+                // Init charts in panel after opening (slight delay for rendering)
+                setTimeout(() => {
+                    initPanelCharts();
+                    lucide.createIcons();
+                }, 100);
+
+                // Dismiss popup only after drawer slide-in animation completes (350ms transition)
+                if (typeof onRendered === 'function') {
+                    setTimeout(onRendered, 400);
+                }
+            }
+
+            function populateOfflineTable(p) {
+                const tbody = document.getElementById("offline-meters-tbody");
+                if (!tbody) return;
+                tbody.innerHTML = '';
+
+                const meterTypes = ['Electricity', 'Water', 'Generator', 'Borehole', 'Hot Water'];
+                const consumerNames = ['Unit 12A', 'Unit 3B', 'Common Area', 'Block C', 'Unit 7F', 'Parking L2', null, 'Unit 22', null, 'Unit 5D'];
+                const totalIssues = p.metersOffline + p.metersNotComm;
+
+                for (let i = 0; i < totalIssues; i++) {
+                    const isOffline = i < p.metersOffline;
+                    const meterNum = `MTR-${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, '0')}`;
+                    const meterType = meterTypes[Math.floor(Math.random() * meterTypes.length)];
+                    const consumer = consumerNames[Math.floor(Math.random() * consumerNames.length)];
+                    const hours = Math.floor(Math.random() * 72) + 1;
+                    const alertType = isOffline ? 'Offline' : 'Not Reporting';
+                    const alertColor = isOffline ? '#dc2626' : '#d97706';
+                    const alertBg = isOffline ? '#fef2f2' : '#fff7ed';
+                    const actionIcon = isOffline
+                        ? `<div class="tooltip" data-tip="Switch On"><button onclick="showToast('Switch-on command sent to ${meterNum}')" style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:4px 6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 0.2s" onmouseover="this.style.background='#dc2626';this.querySelector('svg').style.stroke='white'" onmouseout="this.style.background='#fef2f2';this.querySelector('svg').style.stroke='#dc2626'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg></button></div>`
+                        : `<div class="tooltip" data-tip="Send Instruction"><button onclick="showToast('Reconnect instruction sent to ${meterNum}')" style="background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:4px 6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 0.2s" onmouseover="this.style.background='#d97706';this.querySelector('svg').style.stroke='white'" onmouseout="this.style.background='#fff7ed';this.querySelector('svg').style.stroke='#d97706'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div>`;
+
+                    const row = document.createElement('tr');
+                    row.style.borderBottom = '1px solid #f1f5f9';
+                    row.innerHTML = `
+                        <td style="padding:8px 6px;font-weight:700;color:#334155">${meterNum}</td>
+                        <td style="padding:8px 6px;color:#64748b">${meterType}</td>
+                        <td style="padding:8px 6px;color:${consumer ? '#334155' : '#cbd5e1'};font-style:${consumer ? 'normal' : 'italic'}">${consumer || '—'}</td>
+                        <td style="padding:8px 6px"><span style="display:inline-block;padding:2px 6px;border-radius:4px;background:${alertBg};color:${alertColor};font-weight:800;font-size:9px">${alertType}</span></td>
+                        <td style="padding:8px 6px;text-align:center;font-weight:800;color:#64748b">${hours}h</td>
+                        <td style="padding:8px 6px;text-align:center">${actionIcon}</td>
+                    `;
+                    tbody.appendChild(row);
+                }
+            }
+
+            function populateAlertsTab(p) {
+                const waterTbody = document.getElementById("alerts-water-tbody");
+                const ticketsTbody = document.getElementById("alerts-tickets-tbody");
+                if (!waterTbody || !ticketsTbody) return;
+                waterTbody.innerHTML = '';
+                ticketsTbody.innerHTML = '';
+
+                const alertTypes = ['Leak', 'Excessive Usage', 'Burst Pipe'];
+                const units = ['Unit 12A', 'Unit 3B', 'Block C', 'Unit 7F', 'Parking L2', 'Unit 22', 'Unit 5D', 'Common Area'];
+                const consumers = ['J. Mokoena', 'S. van der Merwe', 'T. Naidoo', 'M. Botha', 'P. Dlamini', null, 'R. Singh', 'K. Mthembu'];
+                const ticketSubjects = ['Meter reading dispute', 'High bill complaint', 'No water supply', 'Meter replacement request', 'Billing query', 'Water pressure low', 'Account credit request'];
+
+                // Water Alerts
+                for (let i = 0; i < p.waterAlerts; i++) {
+                    const meterNum = `WM-${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, '0')}`;
+                    const unit = units[Math.floor(Math.random() * units.length)];
+                    const consumer = consumers[Math.floor(Math.random() * consumers.length)];
+                    const alertType = alertTypes[Math.floor(Math.random() * alertTypes.length)];
+                    const hoursAgo = Math.floor(Math.random() * 96) + 1;
+                    const firstAlert = new Date(Date.now() - hoursAgo * 3600000);
+                    const dateStr = firstAlert.toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' });
+                    const alertColor = alertType === 'Burst Pipe' ? '#dc2626' : alertType === 'Leak' ? '#d97706' : '#2563eb';
+                    const alertBg = alertType === 'Burst Pipe' ? '#fef2f2' : alertType === 'Leak' ? '#fff7ed' : '#eff6ff';
+
+                    const row = document.createElement('tr');
+                    row.style.borderBottom = '1px solid #f1f5f9';
+                    row.innerHTML = `
+                        <td style="padding:8px 6px;font-weight:700;color:#334155">${meterNum}</td>
+                        <td style="padding:8px 6px"><div style="font-weight:700;color:#334155">${unit}</div><div style="font-size:9px;color:#94a3b8">${consumer || '—'}</div></td>
+                        <td style="padding:8px 6px"><span style="display:inline-block;padding:2px 6px;border-radius:4px;background:${alertBg};color:${alertColor};font-weight:800;font-size:9px">${alertType}</span></td>
+                        <td style="padding:8px 6px;font-size:9px;color:#64748b">${dateStr}</td>
+                        <td style="padding:8px 6px;text-align:center;font-weight:800;color:#64748b">${hoursAgo}h</td>
+                        <td style="padding:8px 6px;text-align:center"><div class="tooltip" data-tip="Send WF Instruction"><button onclick="showToast('WF instruction sent for ${meterNum}')" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:4px 6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 0.2s" onmouseover="this.style.background='#2563eb';this.querySelector('svg').style.stroke='white'" onmouseout="this.style.background='#eff6ff';this.querySelector('svg').style.stroke='#2563eb'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div></td>
+                    `;
+                    waterTbody.appendChild(row);
+                }
+
+                // Tickets
+                for (let i = 0; i < p.tickets; i++) {
+                    const meterNum = `MTR-${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, '0')}`;
+                    const unit = units[Math.floor(Math.random() * units.length)];
+                    const consumer = consumers[Math.floor(Math.random() * consumers.length)];
+                    const subject = ticketSubjects[Math.floor(Math.random() * ticketSubjects.length)];
+                    const hoursAgo = Math.floor(Math.random() * 168) + 1;
+                    const ticketDate = new Date(Date.now() - hoursAgo * 3600000);
+                    const dateStr = ticketDate.toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' });
+                    const timeStr = ticketDate.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+                    const elapsed = hoursAgo >= 24 ? `${Math.floor(hoursAgo / 24)}d ${hoursAgo % 24}h` : `${hoursAgo}h`;
+
+                    const row = document.createElement('tr');
+                    row.style.borderBottom = '1px solid #f1f5f9';
+                    row.innerHTML = `
+                        <td style="padding:8px 6px;font-weight:700;color:#334155">${meterNum}</td>
+                        <td style="padding:8px 6px"><div style="font-weight:700;color:#334155">${unit}</div><div style="font-size:9px;color:#94a3b8">${consumer || '—'}</div></td>
+                        <td style="padding:8px 6px"><div style="font-weight:600;color:#334155">${dateStr}</div><div style="font-size:9px;color:#94a3b8">${timeStr}</div></td>
+                        <td style="padding:8px 6px;text-align:center;font-weight:800;color:#64748b">${elapsed}</td>
+                        <td style="padding:8px 6px;color:#334155;font-weight:600">${subject}</td>
+                    `;
+                    ticketsTbody.appendChild(row);
+                }
+            }
+
+            function populateRevenueTab(p) {
+                const fmt = (v) => 'R ' + v.toLocaleString('en-ZA');
+                const total = p.revPrepaid + p.revPostpaid + p.revWallet;
+                document.getElementById('rev-total').textContent = fmt(total);
+                document.getElementById('rev-prepaid').textContent = fmt(p.revPrepaid);
+                document.getElementById('rev-postpaid').textContent = fmt(p.revPostpaid);
+                document.getElementById('rev-wallet').textContent = fmt(p.revWallet);
+                document.getElementById('rev-bills-approve').textContent = p.billsToApprove;
+
+                // Recovery - This Month to Date
+                const recColor = p.recovery >= 90 ? '#10b981' : p.recovery >= 75 ? '#d97706' : '#dc2626';
+                const recEl = document.getElementById('rev-recovery-current');
+                recEl.textContent = p.recovery + '%';
+                recEl.style.color = recColor;
+                const fillEl = document.getElementById('rev-recovery-fill-current');
+                fillEl.style.width = p.recovery + '%';
+                fillEl.style.background = recColor;
+
+                // Recovery - Average
+                const avgColor = p.recoveryAvg >= 90 ? '#10b981' : p.recoveryAvg >= 75 ? '#d97706' : '#dc2626';
+                const avgEl = document.getElementById('rev-recovery-avg');
+                avgEl.textContent = p.recoveryAvg + '%';
+                avgEl.style.color = avgColor;
+                const fillAvgEl = document.getElementById('rev-recovery-fill-avg');
+                fillAvgEl.style.width = p.recoveryAvg + '%';
+                fillAvgEl.style.background = avgColor;
+
+                // Bills in Arrears
+                document.getElementById('rev-arrears-count').textContent = p.arrearsCount;
+                document.getElementById('rev-arrears-amount').textContent = fmt(p.arrearsAmount);
+
+                // Costs
+                document.getElementById('rev-cost-water').textContent = fmt(p.costWater);
+                document.getElementById('rev-cost-sewage').textContent = fmt(p.costSewage);
+                document.getElementById('rev-cost-electricity').textContent = fmt(p.costElectricity);
+                document.getElementById('rev-cost-gas').textContent = fmt(p.costGas);
+            }
+
+            function populateConsumptionTab(p) {
+                const n = (v) => v.toLocaleString('en-ZA');
+                const kwhTotal = p.kwhElectricity + p.kwhGenerator + p.kwhSolar;
+                document.getElementById('cons-kwh-total').textContent = n(kwhTotal) + ' kWh';
+                document.getElementById('cons-kwh-elec').textContent = n(p.kwhElectricity);
+                document.getElementById('cons-kwh-gen').textContent = n(p.kwhGenerator);
+                document.getElementById('cons-kwh-solar').textContent = n(p.kwhSolar);
+
+                const klTotal = p.klWater + p.klBorehole + p.klHotWater;
+                document.getElementById('cons-kl-total').textContent = n(klTotal) + ' kL';
+                document.getElementById('cons-kl-water').textContent = n(p.klWater);
+                document.getElementById('cons-kl-borehole').textContent = n(p.klBorehole);
+                document.getElementById('cons-kl-hotwater').textContent = n(p.klHotWater);
+
+                document.getElementById('cons-gas-total').textContent = n(p.gasConsumption) + ' m³';
+
+                // Max Demand
+                document.getElementById('cons-md-kva').textContent = n(p.maxDemandKva);
+                const mdDate = p.maxDemandDate;
+                const dateStr = mdDate.toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' });
+                const timeStr = mdDate.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+                document.getElementById('cons-md-datetime').textContent = dateStr + ' ' + timeStr;
+                document.getElementById('cons-md-meter').textContent = p.maxDemandMeter;
+
+                // Power Factor
+                const pfColor = (v) => v >= 0.95 ? '#10b981' : v >= 0.85 ? '#d97706' : '#dc2626';
+                const curEl = document.getElementById('cons-pf-current');
+                curEl.textContent = p.pfCurrent.toFixed(2);
+                curEl.style.color = pfColor(p.pfCurrent);
+                const fillCur = document.getElementById('cons-pf-fill-current');
+                fillCur.style.width = (p.pfCurrent * 100) + '%';
+                fillCur.style.background = pfColor(p.pfCurrent);
+
+                const ovrEl = document.getElementById('cons-pf-overall');
+                ovrEl.textContent = p.pfOverall.toFixed(2);
+                ovrEl.style.color = pfColor(p.pfOverall);
+                const fillOvr = document.getElementById('cons-pf-fill-overall');
+                fillOvr.style.width = (p.pfOverall * 100) + '%';
+                fillOvr.style.background = pfColor(p.pfOverall);
+            }
+
+            function populateWfTab(p) {
+                document.getElementById('wf-qc').textContent = p.wfQc;
+                document.getElementById('wf-outstanding').textContent = p.wfOutstanding;
+                document.getElementById('wf-completed').textContent = p.wfCompleted;
+                document.getElementById('wf-agents').textContent = p.wfAgents;
+            }
+
+            function closePropertyPanel() {
+                document
+                    .getElementById("property-panel")
+                    .classList.remove("open");
+                selectedProperty = null;
+            }
+
+            function switchPanelTab(tabId) {
+                activePanelTab = tabId;
+                document.querySelectorAll(".panel-tab").forEach((btn) => {
+                    btn.classList.toggle(
+                        "active",
+                        btn.dataset.panelTab === tabId,
+                    );
+                });
+                document.querySelectorAll(".panel-tab-content").forEach((c) => {
+                    c.classList.toggle(
+                        "active",
+                        c.id === `panel-content-${tabId}`,
+                    );
+                });
+
+                // Resize charts when switching
+                setTimeout(() => {
+                    Object.values(charts).forEach((c) => {
+                        if (c && typeof c.resize === "function") c.resize();
+                    });
+                    if (tabId === "water" && !charts.water) initWaterChart();
+                    if (tabId === "solar" && !charts.demand) initDemandGauge();
+                }, 50);
+            }
+
+            function formatCurrency(amount) {
+                if (amount >= 1000000)
+                    return `R ${(amount / 1000000).toFixed(1)}M`;
+                if (amount >= 1000) return `R ${Math.round(amount / 1000)}k`;
+                return `R ${amount.toLocaleString()}`;
+            }
+
+            function populatePanelArrears(property) {
+                const list = document.getElementById("panel-arrears-list");
+                if (!list) return;
+                const stores = [
+                    "Tenant Alpha",
+                    "Tenant Beta",
+                    "Tenant Gamma",
+                    "Service Unit A",
+                    "Service Unit B",
+                    "Facilities Mgmt",
+                ];
+                const count = Math.min(property.offlineMeters + 2, 5);
+                document.getElementById("panel-arrears-count").textContent =
+                    `${count} Cases`;
+                list.innerHTML = "";
+                for (let i = 0; i < count; i++) {
+                    const amount = Math.floor(Math.random() * 25000) + 3000;
+                    const days = Math.floor(Math.random() * 90) + 10;
+                    list.innerHTML += `
+                        <div class="flex items-center justify-between p-2.5 bg-slate-50/80 border border-slate-100/80 rounded-lg">
+                            <div>
+                                <span class="text-[11px] font-bold text-slate-800">${stores[i % stores.length]}</span>
+                                <span class="block text-[8px] font-bold ${days > 60 ? "text-rose-600" : "text-amber-600"} uppercase">${days} Days Overdue</span>
+                            </div>
+                            <span class="text-[11px] font-black text-slate-700">R ${amount.toLocaleString()}</span>
+                        </div>`;
+                }
+            }
+
+            function populatePanelCommAlerts(property) {
+                const list = document.getElementById("panel-comm-list");
+                if (!list) return;
+                const sites = [
+                    "North Wing",
+                    "South Block",
+                    "Main Building",
+                    "Annex",
+                    "Parking",
+                    "Service Area",
+                ];
+                const types = ["Electric", "Water", "Gas"];
+                const count =
+                    property.offlineMeters + Math.floor(Math.random() * 3);
+                let html = "";
+                for (let i = 0; i < Math.max(count, 2); i++) {
+                    const meterId = `MTR-${70000 + i * 123 + parseInt(property.id.replace("PROP-", ""))}`;
+                    const site = sites[i % sites.length];
+                    const type = types[i % types.length];
+                    html += `
+                        <tr class="text-[10px] hover:bg-blue-50/50 transition-colors group">
+                            <td class="p-2.5">
+                                <div class="font-bold text-slate-700 group-hover:text-blue-700 transition-colors">${meterId}</div>
+                                <div class="text-[7px] text-slate-400 uppercase font-black">${site} · ${type}</div>
+                            </td>
+                            <td class="p-2.5 text-right">
+                                <button onclick="triggerAudit('${meterId}')" class="btn-action px-2 py-0.5 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-md text-[7px] uppercase transition-all border border-blue-100 hover:border-transparent">Audit</button>
+                            </td>
+                        </tr>`;
+                }
+                list.innerHTML = html;
+            }
+
+            /* ══════════════════════════════════════════════
+               §6  LIVE SIMULATIONS
+               ══════════════════════════════════════════════ */
+            function startLiveSimulations() {
+                // Energy mix simulation
+                setInterval(() => {
+                    const grid = 50 + Math.random() * 15;
+                    const solar = 20 + Math.random() * 10;
+                    const gen = 100 - grid - solar;
+                    const gridEl = document.getElementById("mix-grid");
+                    const solarEl = document.getElementById("mix-solar");
+                    const genEl = document.getElementById("mix-gen");
+                    if (gridEl) gridEl.style.width = grid + "%";
+                    if (solarEl) solarEl.style.width = solar + "%";
+                    if (genEl) genEl.style.width = gen + "%";
+                    const vg = document.getElementById("val-grid");
+                    const vs = document.getElementById("val-solar");
+                    const vge = document.getElementById("val-gen");
+                    if (vg) vg.innerText = `${Math.round(grid * 20.4)} kW`;
+                    if (vs) vs.innerText = `${Math.round(solar * 20.4)} kW`;
+                    if (vge) vge.innerText = `${Math.round(gen * 20.4)} kW`;
+                }, 3000);
+
+                // Demand gauge
+                setInterval(() => {
+                    demandPercent += Math.random() * 4 - 2;
+                    demandPercent = Math.min(Math.max(demandPercent, 65), 98);
+                    updateDemandGauge();
+                }, 5000);
+            }
+
+            /* ══════════════════════════════════════════════
+               §7  ECHARTS
+               ══════════════════════════════════════════════ */
+            function initPanelCharts() {
+                initDemandGauge();
+            }
+
+            function initDemandGauge() {
+                const demandEl = document.getElementById("demand-gauge");
+                if (!demandEl) return;
+                if (charts.demand) {
+                    charts.demand.resize();
+                    return;
+                }
+                charts.demand = echarts.init(demandEl);
+                updateDemandGauge();
+            }
+
+            function updateDemandGauge() {
+                if (!charts.demand) return;
+                const color =
+                    demandPercent > 90
+                        ? "#f43f5e"
+                        : demandPercent > 80
+                          ? "#f59e0b"
+                          : "#3b82f6";
+                charts.demand.setOption({
+                    series: [
+                        {
+                            type: "gauge",
+                            startAngle: 180,
+                            endAngle: 0,
+                            radius: "100%",
+                            center: ["50%", "85%"],
+                            progress: {
+                                show: true,
+                                width: 20,
+                                itemStyle: { color },
+                            },
+                            axisLine: {
+                                lineStyle: {
+                                    width: 20,
+                                    color: [[1, "#f1f5f9"]],
+                                },
+                            },
+                            axisTick: { show: false },
+                            splitLine: { show: false },
+                            axisLabel: { show: false },
+                            pointer: { show: false },
+                            detail: {
+                                valueAnimation: true,
+                                offsetCenter: [0, -10],
+                                fontSize: 30,
+                                fontWeight: "900",
+                                formatter: "{value}%",
+                                color: "#0f172a",
+                            },
+                            data: [{ value: Math.round(demandPercent) }],
+                        },
+                    ],
+                });
+            }
+
+            function initWaterChart() {
+                const waterEl = document.getElementById("water-chart");
+                if (!waterEl) return;
+                if (charts.water) {
+                    charts.water.resize();
+                    return;
+                }
+                charts.water = echarts.init(waterEl);
+                const data = [];
+                let base = +new Date(2024, 0, 1);
+                const oneDay = 24 * 3600 * 1000;
+                for (let i = 1; i < 30; i++) {
+                    const now = new Date((base += oneDay));
+                    data.push([
+                        [
+                            now.getFullYear(),
+                            now.getMonth() + 1,
+                            now.getDate(),
+                        ].join("/"),
+                        Math.round((Math.random() + 0.5) * 50),
+                    ]);
+                }
+                charts.water.setOption({
+                    tooltip: { trigger: "axis" },
+                    xAxis: { type: "category", boundaryGap: false },
+                    yAxis: { type: "value", boundaryGap: [0, "100%"] },
+                    grid: {
+                        left: "3%",
+                        right: "4%",
+                        bottom: "3%",
+                        containLabel: true,
+                    },
+                    series: [
+                        {
+                            name: "Flow m\u00B3/h",
+                            type: "line",
+                            smooth: true,
+                            symbol: "none",
+                            areaStyle: {
+                                color: new echarts.graphic.LinearGradient(
+                                    0,
+                                    0,
+                                    0,
+                                    1,
+                                    [
+                                        {
+                                            offset: 0,
+                                            color: "rgb(59, 130, 246)",
+                                        },
+                                        {
+                                            offset: 1,
+                                            color: "rgb(255, 255, 255)",
+                                        },
+                                    ],
+                                ),
+                            },
+                            data,
+                        },
+                    ],
+                });
+            }
+
+            /* ══════════════════════════════════════════════
+               §8  INTERACTIVE MAP
+               ══════════════════════════════════════════════ */
+            function updateMapStats() {
+                const online = propertyData.filter(
+                    (p) => p.status === "online",
+                ).length;
+                const warning = propertyData.filter(
+                    (p) => p.status === "warning",
+                ).length;
+                const offline = propertyData.filter(
+                    (p) => p.status === "offline",
+                ).length;
+                const el = (id, v) => {
+                    const e = document.getElementById(id);
+                    if (e) e.textContent = v;
+                };
+                el("map-stat-online", online);
+                el("map-stat-warning", warning);
+                el("map-stat-offline", offline);
+            }
+
+            function createMarkerIcon(status) {
+                const colorClass =
+                    status === "online"
+                        ? "marker-green"
+                        : status === "warning"
+                          ? "marker-amber"
+                          : "marker-red";
+                const emoji =
+                    status === "online"
+                        ? "🏢"
+                        : status === "warning"
+                          ? "⚠️"
+                          : "🔴";
+                return L.divIcon({
+                    className: "",
+                    html: `<div class="property-marker ${colorClass}"><span class="marker-inner">${emoji}</span></div>`,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 32],
+                    popupAnchor: [0, -34],
+                });
+            }
+
+            function buildPopupHTML(p) {
+                const statusBadge =
+                    p.status === "online"
+                        ? "badge-online"
+                        : p.status === "warning"
+                          ? "badge-warning"
+                          : "badge-offline";
+                return `
+            <div class="map-popup-header">
+                <h4>${p.name}${p.org ? ` <span style="font-weight:500;opacity:0.65;font-size:12px;text-transform:none;letter-spacing:0;display:inline;margin:0;">(${p.org})</span>` : ''}</h4>
+                <span>${p.province} · ${p.id}</span>
+                <span style="margin-top:2px;opacity:0.5;font-size:8px">${p.address}</span>
+            </div>
+            <div class="map-popup-body">
+                <!-- Meters Section -->
+                <div style="margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0">
+                    <div style="font-size:9px;font-weight:800;color:#404068;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Meters${p.offlineMeters > 0 ? ` <span style="color:#d97706;font-weight:800;text-transform:none;letter-spacing:0">(${p.offlineMeters} offline)</span>` : ''}</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px">
+                        <div class="map-popup-row" style="border:none;padding:2px 0"><span class="label">Electricity</span><span class="value">${p.electricityMeters}</span></div>
+                        <div class="map-popup-row" style="border:none;padding:2px 0"><span class="label">Water</span><span class="value">${p.waterMeters}</span></div>
+                        <div class="map-popup-row" style="border:none;padding:2px 0"><span class="label">Gas</span><span class="value">${p.gasMeters}</span></div>
+                        <div class="map-popup-row" style="border:none;padding:2px 0"><span class="label">Generator</span><span class="value">${p.generatorMeters}</span></div>
+                        <div class="map-popup-row" style="border:none;padding:2px 0"><span class="label">Borehole</span><span class="value">${p.boreholeMeters}</span></div>
+                        <div class="map-popup-row" style="border:none;padding:2px 0"><span class="label">Solar</span><span class="value">${p.hasSolar ? '<span style="color:#059669">&#10003;</span>' : '<span style="color:#dc2626">&#10005;</span>'}</span></div>
+                    </div>
+                </div>
+
+                <!-- Alerts Section -->
+                ${p.alertCount > 0 ? `
+                <div style="margin-top:8px;padding:8px;border-radius:8px;background:#fef2f2;border:1px solid #fecaca">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <div style="font-size:9px;font-weight:800;color:#dc2626;text-transform:uppercase;letter-spacing:0.06em">Alerts</div>
+                        <span style="font-size:9px;font-weight:700;color:#94a3b8">${p.alertHoursAgo}h ago</span>
+                    </div>
+                    <div style="margin-top:4px;font-size:12px;font-weight:800;color:#dc2626">${p.alertCount} active alert${p.alertCount > 1 ? 's' : ''}</div>
+                    <div style="font-size:9px;color:#94a3b8;margin-top:2px">First alert ${p.alertHoursAgo} hour${p.alertHoursAgo > 1 ? 's' : ''} ago</div>
+                </div>
+                ` : ''}
+
+                <!-- Consumers Section -->
+                <div style="margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0">
+                    <div style="font-size:9px;font-weight:800;color:#404068;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Consumers</div>
+                    <div class="map-popup-row" style="border:none;padding:2px 0"><span class="label">Total</span><span class="value">${p.consumers}</span></div>
+                </div>
+
+                <!-- Providers Section -->
+                <div style="margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0">
+                    <div style="font-size:9px;font-weight:800;color:#404068;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Providers</div>
+                    ${p.providers.map(prov => `<div style="display:inline-block;padding:2px 8px;margin:2px 4px 2px 0;border-radius:6px;background:#f1f5f9;font-size:10px;font-weight:700;color:#334155">${prov}</div>`).join('')}
+                </div>
+                <div style="margin-top:8px;display:flex;gap:8px">
+                    <button style="flex:1;padding:8px;border-radius:8px;border:2px solid #faa919;background:transparent;color:#404068;font-family:Inter,sans-serif;font-size:11px;font-weight:800;cursor:pointer;letter-spacing:0.02em;transition:all 0.2s" onmouseover="this.style.background='#faa919';this.style.color='#404068'" onmouseout="this.style.background='transparent';this.style.color='#404068'">Manage</button>
+                    <button id="popup-view-btn-${p.id}" onclick="loadAndViewProperty('${p.id}', this)" style="flex:1;padding:8px;border-radius:8px;border:none;background:#404068;color:#faa919;font-family:Inter,sans-serif;font-size:11px;font-weight:800;cursor:pointer;letter-spacing:0.02em;transition:opacity 0.2s" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">View →</button>
+                </div>
+            </div>`;
+            }
+
+            function initMap() {
+                if (portfolioMap) {
+                    portfolioMap.invalidateSize();
+                    return;
+                }
+
+                portfolioMap = L.map("portfolio-map", {
+                    zoomControl: false,
+                    attributionControl: true,
+                }).setView([-28.7, 25.5], 6);
+
+                L.control.zoom({ position: "topleft" }).addTo(portfolioMap);
+
+                const streetLayer = L.tileLayer(
+                    "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+                    {
+                        attribution:
+                            '© <a href="https://www.openstreetmap.org/copyright">OSM</a> · © <a href="https://carto.com/">CARTO</a>',
+                        subdomains: "abcd",
+                        maxZoom: 19,
+                    },
+                );
+                const satelliteLayer = L.tileLayer(
+                    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                    {
+                        attribution: '© <a href="https://www.esri.com/">Esri</a> · Imagery',
+                        maxZoom: 19,
+                    },
+                );
+                streetLayer.addTo(portfolioMap);
+                L.control.layers({ "Street": streetLayer, "Satellite": satelliteLayer }, null, { position: "topleft" }).addTo(portfolioMap);
+
+                const clusterGroup = L.markerClusterGroup({
+                    maxClusterRadius: 45,
+                    spiderfyOnMaxZoom: true,
+                    showCoverageOnHover: false,
+                    zoomToBoundsOnClick: true,
+                    disableClusteringAtZoom: 13,
+                });
+
+                propertyData.forEach((p) => {
+                    const marker = L.marker([p.lat, p.lng], {
+                        icon: createMarkerIcon(p.status),
+                    });
+                    marker.bindPopup(buildPopupHTML(p), {
+                        maxWidth: 300,
+                        closeButton: true,
+                        autoClose: false,
+                        closeOnClick: false,
+                    });
+                    marker.bindTooltip(
+                        `<strong style="font-family:Inter,sans-serif;font-size:11px">${p.name}</strong><br><span style="font-family:Inter,sans-serif;font-size:9px;color:#64748b">${p.address}</span>`,
+                        {
+                            direction: "top",
+                            offset: [0, -36],
+                            className: "leaflet-tooltip",
+                        },
+                    );
+                    clusterGroup.addLayer(marker);
+                    propertyMarkers[p.id] = marker;
+                });
+
+                mapClusterGroup = clusterGroup;
+                portfolioMap.addLayer(clusterGroup);
+
+
+                setTimeout(() => portfolioMap.invalidateSize(), 200);
+
+                initMapSearch();
+            }
+
+            /* ══════════════════════════════════════════════
+               §9  MAP SEARCH
+               ══════════════════════════════════════════════ */
+            function initMapSearch() {
+                const input = document.getElementById("map-search-input");
+                const dropdown = document.getElementById("map-search-dropdown");
+                const clearBtn = document.getElementById("map-search-clear");
+                if (!input || !dropdown) return;
+
+                input.addEventListener("input", () => {
+                    const q = input.value.trim().toLowerCase();
+                    clearBtn.classList.toggle("visible", q.length > 0);
+                    searchActiveIndex = -1;
+                    if (q.length === 0) {
+                        dropdown.classList.remove("open");
+                        return;
+                    }
+                    const matches = propertyData.filter(
+                        (p) =>
+                            p.name.toLowerCase().includes(q) ||
+                            p.address.toLowerCase().includes(q) ||
+                            p.city.toLowerCase().includes(q) ||
+                            p.province.toLowerCase().includes(q) ||
+                            p.id.toLowerCase().includes(q),
+                    );
+                    renderSearchResults(matches, q);
+                });
+
+                input.addEventListener("keydown", (e) => {
+                    const items = dropdown.querySelectorAll(".map-search-item");
+                    if (!items.length) return;
+                    if (e.key === "ArrowDown") {
+                        e.preventDefault();
+                        searchActiveIndex = Math.min(
+                            searchActiveIndex + 1,
+                            items.length - 1,
+                        );
+                        highlightSearchItem(items);
+                    } else if (e.key === "ArrowUp") {
+                        e.preventDefault();
+                        searchActiveIndex = Math.max(searchActiveIndex - 1, 0);
+                        highlightSearchItem(items);
+                    } else if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (
+                            searchActiveIndex >= 0 &&
+                            items[searchActiveIndex]
+                        ) {
+                            items[searchActiveIndex].click();
+                        }
+                    } else if (e.key === "Escape") {
+                        dropdown.classList.remove("open");
+                        input.blur();
+                    }
+                });
+
+                clearBtn.addEventListener("click", () => {
+                    input.value = "";
+                    clearBtn.classList.remove("visible");
+                    dropdown.classList.remove("open");
+                    searchActiveIndex = -1;
+                    input.focus();
+                });
+
+                document.addEventListener("click", (e) => {
+                    const wrapper =
+                        document.getElementById("map-search-wrapper");
+                    if (wrapper && !wrapper.contains(e.target)) {
+                        dropdown.classList.remove("open");
+                    }
+                });
+            }
+
+            function highlightSearchItem(items) {
+                items.forEach((el, i) => {
+                    el.classList.toggle("active", i === searchActiveIndex);
+                    if (i === searchActiveIndex) {
+                        el.scrollIntoView({ block: "nearest" });
+                    }
+                });
+            }
+
+            function renderSearchResults(matches, query) {
+                const dropdown = document.getElementById("map-search-dropdown");
+                if (!matches.length) {
+                    dropdown.innerHTML = `<div class="map-search-empty">No properties matching "<strong>${query}</strong>"</div>`;
+                    dropdown.classList.add("open");
+                    return;
+                }
+
+                const capped = matches.slice(0, 20);
+                let html = `<div class="map-search-hint">${matches.length} result${matches.length !== 1 ? "s" : ""} found</div>`;
+
+                capped.forEach((p) => {
+                    const statusColor =
+                        p.status === "online"
+                            ? "#10b981"
+                            : p.status === "warning"
+                              ? "#f59e0b"
+                              : "#f43f5e";
+                    const statusBg =
+                        p.status === "online"
+                            ? "#ecfdf5"
+                            : p.status === "warning"
+                              ? "#fffbeb"
+                              : "#fef2f2";
+                    const statusTextColor =
+                        p.status === "online"
+                            ? "#059669"
+                            : p.status === "warning"
+                              ? "#d97706"
+                              : "#dc2626";
+                    const highlightedName = highlightMatch(p.name, query);
+                    const highlightedAddr = highlightMatch(p.address, query);
+
+                    html += `
+                    <div class="map-search-item" data-property-id="${p.id}">
+                        <span class="map-search-item-dot" style="background:${statusColor}"></span>
+                        <div class="map-search-item-info">
+                            <div class="map-search-item-name">${highlightedName}</div>
+                            <div class="map-search-item-meta" style="margin-top:1px">${highlightedAddr}</div>
+                            <div class="map-search-item-meta" style="margin-top:2px;opacity:0.7">${p.province} · ${p.id} · ${p.meters} meters</div>
+                        </div>
+                        <span class="map-search-item-badge" style="background:${statusBg};color:${statusTextColor}">${p.status}</span>
+                    </div>`;
+                });
+
+                dropdown.innerHTML = html;
+                dropdown.classList.add("open");
+
+                dropdown.querySelectorAll(".map-search-item").forEach((el) => {
+                    el.addEventListener("click", () => {
+                        const propId = el.dataset.propertyId;
+                        flyToProperty(propId);
+                        dropdown.classList.remove("open");
+                    });
+                });
+            }
+
+            function highlightMatch(text, query) {
+                if (!query) return text;
+                const regex = new RegExp(
+                    `(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
+                    "gi",
+                );
+                return text.replace(regex, "<mark>$1</mark>");
+            }
+
+            function flyToProperty(propertyId) {
+                const property = propertyData.find((p) => p.id === propertyId);
+                const marker = propertyMarkers[propertyId];
+                if (!property || !marker || !portfolioMap || !mapClusterGroup)
+                    return;
+
+                const input = document.getElementById("map-search-input");
+                const clearBtn = document.getElementById("map-search-clear");
+                if (input) {
+                    input.value = property.name;
+                    clearBtn.classList.add("visible");
+                }
+
+                mapClusterGroup.zoomToShowLayer(marker, () => {
+                    portfolioMap.flyTo([property.lat, property.lng], 15, {
+                        duration: 1.2,
+                    });
+                    setTimeout(() => {
+                        marker.openPopup();
+                    }, 600);
+                });
+            }
+
+            // ── Status chip filter ─────────────────────────────────────────
+            let activeStatusFilter = null;
+            const chipIds = { online: 'chip-online', warning: 'chip-warning', offline: 'chip-offline' };
+
+            function applyStatusFilter(status) {
+                // Toggle off if already active
+                if (activeStatusFilter === status) {
+                    resetStatusFilter();
+                    return;
+                }
+                activeStatusFilter = status;
+
+                // Update chip styles
+                Object.entries(chipIds).forEach(([s, id]) => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.classList.toggle('active', s === status);
+                    el.classList.toggle('dimmed', s !== status);
+                });
+                document.getElementById('chip-reset').style.display = 'flex';
+
+                // Filter markers
+                mapClusterGroup.clearLayers();
+                propertyData.forEach(p => {
+                    if (p.status === status) mapClusterGroup.addLayer(propertyMarkers[p.id]);
+                });
+            }
+
+            function resetStatusFilter() {
+                activeStatusFilter = null;
+
+                Object.values(chipIds).forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) { el.classList.remove('active', 'dimmed'); }
+                });
+                document.getElementById('chip-reset').style.display = 'none';
+
+                // Restore all markers
+                mapClusterGroup.clearLayers();
+                propertyData.forEach(p => mapClusterGroup.addLayer(propertyMarkers[p.id]));
+            }
+
+            // Org / address search
+            function handleOrgSearch() {
+                const token = (document.getElementById("org-search-input").value || "").trim().toLowerCase();
+                if (!token) {
+                    mapClusterGroup.clearLayers();
+                    allMarkers.forEach(({ marker }) => mapClusterGroup.addLayer(marker));
+                    return;
+                }
+                mapClusterGroup.clearLayers();
+                allMarkers.forEach(({ marker, property }) => {
+                    const orgName = (property.org_name || property.orgName || "").toLowerCase();
+                    const address = (property.address || property.site_address || "").toLowerCase();
+                    const name = (property.name || "").toLowerCase();
+                    if (orgName.includes(token) || address.includes(token) || name.includes(token)) {
+                        mapClusterGroup.addLayer(marker);
+                    }
+                });
+            }
+
+            (function () {
+                const orgInput = document.getElementById("org-search-input");
+                const orgBtn = document.getElementById("org-search-btn");
+
+                function updateOrgBtn() {
+                    const enabled = orgInput.value.trim().length > 5;
+                    orgBtn.disabled = !enabled;
+                    orgBtn.style.background = enabled ? "#404068" : "#9ca3af";
+                    orgBtn.style.color = enabled ? "#faa919" : "#fff";
+                    orgBtn.style.cursor = enabled ? "pointer" : "not-allowed";
+                }
+
+                orgBtn.addEventListener("mouseenter", () => {
+                    if (!orgBtn.disabled) orgBtn.style.background = "#323254";
+                });
+                orgBtn.addEventListener("mouseleave", () => {
+                    if (!orgBtn.disabled) orgBtn.style.background = "#404068";
+                });
+
+                orgInput.addEventListener("input", updateOrgBtn);
+                orgInput.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter" && !orgBtn.disabled) handleOrgSearch();
+                });
+            })();
+
+            // Close panel on Escape key
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "Escape" && selectedProperty) {
+                    closePropertyPanel();
+                }
+            });
+        </script>
+    </body>
+</html>

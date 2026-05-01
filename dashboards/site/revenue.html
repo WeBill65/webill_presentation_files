@@ -1,0 +1,1135 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>WeBill Golf Estate - Utility Dashboard</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap");
+            body {
+                font-family: "Inter", sans-serif;
+                background-color: #f8fafc;
+            }
+            .bg-webill-dark {
+                background-color: #404068;
+            }
+            .text-webill-gold {
+                color: #faa919;
+            }
+            .bg-webill-gold {
+                background-color: #faa919;
+            }
+            .border-webill-dark {
+                border-color: #404068;
+            }
+            .chart-container {
+                height: 400px;
+                width: 100%;
+            }
+            .donut-container {
+                height: 400px;
+                width: 100%;
+            }
+
+            .custom-scrollbar::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-track {
+                background: #f1f5f9;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 10px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: #94a3b8;
+            }
+
+            .sticky-header {
+                position: sticky;
+                top: 0;
+                z-index: 10;
+                background-color: #404068;
+                color: white;
+            }
+
+            .table-scroll-area {
+                max-height: 560px;
+                overflow-y: auto;
+            }
+
+            #unit-table-body tr,
+            #unit-table-body tr td {
+                cursor: pointer !important;
+            }
+
+            select {
+                appearance: none;
+                background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+                background-repeat: no-repeat;
+                background-position: right 0.5rem center;
+                background-size: 1em;
+            }
+
+            .loading-overlay {
+                position: absolute;
+                inset: 0;
+                background: rgba(255, 255, 255, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 30;
+                backdrop-filter: blur(2px);
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.2s ease;
+            }
+
+            .loading-active .loading-overlay {
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            @keyframes spin {
+                from {
+                    transform: rotate(0deg);
+                }
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+            .spinner {
+                width: 24px;
+                height: 24px;
+                border: 3px solid #e2e8f0;
+                border-top-color: #faa919;
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
+            }
+        </style>
+    </head>
+    <body class="text-slate-700">
+        <!-- Header -->
+        <header
+            class="bg-webill-dark text-webill-gold px-6 py-3 shadow-md flex justify-between items-center sticky top-0 z-50"
+        >
+            <div class="flex items-center space-x-3">
+                <div
+                    class="w-8 h-8 bg-webill-gold rounded-full flex items-center justify-center text-webill-dark font-semibold text-lg shadow-sm"
+                >
+                    W
+                </div>
+                <div>
+                    <h1 class="text-lg font-semibold tracking-tight text-white">
+                        WeBill Golf Estate
+                    </h1>
+                    <p
+                        class="text-[10px] opacity-70 uppercase tracking-widest font-medium"
+                    >
+                        Utility Management
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-6">
+                <div class="flex flex-col items-end">
+                    <span class="text-[9px] uppercase font-semibold opacity-50"
+                        >System Status</span
+                    >
+                    <div class="flex items-center space-x-1.5">
+                        <span
+                            class="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"
+                        ></span>
+                        <span class="text-[11px] font-medium text-white"
+                            >Live Data</span
+                        >
+                    </div>
+                </div>
+                <div
+                    id="real-time-clock"
+                    class="text-xs font-mono bg-white/5 px-2 py-1 rounded border border-white/10 text-white/90"
+                >
+                    --:--:--
+                </div>
+            </div>
+        </header>
+
+        <!-- Range Selector Banner -->
+        <div
+            class="bg-white border-b border-slate-200 px-6 py-3 flex flex-wrap items-center gap-6 sticky top-[60px] z-40 shadow-sm"
+        >
+            <div class="flex items-center space-x-3">
+                <span
+                    class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
+                    >Period:</span
+                >
+                <div class="flex items-center space-x-2">
+                    <select
+                        id="start-month"
+                        class="text-xs font-semibold bg-slate-50 border border-slate-200 rounded px-3 py-1.5 pr-8 focus:outline-none focus:ring-1 focus:ring-webill-gold transition-all cursor-pointer text-slate-600"
+                    ></select>
+                    <span class="text-slate-300 text-xs">—</span>
+                    <select
+                        id="end-month"
+                        class="text-xs font-semibold bg-slate-50 border border-slate-200 rounded px-3 py-1.5 pr-8 focus:outline-none focus:ring-1 focus:ring-webill-gold transition-all cursor-pointer text-slate-600"
+                    ></select>
+                </div>
+                <button
+                    id="fetch-btn"
+                    class="ml-2 bg-webill-dark hover:bg-slate-700 text-white text-[10px] font-bold py-1.5 px-4 rounded shadow-sm transition-all flex items-center space-x-2 group active:scale-95"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-3 w-3 group-hover:rotate-180 transition-transform duration-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="3"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                    </svg>
+                    <span>FETCH DATA</span>
+                </button>
+            </div>
+
+            <div
+                id="filter-banner-content"
+                class="hidden flex items-center gap-4"
+            >
+                <div class="h-4 w-px bg-slate-200"></div>
+                <span
+                    class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider"
+                    >Utility Filters:</span
+                >
+                <div
+                    id="active-filters-container"
+                    class="flex flex-wrap gap-2"
+                ></div>
+                <button
+                    id="clear-filter-btn"
+                    class="text-[9px] font-bold text-red-400 hover:text-red-600 transition uppercase"
+                >
+                    Reset Filters
+                </button>
+            </div>
+        </div>
+
+        <main
+            id="main-content-area"
+            class="max-w-7xl mx-auto p-6 space-y-6 relative"
+        >
+            <!-- Global Loading Overlay for the whole main area -->
+            <div class="loading-overlay rounded-xl">
+                <div class="flex flex-col items-center">
+                    <div class="spinner mb-2"></div>
+                    <span
+                        class="text-[10px] font-bold text-slate-500 uppercase tracking-widest"
+                        >Retrieving Records...</span
+                    >
+                </div>
+            </div>
+
+            <!-- Summary Dashboard -->
+            <div class="space-y-6">
+                <div
+                    id="card-aggregate"
+                    class="bg-white p-8 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center transition-all duration-700 relative overflow-hidden"
+                >
+                    <div
+                        class="relative z-10 text-center md:text-left mb-4 md:mb-0"
+                    >
+                        <h3
+                            class="text-slate-400 font-semibold text-[11px] uppercase tracking-widest mb-1"
+                        >
+                            Total Period Revenue
+                        </h3>
+                        <div
+                            class="text-4xl font-semibold text-slate-800 tracking-tight"
+                            id="grand-total-monthly"
+                        >
+                            R 0
+                        </div>
+                        <p
+                            class="text-slate-400 text-xs mt-1 font-normal"
+                            id="aggregate-desc"
+                        >
+                            Aggregated for selected months
+                        </p>
+                    </div>
+
+                    <div
+                        class="relative z-10 flex flex-col sm:flex-row items-center gap-4"
+                    >
+                        <div
+                            class="bg-slate-50 px-5 py-3 rounded-lg border border-slate-100 min-w-[200px]"
+                        >
+                            <span
+                                class="text-[10px] font-semibold text-slate-400 uppercase block mb-0.5"
+                                >Average Monthly Revenue</span
+                            >
+                            <span
+                                class="text-xl font-medium text-slate-500"
+                                id="grand-avg-monthly"
+                                >R 0</span
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Breakdown Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Prepaid Card -->
+                    <div
+                        class="bg-white p-5 shadow-sm rounded-xl border border-slate-200 transition-all duration-500"
+                    >
+                        <div class="flex justify-between items-start">
+                            <h3
+                                class="text-slate-400 font-semibold text-[10px] uppercase tracking-wider"
+                            >
+                                Prepaid
+                            </h3>
+                            <div
+                                class="bg-green-50 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded border border-green-100"
+                                id="pct-prepaid"
+                            >
+                                0%
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div
+                                class="text-xl font-semibold text-slate-700"
+                                id="total-prepaid-monthly"
+                            >
+                                R 0
+                            </div>
+                        </div>
+                        <div
+                            class="mt-2 text-[10px] text-slate-400 font-medium"
+                        >
+                            Avg Monthly:
+                            <span
+                                class="text-slate-500 font-semibold"
+                                id="avg-prepaid"
+                                >R 0</span
+                            >
+                        </div>
+                        <div
+                            class="mt-4 pt-4 border-t border-slate-50 flex justify-between items-end"
+                        >
+                            <div class="text-[11px] font-normal text-slate-400">
+                                Period Revenue
+                            </div>
+                            <div class="text-right">
+                                <span
+                                    class="text-[9px] font-semibold text-slate-300 block uppercase"
+                                    >Meters</span
+                                >
+                                <span
+                                    class="text-sm font-medium text-green-600"
+                                    id="total-prepaid-count"
+                                    >0</span
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Postpaid Card -->
+                    <div
+                        class="bg-white p-5 shadow-sm rounded-xl border border-slate-200 transition-all duration-500"
+                    >
+                        <div class="flex justify-between items-start">
+                            <h3
+                                class="text-slate-400 font-semibold text-[10px] uppercase tracking-wider"
+                            >
+                                Postpaid
+                            </h3>
+                            <div
+                                class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-100"
+                                id="pct-postpaid"
+                            >
+                                0%
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div
+                                class="text-xl font-semibold text-slate-700"
+                                id="total-postpaid-monthly"
+                            >
+                                R 0
+                            </div>
+                        </div>
+                        <div
+                            class="mt-2 text-[10px] text-slate-400 font-medium"
+                        >
+                            Avg Monthly:
+                            <span
+                                class="text-slate-500 font-semibold"
+                                id="avg-postpaid"
+                                >R 0</span
+                            >
+                        </div>
+                        <div
+                            class="mt-4 pt-4 border-t border-slate-50 flex justify-between items-end"
+                        >
+                            <div class="text-[11px] font-normal text-slate-400">
+                                Period Revenue
+                            </div>
+                            <div class="text-right">
+                                <span
+                                    class="text-[9px] font-semibold text-slate-300 block uppercase"
+                                    >Meters</span
+                                >
+                                <span
+                                    class="text-sm font-medium text-blue-600"
+                                    id="total-postpaid-count"
+                                    >0</span
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Wallet Card -->
+                    <div
+                        class="bg-white p-5 shadow-sm rounded-xl border border-slate-200 transition-all duration-500"
+                    >
+                        <div class="flex justify-between items-start">
+                            <h3
+                                class="text-slate-400 font-semibold text-[10px] uppercase tracking-wider"
+                            >
+                                Wallet
+                            </h3>
+                            <div
+                                class="bg-purple-50 text-purple-600 text-[10px] font-bold px-2 py-0.5 rounded border border-purple-100"
+                                id="pct-wallet"
+                            >
+                                0%
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div
+                                class="text-xl font-semibold text-slate-700"
+                                id="total-wallet-monthly"
+                            >
+                                R 0
+                            </div>
+                        </div>
+                        <div
+                            class="mt-2 text-[10px] text-slate-400 font-medium"
+                        >
+                            Avg Monthly:
+                            <span
+                                class="text-slate-500 font-semibold"
+                                id="avg-wallet"
+                                >R 0</span
+                            >
+                        </div>
+                        <div
+                            class="mt-4 pt-4 border-t border-slate-50 flex justify-between items-end"
+                        >
+                            <div class="text-[11px] font-normal text-slate-400">
+                                Period Revenue
+                            </div>
+                            <div class="text-right">
+                                <span
+                                    class="text-[9px] font-semibold text-slate-300 block uppercase"
+                                    >Wallets</span
+                                >
+                                <span
+                                    class="text-sm font-medium text-purple-600"
+                                    id="total-wallet-count"
+                                    >0</span
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Analytics Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div
+                    class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
+                >
+                    <div
+                        class="px-5 py-4 border-b border-slate-100 flex justify-between items-center"
+                    >
+                        <div>
+                            <h2
+                                class="text-base font-semibold text-slate-800"
+                                id="chart-title"
+                            >
+                                Revenue Analytics
+                            </h2>
+                            <p
+                                class="text-[11px] text-slate-400"
+                                id="chart-breadcrumb"
+                            >
+                                Estate Overview > Period View
+                            </p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button
+                                id="back-btn"
+                                class="hidden px-3 py-1 border border-slate-200 text-slate-500 rounded text-[10px] font-semibold hover:bg-slate-50 transition uppercase"
+                            >
+                                ← Back
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-4 relative">
+                        <div id="main-chart" class="chart-container"></div>
+                    </div>
+                </div>
+
+                <div
+                    class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
+                >
+                    <div class="px-5 py-4 border-b border-slate-100">
+                        <h2 class="text-base font-semibold text-slate-800">
+                            Utility Mix
+                        </h2>
+                        <p class="text-[11px] text-slate-400">
+                            Distribution for selected period
+                        </p>
+                    </div>
+                    <div class="p-4">
+                        <div id="donut-chart" class="donut-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Unit List Section -->
+            <div
+                class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col"
+            >
+                <div
+                    class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-white z-20"
+                >
+                    <h2 class="text-base font-semibold text-slate-800">
+                        Consumer Breakdown
+                    </h2>
+                    <div
+                        class="flex items-center space-x-2 text-[10px] font-semibold text-slate-400 uppercase bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100"
+                    >
+                        <span>Active Consumers:</span>
+                        <span
+                            id="consumer-counter"
+                            class="font-bold text-webill-dark"
+                            >0</span
+                        >
+                    </div>
+                </div>
+
+                <div class="table-scroll-area custom-scrollbar">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="sticky-header shadow-sm">
+                                <th
+                                    class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest border-b border-white/10"
+                                >
+                                    Unit
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest border-b border-white/10"
+                                >
+                                    Consumer
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest border-b border-white/10"
+                                >
+                                    Type
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-widest border-b border-white/10"
+                                    id="table-period-header"
+                                >
+                                    Period Total
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-widest border-b border-white/10"
+                                >
+                                    Avg Monthly
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody
+                            id="unit-table-body"
+                            class="divide-y divide-slate-50 text-xs"
+                        >
+                            <!-- Content generated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <script>
+            const MONTHS = [
+                "Apr 2023",
+                "May 2023",
+                "Jun 2023",
+                "Jul 2023",
+                "Aug 2023",
+                "Sep 2023",
+                "Oct 2023",
+                "Nov 2023",
+                "Dec 2023",
+                "Jan 2024",
+                "Feb 2024",
+                "Mar 2024",
+            ];
+            const UTILITY_TYPES = [
+                "Electricity",
+                "Water",
+                "Hot Water",
+                "Generator",
+                "Solar",
+                "Gas",
+                "Borehole",
+                "Sewage",
+            ];
+            const COLORS = {
+                prepaid: "#10b981",
+                postpaid: "#3b82f6",
+                wallet: "#8b5cf6",
+                webillDark: "#404068",
+                webillGold: "#faa919",
+                utilities: {
+                    Electricity: "#3b82f6",
+                    Water: "#0ea5e9",
+                    "Hot Water": "#f43f5e",
+                    Generator: "#f59e0b",
+                    Solar: "#10b981",
+                    Gas: "#8b5cf6",
+                    Borehole: "#14b8a6",
+                    Sewage: "#71717a",
+                },
+            };
+
+            let currentView = "monthly",
+                currentMonthName = "",
+                currentDayName = "";
+            let selectedUtilities = new Set();
+            let startIndex = 0,
+                endIndex = MONTHS.length - 1;
+
+            const liveCounts = { prepaid: 1240, postpaid: 892, wallet: 2150 };
+            const utilityMixValues = UTILITY_TYPES.map(() =>
+                Math.floor(Math.random() * 50000 + 10000),
+            );
+
+            const seedRandom = (seed) => {
+                const x = Math.sin(seed++) * 10000;
+                return x - Math.floor(x);
+            };
+
+            const baseData = {
+                monthly: {
+                    labels: MONTHS,
+                    prepaid: MONTHS.map((_, i) =>
+                        Math.floor(seedRandom(i + 1) * 25000 + 45000),
+                    ),
+                    postpaid: MONTHS.map((_, i) =>
+                        Math.floor(seedRandom(i + 10) * 25000 + 30000),
+                    ),
+                    wallet: MONTHS.map((_, i) =>
+                        Math.floor(seedRandom(i + 20) * 10000 + 15000),
+                    ),
+                },
+                consumers: [
+                    {
+                        unit: "G01",
+                        name: "John Peterson",
+                        type: "Prepaid",
+                        monthlyWeight: 0.05,
+                    },
+                    {
+                        unit: "G05",
+                        name: "Elite Rentals Ltd",
+                        type: "Postpaid",
+                        monthlyWeight: 0.15,
+                    },
+                    {
+                        unit: "G12",
+                        name: "Sarah Jenkins",
+                        type: "Wallet",
+                        monthlyWeight: 0.03,
+                    },
+                    {
+                        unit: "G18",
+                        name: "Michael Chen",
+                        type: "Prepaid",
+                        monthlyWeight: 0.04,
+                    },
+                    {
+                        unit: "G22",
+                        name: "Golf Pro Shop",
+                        type: "Postpaid",
+                        monthlyWeight: 0.12,
+                    },
+                    {
+                        unit: "G25",
+                        name: "Clubhouse Main",
+                        type: "Postpaid",
+                        monthlyWeight: 0.18,
+                    },
+                    {
+                        unit: "G30",
+                        name: "Estate Security",
+                        type: "Wallet",
+                        monthlyWeight: 0.06,
+                    },
+                    {
+                        unit: "G35",
+                        name: "Maintenance Hub",
+                        type: "Postpaid",
+                        monthlyWeight: 0.04,
+                    },
+                    {
+                        unit: "G42",
+                        name: "Leisure Center",
+                        type: "Wallet",
+                        monthlyWeight: 0.07,
+                    },
+                    {
+                        unit: "G48",
+                        name: "N. Visser",
+                        type: "Prepaid",
+                        monthlyWeight: 0.02,
+                    },
+                    {
+                        unit: "G50",
+                        name: "D. Mbeki",
+                        type: "Postpaid",
+                        monthlyWeight: 0.05,
+                    },
+                    {
+                        unit: "G52",
+                        name: "Tech Solutions SA",
+                        type: "Postpaid",
+                        monthlyWeight: 0.08,
+                    },
+                ],
+            };
+
+            const getScale = () =>
+                selectedUtilities.size === 0
+                    ? 1.0
+                    : (selectedUtilities.size / UTILITY_TYPES.length) * 1.8;
+            const mainChart = echarts.init(
+                document.getElementById("main-chart"),
+            );
+            const donutChart = echarts.init(
+                document.getElementById("donut-chart"),
+            );
+
+            const getChartOption = () => {
+                const scale = getScale();
+                let labels, prepaidData, postpaidData, walletData;
+
+                if (currentView === "monthly") {
+                    labels = baseData.monthly.labels.slice(
+                        startIndex,
+                        endIndex + 1,
+                    );
+                    prepaidData = baseData.monthly.prepaid
+                        .slice(startIndex, endIndex + 1)
+                        .map((v) => Math.round(v * scale));
+                    postpaidData = baseData.monthly.postpaid
+                        .slice(startIndex, endIndex + 1)
+                        .map((v) => Math.round(v * scale));
+                    walletData = baseData.monthly.wallet
+                        .slice(startIndex, endIndex + 1)
+                        .map((v) => Math.round(v * scale));
+                } else if (currentView === "daily") {
+                    labels = Array.from({ length: 30 }, (_, i) => i + 1);
+                    const baseVal =
+                        (baseData.monthly.prepaid[
+                            MONTHS.indexOf(currentMonthName)
+                        ] /
+                            30) *
+                        scale;
+                    prepaidData = labels.map((i) =>
+                        Math.round(baseVal * (0.8 + seedRandom(i) * 0.4)),
+                    );
+                    postpaidData = labels.map((i) =>
+                        Math.round(
+                            baseVal * 0.7 * (0.8 + seedRandom(i + 50) * 0.4),
+                        ),
+                    );
+                    walletData = labels.map((i) =>
+                        Math.round(
+                            baseVal * 0.3 * (0.8 + seedRandom(i + 100) * 0.4),
+                        ),
+                    );
+                } else {
+                    labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+                    prepaidData = labels.map((i) =>
+                        Math.round(seedRandom(parseInt(i)) * 500 * scale),
+                    );
+                    postpaidData = labels.map((i) =>
+                        Math.round(seedRandom(parseInt(i) + 50) * 400 * scale),
+                    );
+                    walletData = labels.map((i) =>
+                        Math.round(seedRandom(parseInt(i) + 100) * 200 * scale),
+                    );
+                }
+
+                return {
+                    tooltip: {
+                        trigger: "axis",
+                        axisPointer: { type: "shadow" },
+                        formatter: (params) => {
+                            let res = `${params[0].name}<br/>`;
+                            params.forEach((item) => {
+                                res += `${item.marker} ${item.seriesName}: R ${item.value.toLocaleString()}<br/>`;
+                            });
+                            return res;
+                        },
+                    },
+                    legend: { bottom: 0, textStyle: { fontSize: 10 } },
+                    grid: {
+                        left: "3%",
+                        right: "4%",
+                        top: "15%",
+                        bottom: "15%",
+                        containLabel: true,
+                    },
+                    xAxis: {
+                        type: "category",
+                        data: labels,
+                        axisLabel: {
+                            fontSize: 10,
+                            rotate: currentView === "monthly" ? 30 : 0,
+                        },
+                    },
+                    yAxis: {
+                        type: "value",
+                        axisLabel: { fontSize: 10, formatter: "R{value}" },
+                    },
+                    series: [
+                        {
+                            name: "Prepaid",
+                            type: "bar",
+                            stack: "total",
+                            color: COLORS.prepaid,
+                            data: prepaidData,
+                            cursor: "pointer",
+                        },
+                        {
+                            name: "Postpaid",
+                            type: "bar",
+                            stack: "total",
+                            color: COLORS.postpaid,
+                            data: postpaidData,
+                            cursor: "pointer",
+                        },
+                        {
+                            name: "Wallet",
+                            type: "bar",
+                            stack: "total",
+                            color: COLORS.wallet,
+                            data: walletData,
+                            cursor: "pointer",
+                        },
+                    ],
+                };
+            };
+
+            const getUtilityMixOption = () => {
+                return {
+                    tooltip: {
+                        trigger: "item",
+                        formatter: (params) =>
+                            `${params.name}: R ${Math.round(params.value).toLocaleString()} (${params.percent}%)`,
+                    },
+                    legend: {
+                        bottom: 0,
+                        left: "center",
+                        type: "scroll",
+                        textStyle: { fontSize: 9 },
+                    },
+                    series: [
+                        {
+                            name: "Utility Distribution",
+                            type: "pie",
+                            radius: ["45%", "70%"],
+                            center: ["50%", "45%"],
+                            itemStyle: {
+                                borderRadius: 4,
+                                borderColor: "#fff",
+                                borderWidth: 2,
+                            },
+                            label: { show: false },
+                            cursor: "pointer",
+                            data: UTILITY_TYPES.map((type, i) => ({
+                                name: type,
+                                value: Math.round(
+                                    utilityMixValues[i] *
+                                        (endIndex - startIndex + 1),
+                                ),
+                                itemStyle: {
+                                    color: COLORS.utilities[type],
+                                    opacity:
+                                        selectedUtilities.size > 0 &&
+                                        !selectedUtilities.has(type)
+                                            ? 0.2
+                                            : 1,
+                                },
+                            })),
+                        },
+                    ],
+                };
+            };
+
+            const updateDashboardData = (isInitial = false) => {
+                const updateLogic = () => {
+                    const scale = getScale();
+                    mainChart.setOption(getChartOption(), true);
+                    donutChart.setOption(getUtilityMixOption(), true);
+
+                    const numMonths = endIndex - startIndex + 1;
+                    const periodPrepaid =
+                        baseData.monthly.prepaid
+                            .slice(startIndex, endIndex + 1)
+                            .reduce((a, b) => a + b, 0) * scale;
+                    const periodPostpaid =
+                        baseData.monthly.postpaid
+                            .slice(startIndex, endIndex + 1)
+                            .reduce((a, b) => a + b, 0) * scale;
+                    const periodWallet =
+                        baseData.monthly.wallet
+                            .slice(startIndex, endIndex + 1)
+                            .reduce((a, b) => a + b, 0) * scale;
+                    const grandTotal = Math.round(
+                        periodPrepaid + periodPostpaid + periodWallet,
+                    );
+
+                    document.getElementById("grand-total-monthly").textContent =
+                        `R ${grandTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+                    document.getElementById("grand-avg-monthly").textContent =
+                        `R ${Math.round(grandTotal / numMonths).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+
+                    document.getElementById("pct-prepaid").textContent =
+                        `${((periodPrepaid / grandTotal) * 100).toFixed(1)}%`;
+                    document.getElementById("pct-postpaid").textContent =
+                        `${((periodPostpaid / grandTotal) * 100).toFixed(1)}%`;
+                    document.getElementById("pct-wallet").textContent =
+                        `${((periodWallet / grandTotal) * 100).toFixed(1)}%`;
+
+                    document.getElementById(
+                        "total-prepaid-monthly",
+                    ).textContent =
+                        `R ${Math.round(periodPrepaid).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+                    document.getElementById(
+                        "total-postpaid-monthly",
+                    ).textContent =
+                        `R ${Math.round(periodPostpaid).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+                    document.getElementById(
+                        "total-wallet-monthly",
+                    ).textContent =
+                        `R ${Math.round(periodWallet).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+
+                    document.getElementById("avg-prepaid").textContent =
+                        `R ${Math.round(periodPrepaid / numMonths).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+                    document.getElementById("avg-postpaid").textContent =
+                        `R ${Math.round(periodPostpaid / numMonths).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+                    document.getElementById("avg-wallet").textContent =
+                        `R ${Math.round(periodWallet / numMonths).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+
+                    document.getElementById("total-prepaid-count").textContent =
+                        Math.floor(liveCounts.prepaid * scale).toLocaleString();
+                    document.getElementById(
+                        "total-postpaid-count",
+                    ).textContent = Math.floor(
+                        liveCounts.postpaid * scale,
+                    ).toLocaleString();
+                    document.getElementById("total-wallet-count").textContent =
+                        Math.floor(liveCounts.wallet * scale).toLocaleString();
+
+                    const banner = document.getElementById(
+                        "filter-banner-content",
+                    );
+                    const container = document.getElementById(
+                        "active-filters-container",
+                    );
+                    if (selectedUtilities.size > 0) {
+                        banner.classList.remove("hidden");
+                        container.innerHTML = "";
+                        selectedUtilities.forEach((util) => {
+                            const badge = document.createElement("div");
+                            badge.className =
+                                "flex items-center space-x-1.5 text-white px-2 py-0.5 rounded text-[9px] font-semibold cursor-pointer shadow-sm";
+                            badge.style.backgroundColor =
+                                COLORS.utilities[util];
+                            badge.innerHTML = `<span>${util}</span><span>✕</span>`;
+                            badge.onclick = () => {
+                                selectedUtilities.delete(util);
+                                updateDashboardData();
+                            };
+                            container.appendChild(badge);
+                        });
+                    } else banner.classList.add("hidden");
+
+                    renderTable(grandTotal, numMonths);
+                    document
+                        .getElementById("main-content-area")
+                        .classList.remove("loading-active");
+                };
+
+                if (isInitial) {
+                    updateLogic();
+                } else {
+                    document
+                        .getElementById("main-content-area")
+                        .classList.add("loading-active");
+                    setTimeout(updateLogic, 800);
+                }
+            };
+
+            const renderTable = (grandTotal, numMonths) => {
+                const tbody = document.getElementById("unit-table-body");
+                tbody.innerHTML = "";
+                document.getElementById("consumer-counter").textContent =
+                    baseData.consumers.length;
+
+                baseData.consumers.forEach((consumer) => {
+                    const tr = document.createElement("tr");
+                    tr.className = "hover:bg-slate-50 transition-colors group";
+                    const periodTotal = Math.round(
+                        grandTotal * consumer.monthlyWeight,
+                    );
+                    const avgMonthly = Math.round(periodTotal / numMonths);
+
+                    tr.innerHTML = `
+                    <td class="px-6 py-4 font-semibold text-slate-700">${consumer.unit}</td>
+                    <td class="px-6 py-4 font-medium text-slate-500">${consumer.name}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-0.5 rounded text-[9px] font-bold tracking-wide border
+                            ${
+                                consumer.type === "Prepaid"
+                                    ? "text-green-600 bg-green-50 border-green-100"
+                                    : consumer.type === "Postpaid"
+                                      ? "text-blue-600 bg-blue-50 border-blue-100"
+                                      : "text-purple-600 bg-purple-50 border-purple-100"
+                            }">
+                            ${consumer.type.toUpperCase()}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="font-bold text-slate-800">R ${periodTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                        <div class="text-[9px] text-slate-400 font-medium group-hover:text-webill-gold transition-colors">${(consumer.monthlyWeight * 100).toFixed(1)}% Share</div>
+                    </td>
+                    <td class="px-6 py-4 text-right font-medium text-slate-500">R ${avgMonthly.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                `;
+                    tbody.appendChild(tr);
+                });
+            };
+
+            const setupDropdownsAndFetch = () => {
+                const startSelect = document.getElementById("start-month");
+                const endSelect = document.getElementById("end-month");
+                const fetchBtn = document.getElementById("fetch-btn");
+
+                MONTHS.forEach((month, i) => {
+                    startSelect.options.add(new Option(month, i));
+                    endSelect.options.add(new Option(month, i));
+                });
+
+                startSelect.value = 0;
+                endSelect.value = MONTHS.length - 1;
+
+                fetchBtn.addEventListener("click", () => {
+                    startIndex = parseInt(startSelect.value);
+                    endIndex = parseInt(endSelect.value);
+
+                    if (startIndex > endIndex) {
+                        const temp = startIndex;
+                        startIndex = endIndex;
+                        endIndex = temp;
+                        startSelect.value = startIndex;
+                        endSelect.value = endIndex;
+                    }
+
+                    currentView = "monthly";
+                    document.getElementById("chart-title").textContent =
+                        `Revenue Analytics`;
+                    document.getElementById("back-btn").classList.add("hidden");
+
+                    updateDashboardData();
+                });
+            };
+
+            donutChart.on("click", (params) => {
+                const util = params.name;
+                selectedUtilities.has(util)
+                    ? selectedUtilities.delete(util)
+                    : selectedUtilities.add(util);
+                updateDashboardData();
+            });
+
+            document
+                .getElementById("clear-filter-btn")
+                .addEventListener("click", () => {
+                    selectedUtilities.clear();
+                    updateDashboardData();
+                });
+
+            mainChart.on("click", (params) => {
+                if (currentView === "monthly") {
+                    currentMonthName = params.name;
+                    currentView = "daily";
+                    document.getElementById("chart-title").textContent =
+                        `Daily Breakdown: ${currentMonthName}`;
+                    document
+                        .getElementById("back-btn")
+                        .classList.remove("hidden");
+                    updateDashboardData();
+                } else if (currentView === "daily") {
+                    currentDayName = params.name;
+                    currentView = "hourly";
+                    document.getElementById("chart-title").textContent =
+                        `Hourly Breakdown: Day ${currentDayName}`;
+                    updateDashboardData();
+                }
+            });
+
+            document
+                .getElementById("back-btn")
+                .addEventListener("click", () => {
+                    if (currentView === "hourly") currentView = "daily";
+                    else {
+                        currentView = "monthly";
+                        document.getElementById("chart-title").textContent =
+                            `Revenue Analytics`;
+                        document
+                            .getElementById("back-btn")
+                            .classList.add("hidden");
+                    }
+                    updateDashboardData();
+                });
+
+            window.onload = () => {
+                setupDropdownsAndFetch();
+                updateDashboardData(true);
+                setInterval(
+                    () =>
+                        (document.getElementById(
+                            "real-time-clock",
+                        ).textContent = new Date().toLocaleTimeString()),
+                    1000,
+                );
+                window.addEventListener("resize", () => {
+                    mainChart.resize();
+                    donutChart.resize();
+                });
+            };
+        </script>
+    </body>
+</html>

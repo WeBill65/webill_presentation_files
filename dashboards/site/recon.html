@@ -1,0 +1,985 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>WeBill Golf Estate - Utility Recon Dashboard</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+        <style>
+            :root {
+                --brand-primary: #404068;
+                --brand-accent: #faa919;
+            }
+            .bg-brand-primary {
+                background-color: var(--brand-primary);
+            }
+            .text-brand-accent {
+                color: var(--brand-accent);
+            }
+
+            .card-shadow {
+                box-shadow:
+                    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+
+            .chart-container {
+                width: 100%;
+                height: 450px;
+            }
+
+            .btn-header {
+                background-color: transparent;
+                border: 1px solid var(--brand-accent);
+                color: var(--brand-accent);
+                padding: 0.4rem 0.8rem;
+                border-radius: 0.375rem;
+                font-size: 0.875rem;
+                font-weight: 600;
+                transition: all 0.2s;
+            }
+            .btn-header:hover {
+                background-color: var(--brand-accent);
+                color: var(--brand-primary);
+            }
+
+            .breadcrumb-active {
+                color: var(--brand-accent);
+                font-weight: bold;
+            }
+
+            @keyframes rotate {
+                from {
+                    transform: rotate(0deg);
+                }
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+            .refreshing {
+                animation: rotate 1s linear infinite;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-50 font-sans text-gray-800">
+        <!-- Header -->
+        <header class="bg-brand-primary sticky top-0 z-50 shadow-md">
+            <div class="max-w-[1800px] mx-auto p-4 border-b border-white/10">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white p-2 rounded-lg">
+                        <svg
+                            class="w-8 h-8 text-brand-primary"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z"
+                            ></path>
+                        </svg>
+                    </div>
+                    <h1 class="text-2xl font-bold text-brand-accent">
+                        WeBill Golf Estate
+                    </h1>
+                </div>
+            </div>
+
+            <div class="bg-brand-primary/95 backdrop-blur-sm shadow-inner">
+                <div
+                    class="max-w-[1800px] mx-auto px-4 py-3 flex justify-between items-center"
+                >
+                    <div
+                        class="flex items-center space-x-2 text-white text-xs uppercase tracking-widest"
+                        id="view-breadcrumb"
+                    >
+                        <span>Monthly View</span>
+                    </div>
+
+                    <div class="flex items-center space-x-4">
+                        <button
+                            id="btn-back"
+                            class="hidden btn-header flex items-center"
+                        >
+                            <svg
+                                class="w-4 h-4 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
+                            </svg>
+                            Back to Monthly
+                        </button>
+
+                        <button
+                            id="btn-refresh"
+                            class="p-1.5 rounded-full border border-brand-accent text-brand-accent hover:bg-brand-accent hover:text-brand-primary transition-all group"
+                            title="Refresh Data"
+                        >
+                            <svg
+                                id="refresh-icon"
+                                class="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357-2H15"
+                                ></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-[1800px] mx-auto p-4 md:p-6 space-y-12">
+            <!-- TOP OVERALL SUMMARY SECTION -->
+            <section class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <!-- Main Hero Metric -->
+                <div
+                    class="lg:col-span-1 bg-white p-6 rounded-2xl card-shadow border-t-4 border-brand-primary flex flex-col justify-center items-center text-center"
+                >
+                    <p
+                        class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2"
+                    >
+                        Total Estate Recon
+                    </p>
+                    <div class="relative inline-block">
+                        <span
+                            id="overall-recon-perc"
+                            class="text-4xl font-bold text-gray-800"
+                            >98.4%</span
+                        >
+                        <div class="absolute -top-1 -right-6">
+                            <svg
+                                class="w-5 h-5 text-green-500"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-[10px] mt-2 text-gray-400 font-medium">
+                        Target: 98.0%
+                    </p>
+                </div>
+
+                <!-- Breakdown Mini Cards -->
+                <div
+                    class="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4"
+                >
+                    <div
+                        class="bg-white p-5 rounded-2xl card-shadow border-b-4 border-blue-500"
+                    >
+                        <div class="flex items-center justify-between mb-3">
+                            <span
+                                class="p-2 bg-blue-50 rounded-lg text-blue-600"
+                            >
+                                <svg
+                                    class="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                                    ></path>
+                                </svg>
+                            </span>
+                            <span
+                                class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded uppercase tracking-wider"
+                                >Energy</span
+                            >
+                        </div>
+                        <p
+                            class="text-2xl font-bold text-gray-800"
+                            id="overall-energy-delta"
+                        >
+                            +0.00%
+                        </p>
+                        <p
+                            class="text-[10px] text-gray-400 uppercase tracking-tighter font-medium"
+                        >
+                            Recovery Delta
+                        </p>
+                    </div>
+
+                    <div
+                        class="bg-white p-5 rounded-2xl card-shadow border-b-4 border-cyan-500"
+                    >
+                        <div class="flex items-center justify-between mb-3">
+                            <span
+                                class="p-2 bg-cyan-50 rounded-lg text-cyan-600"
+                            >
+                                <svg
+                                    class="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                                    ></path>
+                                </svg>
+                            </span>
+                            <span
+                                class="text-[10px] font-bold text-cyan-600 bg-cyan-50 px-2 py-1 rounded uppercase tracking-wider"
+                                >Water</span
+                            >
+                        </div>
+                        <p
+                            class="text-2xl font-bold text-gray-800"
+                            id="overall-water-delta"
+                        >
+                            +0.00%
+                        </p>
+                        <p
+                            class="text-[10px] text-gray-400 uppercase tracking-tighter font-medium"
+                        >
+                            Recovery Delta
+                        </p>
+                    </div>
+
+                    <div
+                        class="bg-white p-5 rounded-2xl card-shadow border-b-4 border-purple-500"
+                    >
+                        <div class="flex items-center justify-between mb-3">
+                            <span
+                                class="p-2 bg-purple-50 rounded-lg text-purple-600"
+                            >
+                                <svg
+                                    class="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                                    ></path>
+                                </svg>
+                            </span>
+                            <span
+                                class="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded uppercase tracking-wider"
+                                >Gas</span
+                            >
+                        </div>
+                        <p
+                            class="text-2xl font-bold text-gray-800"
+                            id="overall-gas-delta"
+                        >
+                            +0.00%
+                        </p>
+                        <p
+                            class="text-[10px] text-gray-400 uppercase tracking-tighter font-medium"
+                        >
+                            Recovery Delta
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ENERGY ROW -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl card-shadow">
+                    <h3
+                        class="font-bold text-lg text-gray-700 flex items-center mb-4"
+                    >
+                        <span
+                            class="w-3 h-3 bg-blue-500 rounded-full mr-3"
+                        ></span>
+                        Energy Recovery Performance (%)
+                    </h3>
+                    <div id="energy-chart" class="chart-container"></div>
+                </div>
+
+                <div class="lg:col-span-1 space-y-4 flex flex-col">
+                    <h2
+                        class="text-xs font-bold text-gray-400 uppercase tracking-widest px-1"
+                    >
+                        Energy Summary
+                    </h2>
+
+                    <div
+                        class="bg-white rounded-xl p-5 card-shadow border-l-4 border-blue-500 flex-1 flex flex-col justify-center"
+                    >
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-gray-700">
+                                Imported Electricity
+                            </h3>
+                            <span
+                                class="bg-blue-100 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded"
+                                >GRID</span
+                            >
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase">
+                                    Supply Cost
+                                </p>
+                                <p
+                                    class="font-mono font-bold text-sm"
+                                    id="val-elec-supply"
+                                >
+                                    R 0.00
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase">
+                                    Billed Amount
+                                </p>
+                                <p
+                                    class="font-mono font-bold text-sm text-gray-400"
+                                    id="val-elec-charged"
+                                >
+                                    R 0.00
+                                </p>
+                            </div>
+                        </div>
+                        <div
+                            class="mt-4 pt-3 border-t flex justify-between items-center"
+                        >
+                            <span class="text-xs text-gray-500"
+                                >Recovery Delta</span
+                            ><span
+                                class="text-sm font-bold"
+                                id="metric-elec-delta"
+                                >0%</span
+                            >
+                        </div>
+                    </div>
+
+                    <div
+                        class="bg-white rounded-xl p-5 card-shadow border-l-4 border-orange-500 flex-1 flex flex-col justify-center"
+                    >
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-gray-700">Generator</h3>
+                            <span
+                                class="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded"
+                                >BACKUP</span
+                            >
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase">
+                                    Supply Cost
+                                </p>
+                                <p
+                                    class="font-mono font-bold text-sm"
+                                    id="val-gen-supply"
+                                >
+                                    R 0.00
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase">
+                                    Billed Amount
+                                </p>
+                                <p
+                                    class="font-mono font-bold text-sm text-gray-400"
+                                    id="val-gen-charged"
+                                >
+                                    R 0.00
+                                </p>
+                            </div>
+                        </div>
+                        <div
+                            class="mt-4 pt-3 border-t flex justify-between items-center"
+                        >
+                            <span class="text-xs text-gray-500"
+                                >Recovery Delta</span
+                            ><span
+                                class="text-sm font-bold"
+                                id="metric-gen-delta"
+                                >0%</span
+                            >
+                        </div>
+                    </div>
+
+                    <div
+                        class="bg-white rounded-xl p-5 card-shadow border-l-4 border-yellow-400 flex-1 flex flex-col justify-center"
+                    >
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-gray-700">Solar PV</h3>
+                            <span
+                                class="bg-yellow-100 text-yellow-600 text-[10px] font-bold px-2 py-0.5 rounded"
+                                >GREEN</span
+                            >
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase">
+                                    Gen Value
+                                </p>
+                                <p
+                                    class="font-mono font-bold text-sm"
+                                    id="val-solar-supply"
+                                >
+                                    R 0.00
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase">
+                                    Billed Amount
+                                </p>
+                                <p
+                                    class="font-mono font-bold text-sm text-gray-400"
+                                    id="val-solar-charged"
+                                >
+                                    R 0.00
+                                </p>
+                            </div>
+                        </div>
+                        <div
+                            class="mt-4 pt-3 border-t flex justify-between items-center"
+                        >
+                            <span class="text-xs text-gray-500"
+                                >Recovery Delta</span
+                            ><span
+                                class="text-sm font-bold"
+                                id="metric-solar-delta"
+                                >0%</span
+                            >
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WATER ROW -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl card-shadow">
+                    <h3
+                        class="font-bold text-lg text-gray-700 flex items-center mb-4"
+                    >
+                        <span
+                            class="w-3 h-3 bg-cyan-500 rounded-full mr-3"
+                        ></span>
+                        Water Recovery Performance (%)
+                    </h3>
+                    <div id="water-chart" class="chart-container"></div>
+                </div>
+
+                <div class="lg:col-span-1 space-y-4 flex flex-col">
+                    <h2
+                        class="text-xs font-bold text-gray-400 uppercase tracking-widest px-1"
+                    >
+                        Water Summary
+                    </h2>
+
+                    <div
+                        class="bg-white rounded-xl p-5 card-shadow border-l-4 border-cyan-500 flex-1 flex flex-col justify-center"
+                    >
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-gray-700">
+                                Municipal Water
+                            </h3>
+                            <span
+                                class="bg-cyan-100 text-cyan-600 text-[10px] font-bold px-2 py-0.5 rounded"
+                                >UTILITY</span
+                            >
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase">
+                                    Bulk Cost
+                                </p>
+                                <p
+                                    class="font-mono font-bold text-sm"
+                                    id="val-water-supply"
+                                >
+                                    R 0.00
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase">
+                                    Recovered
+                                </p>
+                                <p
+                                    class="font-mono font-bold text-sm text-gray-400"
+                                    id="val-water-charged"
+                                >
+                                    R 0.00
+                                </p>
+                            </div>
+                        </div>
+                        <div
+                            class="mt-4 pt-3 border-t flex justify-between items-center"
+                        >
+                            <span class="text-xs text-gray-500"
+                                >Recovery Delta</span
+                            ><span
+                                class="text-sm font-bold"
+                                id="metric-water-delta"
+                                >0%</span
+                            >
+                        </div>
+                    </div>
+
+                    <div
+                        class="bg-white rounded-xl p-5 card-shadow border-l-4 border-emerald-600 flex-1 flex flex-col justify-center"
+                    >
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-gray-700">Borehole</h3>
+                            <span
+                                class="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded"
+                                >GREEN</span
+                            >
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase">
+                                    Pumping Cost
+                                </p>
+                                <p
+                                    class="font-mono font-bold text-sm"
+                                    id="val-bore-supply"
+                                >
+                                    R 0.00
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase">
+                                    Recovered
+                                </p>
+                                <p
+                                    class="font-mono font-bold text-sm text-gray-400"
+                                    id="val-bore-charged"
+                                >
+                                    R 0.00
+                                </p>
+                            </div>
+                        </div>
+                        <div
+                            class="mt-4 pt-3 border-t flex justify-between items-center"
+                        >
+                            <span class="text-xs text-gray-500"
+                                >Recovery Delta</span
+                            ><span
+                                class="text-sm font-bold"
+                                id="metric-borehole-delta"
+                                >0%</span
+                            >
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GAS ROW -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl card-shadow">
+                    <h3
+                        class="font-bold text-lg text-gray-700 flex items-center mb-4"
+                    >
+                        <span
+                            class="w-3 h-3 bg-purple-500 rounded-full mr-3"
+                        ></span>
+                        LPG Gas Recovery Performance (%)
+                    </h3>
+                    <div id="gas-chart" class="chart-container"></div>
+                </div>
+
+                <div class="lg:col-span-1 space-y-4 flex flex-col">
+                    <h2
+                        class="text-xs font-bold text-gray-400 uppercase tracking-widest px-1"
+                    >
+                        Gas Summary
+                    </h2>
+
+                    <div
+                        class="bg-white rounded-xl p-5 card-shadow border-l-4 border-purple-500 flex-1 flex flex-col justify-center"
+                    >
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-gray-700">LPG Gas</h3>
+                            <span
+                                class="bg-purple-100 text-purple-600 text-[10px] font-bold px-2 py-0.5 rounded"
+                                >ENERGY</span
+                            >
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase">
+                                    Bulk Supply
+                                </p>
+                                <p
+                                    class="font-mono font-bold text-sm"
+                                    id="val-gas-supply"
+                                >
+                                    R 0.00
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase">
+                                    Recovered
+                                </p>
+                                <p
+                                    class="font-mono font-bold text-sm text-gray-500"
+                                    id="val-gas-charged"
+                                >
+                                    R 0.00
+                                </p>
+                            </div>
+                        </div>
+                        <div
+                            class="mt-4 pt-3 border-t flex justify-between items-center"
+                        >
+                            <span class="text-xs text-gray-500"
+                                >Recovery Delta</span
+                            ><span
+                                class="text-sm font-bold"
+                                id="metric-gas-delta"
+                                >0%</span
+                            >
+                        </div>
+                    </div>
+                    <div class="flex-[2]"></div>
+                </div>
+            </div>
+        </main>
+
+        <script>
+            let currentLevel = "monthly";
+            let activeMonth = null;
+            let activeDay = null;
+
+            const months = [
+                "Apr 23",
+                "May 23",
+                "Jun 23",
+                "Jul 23",
+                "Aug 23",
+                "Sep 23",
+                "Oct 23",
+                "Nov 23",
+                "Dec 23",
+                "Jan 24",
+                "Feb 24",
+                "Mar 24",
+            ];
+            const days = Array.from({ length: 30 }, (_, i) => `${i + 1}`);
+            const hours = Array.from(
+                { length: 24 },
+                (_, i) => `${String(i).padStart(2, "0")}:00`,
+            );
+
+            const charts = {};
+
+            const baseMetrics = {
+                elec: { supply: 124502.2, charged: 128100.0 },
+                gen: { supply: 45200.0, charged: 46800.0 },
+                solar: { supply: 82900.0, charged: 81200.0 },
+                water: { supply: 58300.0, charged: 59100.0 },
+                bore: { supply: 12400.0, charged: 12800.0 },
+                gas: { supply: 28900.0, charged: 29150.0 },
+            };
+
+            const redBaseline = {
+                silent: true,
+                lineStyle: { color: "#ef4444", type: "solid", width: 2 },
+                data: [{ yAxis: 0 }],
+            };
+
+            function getMockData(seriesName, length) {
+                const isNegative =
+                    seriesName.includes("Elec") || seriesName.includes("Solar");
+                const base = isNegative ? -2 : 2;
+                return Array.from({ length }, () =>
+                    (base + (Math.random() * 4 - 2)).toFixed(2),
+                );
+            }
+
+            function updateSummaryMetrics() {
+                let multiplier = 1.0;
+                if (currentLevel === "daily") multiplier = 0.033;
+                if (currentLevel === "hourly") multiplier = 0.0014;
+
+                let totalS = 0;
+                let totalC = 0;
+                let utilityTotals = {
+                    energy: { s: 0, c: 0 },
+                    water: { s: 0, c: 0 },
+                    gas: { s: 0, c: 0 },
+                };
+
+                Object.keys(baseMetrics).forEach((key) => {
+                    const config = baseMetrics[key];
+                    const sVal =
+                        config.supply *
+                        multiplier *
+                        (0.9 + Math.random() * 0.2);
+                    const cVal =
+                        config.charged *
+                        multiplier *
+                        (0.9 + Math.random() * 0.2);
+                    const delta = (((cVal - sVal) / sVal) * 100).toFixed(2);
+
+                    totalS += sVal;
+                    totalC += cVal;
+
+                    if (["elec", "gen", "solar"].includes(key)) {
+                        utilityTotals.energy.s += sVal;
+                        utilityTotals.energy.c += cVal;
+                    }
+                    if (["water", "bore"].includes(key)) {
+                        utilityTotals.water.s += sVal;
+                        utilityTotals.water.c += cVal;
+                    }
+                    if (key === "gas") {
+                        utilityTotals.gas.s += sVal;
+                        utilityTotals.gas.c += cVal;
+                    }
+
+                    const sElem = document.getElementById(`val-${key}-supply`);
+                    const cElem = document.getElementById(`val-${key}-charged`);
+                    const dElem = document.getElementById(
+                        `metric-${key === "elec" ? "elec" : key === "bore" ? "borehole" : key}-delta`,
+                    );
+
+                    if (sElem)
+                        sElem.innerText = `R ${sVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    if (cElem)
+                        cElem.innerText = `R ${cVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+                    if (dElem) {
+                        dElem.innerText = `${delta > 0 ? "+" : ""}${delta}%`;
+                        dElem.className =
+                            delta >= 0
+                                ? "text-sm font-bold text-green-600"
+                                : "text-sm font-bold text-red-600";
+                    }
+                });
+
+                const overallRecon = ((totalC / totalS) * 100).toFixed(1);
+                document.getElementById("overall-recon-perc").innerText =
+                    `${overallRecon}%`;
+
+                const setDeltaText = (id, s, c) => {
+                    const val = (((c - s) / s) * 100).toFixed(2);
+                    const el = document.getElementById(id);
+                    el.innerText = `${val > 0 ? "+" : ""}${val}%`;
+                    el.className = `text-2xl font-bold ${val >= 0 ? "text-green-600" : "text-red-600"}`;
+                };
+
+                setDeltaText(
+                    "overall-energy-delta",
+                    utilityTotals.energy.s,
+                    utilityTotals.energy.c,
+                );
+                setDeltaText(
+                    "overall-water-delta",
+                    utilityTotals.water.s,
+                    utilityTotals.water.c,
+                );
+                setDeltaText(
+                    "overall-gas-delta",
+                    utilityTotals.gas.s,
+                    utilityTotals.gas.c,
+                );
+            }
+
+            const commonChartOptions = {
+                tooltip: {
+                    trigger: "axis",
+                    backgroundColor: "#fff",
+                    padding: 10,
+                },
+                grid: {
+                    top: "5%",
+                    left: "2%",
+                    right: "2%",
+                    bottom: "12%",
+                    containLabel: true,
+                },
+                xAxis: {
+                    type: "category",
+                    axisLine: { lineStyle: { color: "#f3f4f6" } },
+                    axisLabel: { color: "#9ca3af", fontSize: 10 },
+                },
+                yAxis: {
+                    type: "value",
+                    axisLabel: {
+                        formatter: "{value}%",
+                        color: "#9ca3af",
+                        fontSize: 10,
+                    },
+                    splitLine: {
+                        lineStyle: { type: "dashed", color: "#f3f4f6" },
+                    },
+                },
+                legend: {
+                    bottom: 0,
+                    icon: "circle",
+                    textStyle: { fontSize: 11 },
+                },
+            };
+
+            function updateCharts() {
+                let xData, dataLength;
+                if (currentLevel === "monthly") {
+                    xData = months;
+                    dataLength = months.length;
+                } else if (currentLevel === "daily") {
+                    xData = days;
+                    dataLength = days.length;
+                } else {
+                    xData = hours;
+                    dataLength = hours.length;
+                }
+
+                updateSummaryMetrics();
+
+                charts.energy.setOption({
+                    xAxis: { data: xData },
+                    series: [
+                        {
+                            name: "Electricity",
+                            type: "line",
+                            smooth: true,
+                            data: getMockData("Elec", dataLength),
+                            itemStyle: { color: "#3b82f6" },
+                            markLine: redBaseline,
+                        },
+                        {
+                            name: "Generator",
+                            type: "line",
+                            smooth: true,
+                            data: getMockData("Gen", dataLength),
+                            itemStyle: { color: "#f97316" },
+                        },
+                        {
+                            name: "Solar",
+                            type: "line",
+                            smooth: true,
+                            data: getMockData("Solar", dataLength),
+                            itemStyle: { color: "#fbbf24" },
+                        },
+                    ],
+                });
+
+                charts.water.setOption({
+                    xAxis: { data: xData },
+                    series: [
+                        {
+                            name: "Municipal",
+                            type: "line",
+                            smooth: true,
+                            data: getMockData("Water", dataLength),
+                            itemStyle: { color: "#06b6d4" },
+                            markLine: redBaseline,
+                        },
+                        {
+                            name: "Borehole",
+                            type: "line",
+                            smooth: true,
+                            data: getMockData("Bore", dataLength),
+                            itemStyle: { color: "#10b981" },
+                        },
+                    ],
+                });
+
+                charts.gas.setOption({
+                    xAxis: { data: xData },
+                    series: [
+                        {
+                            name: "Gas Recovery",
+                            type: "line",
+                            smooth: true,
+                            data: getMockData("Gas", dataLength),
+                            itemStyle: { color: "#a855f7" },
+                            markLine: redBaseline,
+                        },
+                    ],
+                });
+
+                updateBreadcrumb();
+            }
+
+            function handleDrillDown(params) {
+                if (currentLevel === "monthly") {
+                    currentLevel = "daily";
+                    activeMonth = params.name;
+                } else if (currentLevel === "daily") {
+                    currentLevel = "hourly";
+                    activeDay = params.name;
+                }
+                updateCharts();
+            }
+
+            function resetToMonthly() {
+                currentLevel = "monthly";
+                activeMonth = null;
+                activeDay = null;
+                updateCharts();
+            }
+
+            function updateBreadcrumb() {
+                const container = document.getElementById("view-breadcrumb");
+                const backBtn = document.getElementById("btn-back");
+                let html = `<span>Monthly View</span>`;
+                if (activeMonth)
+                    html += ` <span class="mx-2 text-white/50">/</span> <span class="breadcrumb-active">${activeMonth}</span>`;
+                if (activeDay)
+                    html += ` <span class="mx-2 text-white/50">/</span> <span class="breadcrumb-active">Day ${activeDay}</span>`;
+                container.innerHTML = html;
+                backBtn.classList.toggle("hidden", currentLevel === "monthly");
+            }
+
+            window.onload = function () {
+                charts.energy = echarts.init(
+                    document.getElementById("energy-chart"),
+                );
+                charts.water = echarts.init(
+                    document.getElementById("water-chart"),
+                );
+                charts.gas = echarts.init(document.getElementById("gas-chart"));
+                Object.values(charts).forEach((c) => {
+                    c.setOption(commonChartOptions);
+                    c.on("click", handleDrillDown);
+                });
+                document.getElementById("btn-back").onclick = resetToMonthly;
+                document.getElementById("btn-refresh").onclick = function () {
+                    document
+                        .getElementById("refresh-icon")
+                        .classList.add("refreshing");
+                    updateCharts();
+                    setTimeout(
+                        () =>
+                            document
+                                .getElementById("refresh-icon")
+                                .classList.remove("refreshing"),
+                        600,
+                    );
+                };
+                updateCharts();
+            };
+
+            window.onresize = () =>
+                Object.values(charts).forEach((c) => c.resize());
+        </script>
+    </body>
+</html>

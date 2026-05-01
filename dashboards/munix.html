@@ -1,0 +1,1042 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Municipal Billing vs Recovery Dashboard</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+        <!-- Libraries for PDF Generation -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+
+            :root {
+                --brand-dark: #404068;
+                --brand-gold: #faa919;
+                --card-radius: 24px;
+                --success-green: #16a34a;
+                --alert-red: #dc2626;
+            }
+
+            body {
+                font-family: "Inter", sans-serif;
+                background-color: #f1f5f9;
+                color: #1e293b;
+            }
+
+            .brand-bg {
+                background-color: var(--brand-dark);
+            }
+            .brand-text {
+                color: var(--brand-gold);
+            }
+
+            .glass-card {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(229, 231, 235, 1);
+                border-radius: var(--card-radius) !important;
+                overflow: hidden;
+                box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+                transition: all 0.2s ease;
+            }
+
+            .glass-card:hover {
+                box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            }
+
+            .accent-border {
+                border-left: 8px solid var(--brand-gold) !important;
+            }
+
+            .stat-label {
+                @apply text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1;
+            }
+
+            .stat-value {
+                @apply text-2xl font-extrabold tracking-tight;
+            }
+
+            input[type="range"] {
+                @apply h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#3b82f6];
+            }
+
+            .efficiency-display {
+                @apply text-6xl font-black tracking-tighter transition-colors duration-300;
+            }
+
+            .efficiency-success {
+                color: var(--success-green);
+            }
+            .efficiency-alert {
+                color: var(--alert-red);
+            }
+
+            .season-legend {
+                @apply flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-2;
+            }
+
+            .action-btn {
+                @apply flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-50 hover:text-blue-600 transition-all;
+            }
+
+            /* Custom Scrollbar */
+            ::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            ::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 10px;
+            }
+
+            /* Loader for PDF generation */
+            #pdf-loader {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(64, 64, 104, 0.8);
+                backdrop-filter: blur(4px);
+                z-index: 1000;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                color: white;
+            }
+        </style>
+    </head>
+    <body class="min-h-screen pb-12" id="dashboard-body">
+        <div id="pdf-loader">
+            <div
+                class="animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-white mb-4"
+            ></div>
+            <p class="font-bold tracking-widest text-xs uppercase">
+                Generating Official Report...
+            </p>
+        </div>
+
+        <header class="brand-bg text-white shadow-xl mb-8">
+            <div class="max-w-7xl mx-auto px-6 py-10">
+                <div
+                    class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
+                >
+                    <div>
+                        <h1
+                            class="text-3xl font-black brand-text uppercase tracking-tighter italic"
+                        >
+                            City of Johannesburg
+                        </h1>
+                        <p class="opacity-70 mt-1 text-sm font-medium">
+                            Municipal Billing & Recovery Performance Portal
+                        </p>
+                    </div>
+                    <div class="flex flex-col items-end gap-3">
+                        <div
+                            class="bg-white/10 p-5 rounded-2xl border border-white/20 backdrop-blur-md"
+                        >
+                            <div class="grid grid-cols-2 gap-x-10 gap-y-1">
+                                <span
+                                    class="text-[10px] uppercase font-bold opacity-60 tracking-widest"
+                                    >Account</span
+                                >
+                                <span
+                                    class="text-xs font-mono brand-text text-right font-bold"
+                                    >9823-4410-0021</span
+                                >
+                                <span
+                                    class="text-[10px] uppercase font-bold opacity-60 tracking-widest"
+                                    >Cycle</span
+                                >
+                                <span class="text-xs text-right font-bold"
+                                    >MARCH 2024</span
+                                >
+                            </div>
+                        </div>
+                        <button
+                            onclick="downloadAsPDF()"
+                            class="flex items-center gap-2 px-4 py-2 bg-[#faa919] hover:bg-[#e09612] text-[#404068] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg"
+                        >
+                            <svg
+                                class="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="3"
+                                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                ></path>
+                            </svg>
+                            Download PDF Report
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-10">
+                    <div
+                        class="bg-white/5 p-5 rounded-[20px] border border-white/10 border-l-4 border-[#faa919]"
+                    >
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="p-2 bg-yellow-500/20 rounded-lg">
+                                <svg
+                                    class="w-4 h-4 brand-text"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2.5"
+                                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                                    ></path>
+                                </svg>
+                            </div>
+                            <h3
+                                class="font-bold text-sm tracking-tight text-white"
+                            >
+                                ELEC-3P-001
+                            </h3>
+                        </div>
+                        <p
+                            class="text-[11px] opacity-60 font-medium uppercase tracking-wider"
+                        >
+                            Business Conventional • 3-Phase
+                        </p>
+                    </div>
+                    <div
+                        class="bg-white/5 p-5 rounded-[20px] border border-white/10 border-l-4 border-blue-400"
+                    >
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="p-2 bg-blue-500/20 rounded-lg">
+                                <svg
+                                    class="w-4 h-4 text-blue-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2.5"
+                                        d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                                    ></path>
+                                </svg>
+                            </div>
+                            <h3
+                                class="font-bold text-sm tracking-tight text-white"
+                            >
+                                WAT-STD-052
+                            </h3>
+                        </div>
+                        <p
+                            class="text-[11px] opacity-60 font-medium uppercase tracking-wider"
+                        >
+                            Multi-Dwelling Residential • Standard
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-6" id="report-container">
+            <!-- Top Summary Row -->
+            <div class="flex flex-col lg:flex-row gap-6 mb-8">
+                <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="glass-card p-8 accent-border">
+                        <p class="stat-label">Total Billed</p>
+                        <h2 id="total-bill" class="stat-value text-slate-900">
+                            R 0.00
+                        </h2>
+                        <div class="mt-3">
+                            <span
+                                class="text-[9px] font-black text-slate-400 uppercase bg-slate-100 px-2 py-1 rounded-md"
+                                >March Invoice</span
+                            >
+                        </div>
+                    </div>
+                    <div class="glass-card p-8">
+                        <p class="stat-label">Total Recovered</p>
+                        <h2
+                            id="total-recovery"
+                            class="stat-value text-blue-600"
+                        >
+                            R 0.00
+                        </h2>
+                        <div class="mt-3">
+                            <span
+                                id="recovery-pct"
+                                class="text-[9px] font-black text-blue-700 bg-blue-100 px-2 py-1 rounded-md uppercase tracking-wider"
+                                >0% Recovery</span
+                            >
+                        </div>
+                    </div>
+                    <div class="glass-card p-8">
+                        <p class="stat-label">Unrecovered</p>
+                        <h2 id="total-variance" class="stat-value text-red-500">
+                            R 0.00
+                        </h2>
+                        <div class="mt-3">
+                            <span
+                                id="variance-pct"
+                                class="text-[9px] font-black text-red-700 bg-red-100 px-2 py-1 rounded-md uppercase tracking-wider"
+                                >0% Variance</span
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    class="lg:w-1/3 glass-card p-8 flex flex-col items-center justify-center relative"
+                >
+                    <div class="absolute top-8 left-8">
+                        <p class="stat-label">Avg Recovery</p>
+                    </div>
+                    <div class="text-center mt-4">
+                        <span id="efficiency-value" class="efficiency-display"
+                            >0%</span
+                        >
+                        <p
+                            id="efficiency-status"
+                            class="text-[10px] font-black uppercase tracking-[0.2em] mt-2 text-slate-400"
+                        >
+                            Calculating...
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trend Chart: Recovery Rate -->
+            <div class="glass-card p-8 mb-8">
+                <div
+                    class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4"
+                >
+                    <div class="flex-1">
+                        <div class="flex items-center gap-4 mb-1">
+                            <h3
+                                class="text-xl font-black text-slate-800 flex items-center gap-3"
+                            >
+                                <div
+                                    class="w-2 h-6 bg-blue-500 rounded-full"
+                                ></div>
+                                Monthly Recovery Rate (%)
+                            </h3>
+                        </div>
+                        <div class="season-legend">
+                            <span class="flex items-center gap-1.5"
+                                ><div
+                                    class="w-3 h-3 bg-red-100 border border-red-200 rounded-sm"
+                                ></div>
+                                Winter (Jun-Aug)</span
+                            >
+                            <span class="flex items-center gap-1.5"
+                                ><div
+                                    class="w-3 h-3 bg-white border border-slate-200 rounded-sm"
+                                ></div>
+                                Summer</span
+                            >
+                        </div>
+                    </div>
+                    <div
+                        class="flex items-center gap-4 bg-slate-100 px-5 py-3 rounded-2xl border border-slate-200"
+                        id="target-control"
+                    >
+                        <label
+                            for="benchmark-slider"
+                            class="text-[10px] font-black text-slate-500 uppercase tracking-widest"
+                            >Target:</label
+                        >
+                        <input
+                            type="range"
+                            id="benchmark-slider"
+                            min="50"
+                            max="100"
+                            value="100"
+                            class="w-32"
+                        />
+                        <span
+                            id="benchmark-val"
+                            class="text-sm font-black text-blue-600 min-w-[4ch]"
+                            >100%</span
+                        >
+                    </div>
+                </div>
+                <div id="recovery-trend-chart" class="w-full h-[320px]"></div>
+            </div>
+
+            <!-- Trend Chart: Billing vs Recovery -->
+            <div class="glass-card p-8 mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h3
+                        class="text-xl font-black text-slate-800 flex items-center gap-3"
+                    >
+                        <div class="w-2 h-6 brand-bg rounded-full"></div>
+                        12-Month Performance Trend
+                    </h3>
+                </div>
+                <div id="main-chart" class="w-full h-[400px]"></div>
+            </div>
+
+            <!-- Per-Meter Consumption Trends -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="glass-card p-8">
+                    <div class="flex items-start justify-between mb-6">
+                        <div class="flex flex-col">
+                            <h3
+                                class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-2"
+                            >
+                                <div
+                                    class="w-1.5 h-1.5 bg-yellow-500 rounded-full"
+                                ></div>
+                                Meter: ELEC-3P-001
+                            </h3>
+                            <h4 class="text-sm font-black text-slate-800">
+                                Electricity Consumption (kWh)
+                            </h4>
+                        </div>
+                    </div>
+                    <div
+                        id="elec-consumption-chart"
+                        class="w-full h-[300px]"
+                    ></div>
+                </div>
+                <div class="glass-card p-8">
+                    <div class="flex items-start justify-between mb-6">
+                        <div class="flex flex-col">
+                            <h3
+                                class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-2"
+                            >
+                                <div
+                                    class="w-1.5 h-1.5 bg-blue-500 rounded-full"
+                                ></div>
+                                Meter: WAT-STD-052
+                            </h3>
+                            <h4 class="text-sm font-black text-slate-800">
+                                Water Consumption (kL)
+                            </h4>
+                        </div>
+                    </div>
+                    <div
+                        id="water-consumption-chart"
+                        class="w-full h-[300px]"
+                    ></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Data Modal -->
+        <div
+            id="data-modal"
+            class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-6"
+        >
+            <div class="glass-card w-full max-w-2xl max-h-[80vh] flex flex-col">
+                <div
+                    class="p-6 border-b border-slate-100 flex items-center justify-between"
+                >
+                    <div>
+                        <h3
+                            id="modal-title"
+                            class="text-lg font-black text-slate-800"
+                        >
+                            Data Table
+                        </h3>
+                        <p
+                            class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
+                        >
+                            CSV Preview
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button
+                            onclick="downloadCSVFromModal()"
+                            class="action-btn text-blue-600 border-blue-100 hover:bg-blue-50 flex items-center gap-2"
+                        >
+                            <svg
+                                class="w-3 h-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2.5"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                ></path>
+                            </svg>
+                            Download CSV
+                        </button>
+                        <button
+                            onclick="hideData()"
+                            class="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400"
+                        >
+                            <svg
+                                class="w-6 h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"
+                                ></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-auto p-0">
+                    <table class="w-full text-left border-collapse">
+                        <thead
+                            id="modal-thead"
+                            class="sticky top-0 bg-slate-50 z-10 border-b border-slate-100"
+                        ></thead>
+                        <tbody
+                            id="modal-tbody"
+                            class="divide-y divide-slate-50 text-sm"
+                        ></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            let currentBenchmark = 100;
+            const labels = [
+                "Apr 23",
+                "May 23",
+                "Jun 23",
+                "Jul 23",
+                "Aug 23",
+                "Sep 23",
+                "Oct 23",
+                "Nov 23",
+                "Dec 23",
+                "Jan 24",
+                "Feb 24",
+                "Mar 24",
+            ];
+            const winterMonths = ["Jun 23", "Jul 23", "Aug 23"];
+            const winterHighlightColor = "rgba(220, 38, 38, 0.08)";
+            const winterTextRed = "#991b1b";
+
+            // Mock data generator
+            const yearlyData = labels.map((month) => {
+                const billed = 18000 + Math.random() * 5000;
+                const rate = 0.85 + Math.random() * 0.12;
+                const recovered = billed * rate;
+                const elecBilled = 3500 + Math.random() * 1000;
+                const waterBilled = 50 + Math.random() * 30;
+                return {
+                    month,
+                    billed: Number(billed.toFixed(2)),
+                    recovered: Number(recovered.toFixed(2)),
+                    rate: Number((rate * 100).toFixed(1)),
+                    elecBilled: Math.round(elecBilled),
+                    elecRecovered: Math.round(elecBilled * rate),
+                    waterBilled: Math.round(waterBilled),
+                    waterRecovered: Math.round(waterBilled * rate),
+                };
+            });
+
+            // Function to create common toolbox features
+            const getToolbox = (title, headers, rows) => ({
+                show: true,
+                right: 20,
+                top: 0,
+                feature: {
+                    myViewCSV: {
+                        show: true,
+                        title: "View / Download Data",
+                        icon: "path://M4 6h16M4 10h16M4 14h16M4 18h16",
+                        onclick: function () {
+                            showData(title, headers, rows);
+                        },
+                    },
+                    saveAsImage: {
+                        show: true,
+                        title: "Download Image",
+                        pixelRatio: 2,
+                        name: title.replace(/\s+/g, "_"),
+                    },
+                },
+                iconStyle: { borderColor: "#94a3b8" },
+                emphasis: { iconStyle: { borderColor: "#3b82f6" } },
+            });
+
+            const getXAxisLabelStyle = (val) => {
+                const isWinter = winterMonths.includes(val);
+                return {
+                    color: isWinter ? winterTextRed : "#94a3b8",
+                    fontWeight: isWinter ? 900 : 600,
+                    backgroundColor: isWinter
+                        ? "rgba(254, 226, 226, 0.5)"
+                        : "transparent",
+                    padding: [4, 8],
+                    borderRadius: 4,
+                };
+            };
+
+            window.onload = function () {
+                setTimeout(() => initDashboard(), 200);
+                const slider = document.getElementById("benchmark-slider");
+                slider.addEventListener("input", (e) => {
+                    currentBenchmark = parseInt(e.target.value);
+                    document.getElementById("benchmark-val").innerText =
+                        `${currentBenchmark}%`;
+                    renderRecoveryTrend();
+                    updateEfficiencyDisplay();
+                });
+                window.addEventListener("resize", () => {
+                    [
+                        "main-chart",
+                        "recovery-trend-chart",
+                        "elec-consumption-chart",
+                        "water-consumption-chart",
+                    ].forEach((id) => {
+                        const inst = echarts.getInstanceByDom(
+                            document.getElementById(id),
+                        );
+                        if (inst) inst.resize();
+                    });
+                });
+            };
+
+            function initDashboard() {
+                updateSummaryCards();
+                renderRecoveryTrend();
+                renderMainPerformanceChart();
+                updateEfficiencyDisplay();
+                renderConsumptionChart(
+                    "elec-consumption-chart",
+                    "kWh",
+                    "elecBilled",
+                    "elecRecovered",
+                    "#f59e0b",
+                    "Elec Consumption (kWh)",
+                    ["Month", "Billed (kWh)", "Recovered (kWh)"],
+                );
+                renderConsumptionChart(
+                    "water-consumption-chart",
+                    "kL",
+                    "waterBilled",
+                    "waterRecovered",
+                    "#3b82f6",
+                    "Water Consumption (kL)",
+                    ["Month", "Billed (kL)", "Recovered (kL)"],
+                );
+            }
+
+            function updateSummaryCards() {
+                const current = yearlyData[11];
+                const variance = current.billed - current.recovered;
+                const variancePct = (variance / current.billed) * 100;
+                document.getElementById("total-bill").innerText =
+                    `R ${current.billed.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+                document.getElementById("total-recovery").innerText =
+                    `R ${current.recovered.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+                document.getElementById("total-variance").innerText =
+                    `R ${variance.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+                document.getElementById("recovery-pct").innerText =
+                    `${current.rate}% Recovery`;
+                document.getElementById("variance-pct").innerText =
+                    `${variancePct.toFixed(1)}% Variance`;
+            }
+
+            function updateEfficiencyDisplay() {
+                const currentRate = yearlyData[11].rate;
+                const display = document.getElementById("efficiency-value");
+                const status = document.getElementById("efficiency-status");
+                display.innerText = `${currentRate}%`;
+                if (currentRate >= currentBenchmark) {
+                    status.innerText = "Target Achieved";
+                    status.style.color = "var(--success-green)";
+                    display.classList.remove("efficiency-alert");
+                    display.classList.add("efficiency-success");
+                } else {
+                    status.innerText = "Below Target";
+                    status.style.color = "var(--alert-red)";
+                    display.classList.remove("efficiency-success");
+                    display.classList.add("efficiency-alert");
+                }
+            }
+
+            function renderRecoveryTrend() {
+                const dom = document.getElementById("recovery-trend-chart");
+                let myChart =
+                    echarts.getInstanceByDom(dom) || echarts.init(dom);
+                const option = {
+                    toolbox: getToolbox(
+                        "Recovery Rate Trend",
+                        ["Month", "Recovery %"],
+                        yearlyData.map((d) => [d.month, d.rate + "%"]),
+                    ),
+                    tooltip: {
+                        trigger: "axis",
+                        backgroundColor: "rgba(255, 255, 255, 0.95)",
+                        textStyle: { color: "#334155", fontWeight: "bold" },
+                    },
+                    grid: {
+                        left: "3%",
+                        right: "4%",
+                        bottom: "3%",
+                        top: "15%",
+                        containLabel: true,
+                    },
+                    xAxis: {
+                        type: "category",
+                        data: labels,
+                        axisLabel: { fontSize: 10 },
+                    },
+                    yAxis: {
+                        type: "value",
+                        min: 70,
+                        max: 100,
+                        axisLabel: {
+                            formatter: "{value}%",
+                            color: "#94a3b8",
+                            fontWeight: 600,
+                        },
+                    },
+                    series: [
+                        {
+                            data: yearlyData.map((d) => d.rate),
+                            type: "line",
+                            smooth: true,
+                            symbolSize: 10,
+                            itemStyle: {
+                                color: (p) =>
+                                    p.value < currentBenchmark
+                                        ? "#dc2626"
+                                        : "#16a34a",
+                            },
+                            lineStyle: {
+                                width: 4,
+                                color: "#3b82f6",
+                                shadowBlur: 10,
+                                shadowColor: "rgba(59, 130, 246, 0.3)",
+                            },
+                            markArea: {
+                                silent: true,
+                                itemStyle: { color: winterHighlightColor },
+                                data: [
+                                    [
+                                        { name: "Winter", xAxis: "Jun 23" },
+                                        { xAxis: "Aug 23" },
+                                    ],
+                                ],
+                            },
+                            markLine: {
+                                silent: true,
+                                symbol: "none",
+                                data: [{ yAxis: currentBenchmark }],
+                                lineStyle: {
+                                    color: "#ef4444",
+                                    type: "dashed",
+                                    width: 2,
+                                },
+                                label: {
+                                    show: true,
+                                    position: "end",
+                                    formatter: "Target {c}%",
+                                    color: "#ef4444",
+                                    fontSize: 10,
+                                    fontWeight: "bold",
+                                },
+                            },
+                        },
+                    ],
+                };
+                option.xAxis.axisLabel.color = (val) =>
+                    getXAxisLabelStyle(val).color;
+                option.xAxis.axisLabel.fontWeight = (val) =>
+                    getXAxisLabelStyle(val).fontWeight;
+                myChart.setOption(option);
+            }
+
+            function renderMainPerformanceChart() {
+                const dom = document.getElementById("main-chart");
+                let myChart =
+                    echarts.getInstanceByDom(dom) || echarts.init(dom);
+                const option = {
+                    toolbox: getToolbox(
+                        "Billing vs Recovery Performance",
+                        ["Month", "Billed (R)", "Recovered (R)"],
+                        yearlyData.map((d) => [d.month, d.billed, d.recovered]),
+                    ),
+                    legend: {
+                        bottom: 0,
+                        icon: "roundRect",
+                        textStyle: { fontWeight: "bold", color: "#64748b" },
+                    },
+                    tooltip: { trigger: "axis" },
+                    grid: {
+                        left: "3%",
+                        right: "4%",
+                        bottom: "15%",
+                        top: "10%",
+                        containLabel: true,
+                    },
+                    xAxis: {
+                        type: "category",
+                        data: labels,
+                        axisLabel: { fontSize: 10 },
+                    },
+                    yAxis: {
+                        type: "value",
+                        axisLabel: {
+                            formatter: (val) => "R " + val / 1000 + "k",
+                            color: "#94a3b8",
+                            fontWeight: 600,
+                        },
+                    },
+                    series: [
+                        {
+                            name: "Billed",
+                            type: "bar",
+                            data: yearlyData.map((d) => d.billed),
+                            itemStyle: {
+                                color: "#404068",
+                                borderRadius: [6, 6, 0, 0],
+                            },
+                            barMaxWidth: 20,
+                            markArea: {
+                                silent: true,
+                                itemStyle: { color: winterHighlightColor },
+                                data: [
+                                    [
+                                        { name: "Winter", xAxis: "Jun 23" },
+                                        { xAxis: "Aug 23" },
+                                    ],
+                                ],
+                            },
+                        },
+                        {
+                            name: "Recovered",
+                            type: "bar",
+                            data: yearlyData.map((d) => d.recovered),
+                            itemStyle: {
+                                color: "#faa919",
+                                borderRadius: [6, 6, 0, 0],
+                            },
+                            barMaxWidth: 20,
+                        },
+                    ],
+                };
+                option.xAxis.axisLabel.color = (val) =>
+                    getXAxisLabelStyle(val).color;
+                option.xAxis.axisLabel.fontWeight = (val) =>
+                    getXAxisLabelStyle(val).fontWeight;
+                myChart.setOption(option);
+            }
+
+            function renderConsumptionChart(
+                id,
+                unit,
+                billedKey,
+                recoveredKey,
+                color,
+                chartTitle,
+                tableHeaders,
+            ) {
+                const dom = document.getElementById(id);
+                let myChart =
+                    echarts.getInstanceByDom(dom) || echarts.init(dom);
+                const option = {
+                    toolbox: getToolbox(
+                        chartTitle,
+                        tableHeaders,
+                        yearlyData.map((d) => [
+                            d.month,
+                            d[billedKey],
+                            d[recoveredKey],
+                        ]),
+                    ),
+                    tooltip: { trigger: "axis" },
+                    legend: {
+                        bottom: 0,
+                        icon: "circle",
+                        textStyle: { fontSize: 10, fontWeight: "bold" },
+                    },
+                    grid: {
+                        left: "3%",
+                        right: "4%",
+                        bottom: "20%",
+                        top: "15%",
+                        containLabel: true,
+                    },
+                    xAxis: {
+                        type: "category",
+                        data: labels,
+                        axisLabel: {
+                            color: "#94a3b8",
+                            fontSize: 9,
+                            fontWeight: 600,
+                        },
+                    },
+                    yAxis: {
+                        type: "value",
+                        axisLabel: {
+                            color: "#94a3b8",
+                            fontSize: 9,
+                            fontWeight: 600,
+                        },
+                    },
+                    series: [
+                        {
+                            name: `Billed`,
+                            type: "line",
+                            data: yearlyData.map((d) => d[billedKey]),
+                            smooth: true,
+                            lineStyle: {
+                                color: "#404068",
+                                width: 2,
+                                type: "dashed",
+                            },
+                            itemStyle: { color: "#404068" },
+                            symbol: "none",
+                        },
+                        {
+                            name: `Recovered`,
+                            type: "line",
+                            data: yearlyData.map((d) => d[recoveredKey]),
+                            smooth: true,
+                            lineStyle: { color: color, width: 4 },
+                            itemStyle: { color: color },
+                            symbol: "circle",
+                            symbolSize: 6,
+                            areaStyle: {
+                                color: new echarts.graphic.LinearGradient(
+                                    0,
+                                    0,
+                                    0,
+                                    1,
+                                    [
+                                        { offset: 0, color: color + "33" },
+                                        { offset: 1, color: color + "00" },
+                                    ],
+                                ),
+                            },
+                        },
+                    ],
+                };
+                myChart.setOption(option);
+            }
+
+            // Data Modal & CSV Functions
+            function showData(title, headers, rows) {
+                document.getElementById("modal-title").innerText = title;
+                const thead = document.getElementById("modal-thead");
+                const tbody = document.getElementById("modal-tbody");
+
+                thead.innerHTML = `<tr>${headers.map((h) => `<th class="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">${h}</th>`).join("")}</tr>`;
+                tbody.innerHTML = rows
+                    .map(
+                        (row) => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    ${row.map((cell) => `<td class="px-6 py-4 font-medium text-slate-700">${cell}</td>`).join("")}
+                </tr>
+            `,
+                    )
+                    .join("");
+
+                document
+                    .getElementById("data-modal")
+                    .classList.remove("hidden");
+                document.body.style.overflow = "hidden";
+            }
+
+            function hideData() {
+                document.getElementById("data-modal").classList.add("hidden");
+                document.body.style.overflow = "auto";
+            }
+
+            function downloadCSVFromModal() {
+                const title = document.getElementById("modal-title").innerText;
+                const headers = Array.from(
+                    document.querySelectorAll("#modal-thead th"),
+                ).map((th) => th.innerText);
+                const rows = Array.from(
+                    document.querySelectorAll("#modal-tbody tr"),
+                ).map((tr) =>
+                    Array.from(tr.querySelectorAll("td"))
+                        .map((td) => td.innerText)
+                        .join(","),
+                );
+
+                const csvContent =
+                    "data:text/csv;charset=utf-8," +
+                    [headers.join(","), ...rows].join("\n");
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute(
+                    "download",
+                    `${title.replace(/\s+/g, "_")}_data.csv`,
+                );
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            // PDF Generation Logic
+            async function downloadAsPDF() {
+                const loader = document.getElementById("pdf-loader");
+                const element = document.getElementById("dashboard-body");
+                const targetControl = document.getElementById("target-control");
+
+                loader.style.display = "flex";
+
+                // Temporary UI adjustments for cleaner PDF
+                targetControl.style.opacity = "0"; // Hide slider in PDF
+
+                try {
+                    const { jsPDF } = window.jspdf;
+
+                    const canvas = await html2canvas(element, {
+                        scale: 2, // High resolution
+                        useCORS: true,
+                        logging: false,
+                        backgroundColor: "#f1f5f9",
+                    });
+
+                    const imgData = canvas.toDataURL("image/png");
+                    const pdf = new jsPDF("p", "mm", "a4");
+
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+                    const imgWidth = canvas.width;
+                    const imgHeight = canvas.height;
+                    const ratio = Math.min(
+                        pdfWidth / imgWidth,
+                        pdfHeight / imgHeight,
+                    );
+
+                    const finalWidth = imgWidth * ratio;
+                    const finalHeight = imgHeight * ratio;
+
+                    pdf.addImage(imgData, "PNG", 0, 0, finalWidth, finalHeight);
+                    pdf.save(`CityOfJohannesburg_Report_982344100021.pdf`);
+                } catch (error) {
+                    console.error("PDF generation failed:", error);
+                } finally {
+                    loader.style.display = "none";
+                    targetControl.style.opacity = "1";
+                }
+            }
+        </script>
+    </body>
+</html>

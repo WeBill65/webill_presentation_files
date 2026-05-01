@@ -1,0 +1,2212 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Agent Management Dashboard</title>
+        <!-- Tailwind and DaisyUI CDN -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+            /* Custom styles to complement Tailwind/DaisyUI */
+            .agent-card {
+                transition:
+                    transform 0.2s ease,
+                    box-shadow 0.2s ease;
+            }
+            .agent-card.clickable {
+                cursor: pointer;
+            }
+            .agent-card.clickable:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            }
+            .custom-header {
+                background-color: #404068;
+            }
+            .header-title-text {
+                color: #faa919;
+            }
+            .filter-btn.active {
+                color: #faa919 !important;
+            }
+            .invite-btn,
+            .save-btn,
+            .link-action-btn,
+            .reassign-action-btn,
+            .confirm-deactivate-btn {
+                background-color: #faa919;
+                color: #404068;
+                transition: all 0.2s ease;
+            }
+            .invite-btn:hover,
+            .save-btn:hover,
+            .link-action-btn:hover,
+            .reassign-action-btn:hover,
+            .confirm-deactivate-btn:hover {
+                background-color: #fdb945;
+                transform: scale(1.02);
+            }
+            .modal-overlay {
+                background-color: rgba(0, 0, 0, 0.5);
+                backdrop-filter: blur(4px);
+                transition: opacity 0.3s ease;
+            }
+            .aptitude-tag {
+                background-color: #f3f4f6;
+                color: #4b5563;
+                font-size: 0.65rem;
+                padding: 2px 8px;
+                border-radius: 9999px;
+                font-weight: 600;
+                text-transform: uppercase;
+                border: 1px solid #e5e7eb;
+            }
+            .selection-chip {
+                cursor: pointer;
+                transition: all 0.2s;
+                border: 1px solid #e5e7eb;
+            }
+            .selection-chip.selected {
+                background-color: #404068;
+                color: #faa919;
+                border-color: #404068;
+            }
+            .aptitude-checkbox:checked + label {
+                background-color: #404068;
+                color: #faa919;
+                border-color: #404068;
+            }
+            .instructions-link {
+                color: #404068;
+                border-bottom: 1px dashed #404068;
+                transition: all 0.2s ease;
+            }
+            .instructions-link:hover {
+                color: #faa919;
+                border-bottom-color: #faa919;
+            }
+            .info-alert {
+                font-size: 0.75rem;
+                padding: 0.5rem;
+                border-radius: 0.5rem;
+                border: 1px solid;
+            }
+            .expiry-alert {
+                background-color: #fff7ed;
+                color: #9a3412;
+                border-color: #ffedd5;
+            }
+            .deactivation-alert {
+                background-color: #fef2f2;
+                color: #991b1b;
+                border-color: #fee2e2;
+            }
+            .instruction-item.selected {
+                background-color: #eff6ff;
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 1px #3b82f6;
+            }
+            .target-agent.selected {
+                background-color: #f0fdf4;
+                border-color: #22c55e;
+                box-shadow: inset 0 0 0 2px #22c55e;
+            }
+            .utility-tag {
+                font-size: 9px;
+                padding: 1px 4px;
+                border-radius: 4px;
+                font-weight: 800;
+                text-transform: uppercase;
+            }
+            .tag-water {
+                background: #dbeafe;
+                color: #1e40af;
+            }
+            .tag-electric {
+                background: #fef9c3;
+                color: #854d0e;
+            }
+            .tag-gas {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+
+            .workload-badge {
+                background-color: #f8fafc;
+                border: 1px solid #e2e8f0;
+                color: #64748b;
+                padding: 2px 6px;
+                border-radius: 6px;
+                font-size: 10px;
+                font-weight: 700;
+            }
+
+            .type-chip {
+                font-size: 8px;
+                padding: 1px 5px;
+                border-radius: 4px;
+                font-weight: 700;
+                border: 1px solid currentColor;
+                background: white;
+            }
+            .type-audit {
+                color: #7c3aed;
+            }
+            .type-read {
+                color: #2563eb;
+            }
+            .type-install {
+                color: #059669;
+            }
+
+            .sub-filter-btn {
+                padding: 4px 8px;
+                font-size: 10px;
+                font-weight: 700;
+                border-radius: 6px;
+                border: 1px solid #e2e8f0;
+                color: #64748b;
+                background: white;
+                transition: all 0.2s;
+            }
+            .sub-filter-btn.active {
+                background: #404068;
+                color: #faa919;
+                border-color: #404068;
+            }
+            .cost-badge {
+                background: #f1f5f9;
+                color: #475569;
+                font-weight: 800;
+                border-radius: 4px;
+                padding: 1px 4px;
+                font-size: 10px;
+            }
+            .instruction-cost-label {
+                color: #059669;
+                font-weight: 800;
+                font-size: 10px;
+            }
+            .deactivate-icon {
+                color: #94a3b8;
+                transition: all 0.2s;
+            }
+            .deactivate-icon:hover {
+                color: #ef4444;
+                transform: scale(1.1);
+            }
+            /* Fix for tooltip positioning inside card */
+            .agent-card .tooltip:before {
+                z-index: 50;
+            }
+
+            /* Specific styles for the Reassign Modal */
+            .modal-full-height {
+                max-height: 90vh; /* Set a maximum height relative to viewport */
+                height: 90vh; /* Explicit height for layout calculation */
+                display: flex;
+                flex-direction: column;
+            }
+
+            .summary-pill {
+                background: #eff6ff;
+                color: #1e40af;
+                padding: 2px 10px;
+                border-radius: 999px;
+                font-size: 11px;
+                font-weight: 800;
+                border: 1px solid #dbeafe;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-50 min-h-screen font-sans text-gray-900">
+        <div id="view-container">
+            <!-- Directory View -->
+            <div
+                id="directory-view"
+                class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4"
+            >
+                <header
+                    class="custom-header border-b border-gray-700 sticky top-0 z-20 rounded-t-2xl shadow-lg overflow-hidden"
+                >
+                    <div class="px-6 py-6 flex justify-between items-center">
+                        <div class="flex flex-col">
+                            <h1
+                                class="text-2xl font-bold header-title-text leading-tight tracking-tight"
+                            >
+                                Agent Directory
+                            </h1>
+                            <p
+                                class="text-xs text-blue-100 font-medium opacity-80"
+                            >
+                                Team availability overview
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <button
+                                onclick="toggleInviteModal(true)"
+                                class="invite-btn px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 shadow-md"
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2.5"
+                                        d="M12 4v16m8-8H4"
+                                    />
+                                </svg>
+                                Invite New Agent
+                            </button>
+                        </div>
+                    </div>
+
+                    <div
+                        class="bg-white/10 backdrop-blur-md border-t border-white/10"
+                    >
+                        <div
+                            class="px-6 py-3 flex flex-col md:flex-row md:items-center justify-between gap-4"
+                        >
+                            <div
+                                class="flex items-center space-x-2 bg-black/20 p-1 rounded-xl w-fit"
+                            >
+                                <button
+                                    onclick="filterAgents('all')"
+                                    id="filter-all"
+                                    class="filter-btn active px-4 py-2 text-sm font-semibold rounded-lg bg-white shadow-sm transition-all"
+                                >
+                                    All (<span id="count-all">0</span>)
+                                </button>
+                                <button
+                                    onclick="filterAgents('Active')"
+                                    id="filter-active"
+                                    class="filter-btn px-4 py-2 text-sm font-semibold rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all"
+                                >
+                                    Active (<span id="count-active">0</span>)
+                                </button>
+                                <button
+                                    onclick="filterAgents('Pending')"
+                                    id="filter-pending"
+                                    class="filter-btn px-4 py-2 text-sm font-semibold rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all"
+                                >
+                                    Pending (<span id="count-pending">0</span>)
+                                </button>
+                                <button
+                                    onclick="filterAgents('Inactive')"
+                                    id="filter-inactive"
+                                    class="filter-btn px-4 py-2 text-sm font-semibold rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all"
+                                >
+                                    Inactive (<span id="count-inactive">0</span
+                                    >)
+                                </button>
+                            </div>
+
+                            <div class="relative w-full md:w-72">
+                                <div
+                                    class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                                >
+                                    <svg
+                                        class="h-4 w-4 text-white/50"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                        />
+                                    </svg>
+                                </div>
+                                <input
+                                    type="text"
+                                    id="agent-search"
+                                    oninput="handleSearch()"
+                                    placeholder="Search name, email, or skill..."
+                                    class="block w-full pl-10 pr-3 py-2 border border-white/20 rounded-xl bg-white/10 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#faa919] focus:border-transparent text-sm transition-all"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <main class="py-8">
+                    <div
+                        id="agent-grid"
+                        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                    ></div>
+                    <div
+                        id="empty-state"
+                        class="hidden flex-col items-center justify-center py-20 text-center"
+                    >
+                        <div class="bg-gray-200 p-4 rounded-full mb-4">
+                            <svg
+                                class="w-12 h-12 text-gray-400"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                                />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900">
+                            No agents found
+                        </h3>
+                    </div>
+                </main>
+            </div>
+
+            <!-- Instructions View -->
+            <div
+                id="instructions-view"
+                class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4"
+            >
+                <header class="custom-header p-6 rounded-2xl shadow-lg">
+                    <div class="flex items-center gap-4">
+                        <button
+                            onclick="navigateTo('directory')"
+                            class="text-white hover:text-[#faa919] transition-colors"
+                        >
+                            <svg
+                                class="w-6 h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                                />
+                            </svg>
+                        </button>
+                        <div>
+                            <h2 class="text-2xl font-bold header-title-text">
+                                Agent Instructions
+                            </h2>
+                            <p
+                                id="instruction-agent-name"
+                                class="text-sm text-blue-100 opacity-80"
+                            >
+                                Managing tasks
+                            </p>
+                        </div>
+                    </div>
+                </header>
+                <main
+                    class="py-8 text-center bg-white rounded-2xl border border-gray-200 p-8"
+                >
+                    <p class="text-gray-500">
+                        Detailed instructions management interface.
+                    </p>
+                    <button
+                        onclick="navigateTo('directory')"
+                        class="mt-6 px-6 py-2 bg-gray-100 text-gray-700 font-bold rounded-xl"
+                    >
+                        Back
+                    </button>
+                </main>
+            </div>
+        </div>
+
+        <!-- Confirmation Modal (Deactivation) -->
+        <div
+            id="deactivate-confirm-modal"
+            class="fixed inset-0 z-[100] hidden overflow-y-auto"
+        >
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div
+                    onclick="toggleDeactivateConfirmModal(false)"
+                    class="modal-overlay fixed inset-0"
+                ></div>
+                <div
+                    class="inline-block align-middle bg-white rounded-2xl text-center overflow-hidden shadow-2xl transform transition-all sm:max-w-sm sm:w-full p-6"
+                >
+                    <div class="mb-4 flex justify-center">
+                        <div class="bg-red-100 p-3 rounded-full">
+                            <svg
+                                class="w-8 h-8 text-red-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                />
+                            </svg>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">
+                        Are you sure?
+                    </h3>
+                    <p class="text-sm text-gray-500 mb-6">
+                        Deactivating this agent will move them to the Inactive
+                        list. You can reactivate them later if needed.
+                    </p>
+                    <div class="flex flex-col gap-3">
+                        <button
+                            id="deactivate-confirm-btn"
+                            class="confirm-deactivate-btn w-full py-3 rounded-xl font-bold shadow-md"
+                        >
+                            Yes, Deactivate
+                        </button>
+                        <button
+                            onclick="toggleDeactivateConfirmModal(false)"
+                            class="w-full py-2 text-sm font-semibold text-gray-500 hover:text-gray-700"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Agent Modal -->
+        <div id="edit-modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+            <div
+                class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0"
+            >
+                <div
+                    onclick="toggleEditModal(false)"
+                    class="modal-overlay fixed inset-0"
+                ></div>
+                <div
+                    class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+                >
+                    <div
+                        class="custom-header px-6 py-4 flex justify-between items-center"
+                    >
+                        <h3 class="text-lg font-bold header-title-text">
+                            Edit Agent Details
+                        </h3>
+                        <button
+                            onclick="toggleEditModal(false)"
+                            class="text-white/60 hover:text-white"
+                        >
+                            <svg
+                                class="w-6 h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"
+                                />
+                            </svg>
+                        </button>
+                    </div>
+                    <form
+                        id="edit-form"
+                        onsubmit="handleEditSubmit(event)"
+                        class="p-6 space-y-4"
+                    >
+                        <input type="hidden" id="edit-agent-id" />
+
+                        <div class="flex flex-col items-center gap-4">
+                            <div
+                                class="relative group cursor-pointer"
+                                onclick="
+                                    document
+                                        .getElementById('edit-photo-input')
+                                        .click()
+                                "
+                            >
+                                <img
+                                    id="edit-photo-preview"
+                                    class="h-24 w-24 rounded-full object-cover border-4 border-gray-100 shadow-sm"
+                                    src=""
+                                />
+                                <div
+                                    class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <svg
+                                        class="w-6 h-6 text-white"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                                        />
+                                    </svg>
+                                </div>
+                            </div>
+                            <input
+                                type="file"
+                                id="edit-photo-input"
+                                class="hidden"
+                                accept="image/*"
+                                onchange="previewImage(this)"
+                            />
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label
+                                    class="block text-sm font-semibold text-gray-700 mb-1"
+                                    >Firstname</label
+                                >
+                                <input
+                                    type="text"
+                                    id="edit-firstname"
+                                    required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#404068] outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-sm font-semibold text-gray-700 mb-1"
+                                    >Lastname</label
+                                >
+                                <input
+                                    type="text"
+                                    id="edit-lastname"
+                                    required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#404068] outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-sm font-semibold text-gray-700 mb-1"
+                                >Cell Number</label
+                            >
+                            <input
+                                type="tel"
+                                id="edit-phone"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#404068] outline-none"
+                            />
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-sm font-semibold text-gray-700 mb-2"
+                                >Aptitudes</label
+                            >
+                            <div class="flex flex-wrap gap-2">
+                                <div class="relative">
+                                    <input
+                                        type="checkbox"
+                                        id="apt-electrician"
+                                        value="Electrician"
+                                        class="hidden aptitude-checkbox"
+                                    />
+                                    <label
+                                        for="apt-electrician"
+                                        class="cursor-pointer inline-block px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-semibold hover:border-gray-400 transition-all text-gray-600"
+                                        >ELECTRICIAN</label
+                                    >
+                                </div>
+                                <div class="relative">
+                                    <input
+                                        type="checkbox"
+                                        id="apt-plumber"
+                                        value="Plumber"
+                                        class="hidden aptitude-checkbox"
+                                    />
+                                    <label
+                                        for="apt-plumber"
+                                        class="cursor-pointer inline-block px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-semibold hover:border-gray-400 transition-all text-gray-600"
+                                        >PLUMBER</label
+                                    >
+                                </div>
+                                <div class="relative">
+                                    <input
+                                        type="checkbox"
+                                        id="apt-auditor"
+                                        value="Auditor"
+                                        class="hidden aptitude-checkbox"
+                                    />
+                                    <label
+                                        for="apt-auditor"
+                                        class="cursor-pointer inline-block px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-semibold hover:border-gray-400 transition-all text-gray-600"
+                                        >AUDITOR</label
+                                    >
+                                </div>
+                                <div class="relative">
+                                    <input
+                                        type="checkbox"
+                                        id="apt-reader"
+                                        value="Reader"
+                                        class="hidden aptitude-checkbox"
+                                    />
+                                    <label
+                                        for="apt-reader"
+                                        class="cursor-pointer inline-block px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-semibold hover:border-gray-400 transition-all text-gray-600"
+                                        >READER</label
+                                    >
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 flex justify-end gap-3">
+                            <button
+                                type="button"
+                                onclick="toggleEditModal(false)"
+                                class="px-6 py-2 border border-gray-300 rounded-xl font-semibold text-gray-600"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                class="save-btn px-8 py-2 rounded-xl font-bold shadow-md"
+                            >
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Link Agent Modal -->
+        <div id="link-modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+            <div
+                class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0"
+            >
+                <div
+                    onclick="toggleLinkModal(false)"
+                    class="modal-overlay fixed inset-0"
+                ></div>
+                <div
+                    class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+                >
+                    <div
+                        class="custom-header px-6 py-4 flex justify-between items-center"
+                    >
+                        <h3 class="text-lg font-bold header-title-text">
+                            Link Agent
+                        </h3>
+                        <button
+                            onclick="toggleLinkModal(false)"
+                            class="text-white/60 hover:text-white"
+                        >
+                            <svg
+                                class="w-6 h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"
+                                />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1 font-medium">
+                                Agent Name
+                            </p>
+                            <p
+                                id="link-agent-name"
+                                class="text-xl font-bold text-gray-900"
+                            ></p>
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-sm font-semibold text-gray-700 mb-3"
+                                >Linked Organizations</label
+                            >
+                            <div id="org-list" class="flex flex-wrap gap-2">
+                                <!-- JS populated -->
+                            </div>
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-sm font-semibold text-gray-700 mb-3"
+                                >Linked Schedules</label
+                            >
+                            <div
+                                id="schedule-list"
+                                class="flex flex-wrap gap-2"
+                            >
+                                <!-- JS populated -->
+                            </div>
+                        </div>
+
+                        <div
+                            class="pt-6 border-t border-gray-100 flex justify-end gap-3"
+                        >
+                            <button
+                                type="button"
+                                onclick="toggleLinkModal(false)"
+                                class="px-6 py-2 border border-gray-300 rounded-xl font-semibold text-gray-600"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onclick="saveLinks()"
+                                class="link-action-btn px-8 py-2 rounded-xl font-bold shadow-md"
+                            >
+                                Update Links
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reassign Modal -->
+        <div id="reassign-modal" class="fixed inset-0 z-50 hidden">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div
+                    onclick="toggleReassignModal(false)"
+                    class="modal-overlay fixed inset-0"
+                ></div>
+                <div
+                    class="relative bg-white rounded-2xl text-left shadow-xl transform transition-all sm:max-w-4xl sm:w-full modal-full-height z-10"
+                >
+                    <!-- Modal Header: Sticky -->
+                    <div
+                        class="custom-header px-6 py-4 flex justify-between items-center shrink-0"
+                    >
+                        <h3 class="text-lg font-bold header-title-text">
+                            Reassign Instructions
+                        </h3>
+                        <button
+                            onclick="toggleReassignModal(false)"
+                            class="text-white/60 hover:text-white"
+                        >
+                            <svg
+                                class="w-6 h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"
+                                />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Modal Main Content -->
+                    <div class="flex-1 overflow-hidden flex flex-col p-6 gap-4">
+                        <div class="shrink-0">
+                            <p
+                                class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1"
+                            >
+                                Source Agent
+                            </p>
+                            <p
+                                id="reassign-agent-name"
+                                class="text-xl font-bold text-gray-900"
+                            ></p>
+                        </div>
+
+                        <!-- Dual Lists -->
+                        <div
+                            class="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 gap-6"
+                        >
+                            <!-- Left Panel: Instructions -->
+                            <div
+                                class="border rounded-xl flex flex-col bg-gray-50 h-full overflow-hidden"
+                            >
+                                <div
+                                    class="px-4 py-3 bg-gray-100 border-b flex flex-col gap-3 shrink-0"
+                                >
+                                    <div
+                                        class="flex justify-between items-center"
+                                    >
+                                        <span
+                                            class="text-xs font-bold text-gray-600 uppercase tracking-wider"
+                                            >1. Select Instructions</span
+                                        >
+                                        <button
+                                            onclick="selectAllInstructions()"
+                                            id="select-all-btn"
+                                            class="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase"
+                                        >
+                                            Select All
+                                        </button>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <div class="relative">
+                                            <div
+                                                class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none"
+                                            >
+                                                <svg
+                                                    class="h-3 w-3 text-gray-400"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                                    />
+                                                </svg>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                id="instruction-sub-search"
+                                                oninput="renderReassignLists()"
+                                                placeholder="Search address or property..."
+                                                class="block w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:ring-1 focus:ring-[#404068]"
+                                            />
+                                        </div>
+                                        <div class="flex flex-wrap gap-1.5">
+                                            <button
+                                                onclick="
+                                                    setInstructionTypeFilter(
+                                                        'all',
+                                                    )
+                                                "
+                                                id="sub-filter-all"
+                                                class="sub-filter-btn active"
+                                            >
+                                                ALL
+                                            </button>
+                                            <button
+                                                onclick="
+                                                    setInstructionTypeFilter(
+                                                        'Audit',
+                                                    )
+                                                "
+                                                id="sub-filter-audit"
+                                                class="sub-filter-btn"
+                                            >
+                                                AUDIT
+                                            </button>
+                                            <button
+                                                onclick="
+                                                    setInstructionTypeFilter(
+                                                        'Read',
+                                                    )
+                                                "
+                                                id="sub-filter-read"
+                                                class="sub-filter-btn"
+                                            >
+                                                READ
+                                            </button>
+                                            <button
+                                                onclick="
+                                                    setInstructionTypeFilter(
+                                                        'Install',
+                                                    )
+                                                "
+                                                id="sub-filter-install"
+                                                class="sub-filter-btn"
+                                            >
+                                                INSTALL
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Scrollable Instruction Content -->
+                                <div
+                                    id="instruction-reassign-list"
+                                    class="flex-1 overflow-y-auto p-4 space-y-3"
+                                ></div>
+                            </div>
+
+                            <!-- Right Panel: Target Agent -->
+                            <div
+                                class="border rounded-xl flex flex-col bg-gray-50 h-full overflow-hidden"
+                            >
+                                <div
+                                    class="px-4 py-3 bg-gray-100 border-b shrink-0 flex items-center min-h-[96px]"
+                                >
+                                    <span
+                                        class="text-xs font-bold text-gray-600 uppercase tracking-wider"
+                                        >2. Select Target Agent</span
+                                    >
+                                </div>
+                                <!-- Scrollable Agent Content -->
+                                <div
+                                    id="target-agent-list"
+                                    class="flex-1 overflow-y-auto p-4 space-y-2"
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div
+                        class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-between items-center shrink-0"
+                    >
+                        <div id="reassign-summary" class="flex flex-col">
+                            <div
+                                class="text-[10px] text-gray-400 font-bold uppercase tracking-tight mb-1"
+                            >
+                                Reassignment Progress
+                            </div>
+                            <div
+                                id="reassign-summary-content"
+                                class="text-xs font-medium text-gray-500 flex items-center gap-2"
+                            >
+                                Select instructions and a recipient...
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <button
+                                type="button"
+                                onclick="toggleReassignModal(false)"
+                                class="px-6 py-2 border border-gray-300 rounded-xl font-semibold text-gray-600 hover:bg-gray-200 transition-colors bg-white"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onclick="executeReassignment()"
+                                class="reassign-action-btn px-8 py-2 rounded-xl font-bold shadow-md"
+                            >
+                                Assign & Reassign
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invite Modal -->
+        <div
+            id="invite-modal"
+            class="fixed inset-0 z-50 hidden overflow-y-auto"
+        >
+            <div
+                class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0"
+            >
+                <div
+                    onclick="toggleInviteModal(false)"
+                    class="modal-overlay fixed inset-0"
+                ></div>
+                <div
+                    class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+                >
+                    <div
+                        class="custom-header px-6 py-4 flex justify-between items-center"
+                    >
+                        <h3 class="text-lg font-bold header-title-text">
+                            Invite New Agent
+                        </h3>
+                        <button
+                            onclick="toggleInviteModal(false)"
+                            class="text-white/60 hover:text-white"
+                        >
+                            <svg
+                                class="w-6 h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"
+                                />
+                            </svg>
+                        </button>
+                    </div>
+                    <form
+                        id="invite-form"
+                        onsubmit="handleInviteSubmit(event)"
+                        class="p-6 space-y-4"
+                    >
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label
+                                    class="block text-sm font-semibold text-gray-700 mb-1"
+                                    >Firstname
+                                    <span class="text-red-500">*</span></label
+                                >
+                                <input
+                                    type="text"
+                                    name="firstName"
+                                    required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#404068] outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-sm font-semibold text-gray-700 mb-1"
+                                    >Lastname
+                                    <span class="text-red-500">*</span></label
+                                >
+                                <input
+                                    type="text"
+                                    name="lastName"
+                                    required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#404068] outline-none"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label
+                                class="block text-sm font-semibold text-gray-700 mb-1"
+                                >Email
+                                <span class="text-red-500">*</span></label
+                            >
+                            <input
+                                type="email"
+                                name="email"
+                                required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#404068] outline-none"
+                            />
+                        </div>
+                        <div class="pt-4 flex justify-end gap-3">
+                            <button
+                                type="button"
+                                onclick="toggleInviteModal(false)"
+                                class="px-6 py-2 border border-gray-300 rounded-xl font-semibold text-gray-600"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                class="invite-btn px-8 py-2 rounded-xl font-bold shadow-md"
+                            >
+                                Send Invitation
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast -->
+        <div
+            id="toast"
+            class="fixed bottom-10 right-10 z-[60] hidden transform translate-y-20 transition-all duration-300"
+        >
+            <div
+                id="toast-bg"
+                class="bg-green-600 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 font-bold"
+            >
+                <span id="toast-message">Success!</span>
+            </div>
+        </div>
+
+        <script>
+            const getFutureDate = (hours) => {
+                const date = new Date();
+                date.setHours(date.getHours() + hours);
+                return date.toISOString();
+            };
+
+            const getPastDate = (days) => {
+                const date = new Date();
+                date.setDate(date.getDate() - days);
+                date.setHours(
+                    Math.floor(Math.random() * 24),
+                    Math.floor(Math.random() * 60),
+                );
+                return date.toISOString();
+            };
+
+            const organizations = [
+                "Apex Global",
+                "Zenith Tech",
+                "Horizon Logistics",
+                "Beacon Inc",
+                "Nova Solutions",
+                "Starlight Core",
+                "Velocity Hub",
+            ];
+            const schedules = [
+                "Morning Shift",
+                "Swing Shift",
+                "Graveyard",
+                "Weekend Rush",
+                "Flex-On-Demand",
+                "Peak Hours",
+            ];
+
+            const instructionData = {
+                101: {
+                    utility: "Water",
+                    type: "Audit",
+                    property: "Grand Heights Plaza",
+                    address: "122 Business Pkwy, Suite 400",
+                    expires: getFutureDate(4),
+                    cost: 450.5,
+                },
+                102: {
+                    utility: "Electric",
+                    type: "Read",
+                    property: "Sun Valley Residences",
+                    address: "892 Oak St, Apt 12B",
+                    expires: getFutureDate(12),
+                    cost: 120.0,
+                },
+                103: {
+                    utility: "Gas",
+                    type: "Install",
+                    property: "Industrial Hub A",
+                    address: "44 Logistics Rd, Dock 9",
+                    expires: getFutureDate(24),
+                    cost: 1850.0,
+                },
+                104: {
+                    utility: "Electric",
+                    type: "Audit",
+                    property: "Willow Creek Mall",
+                    address: "500 Retail Ave",
+                    expires: getFutureDate(2),
+                    cost: 600.0,
+                },
+                201: {
+                    utility: "Water",
+                    type: "Read",
+                    property: "Parkside Condos",
+                    address: "33 Greenway Blvd",
+                    expires: getFutureDate(48),
+                    cost: 95.0,
+                },
+                202: {
+                    utility: "Electric",
+                    type: "Install",
+                    property: "Tower One",
+                    address: "1 Sky Plaza",
+                    expires: getFutureDate(36),
+                    cost: 2200.0,
+                },
+                203: {
+                    utility: "Gas",
+                    type: "Read",
+                    property: "Suburban Villas",
+                    address: "15 Cul-de-sac Way",
+                    expires: getFutureDate(8),
+                    cost: 110.0,
+                },
+                301: {
+                    utility: "Water",
+                    type: "Audit",
+                    property: "Harbor View",
+                    address: "55 Dockside Dr",
+                    expires: getFutureDate(15),
+                    cost: 450.5,
+                },
+                302: {
+                    utility: "Electric",
+                    type: "Read",
+                    property: "Neon District",
+                    address: "777 Vegas Strip",
+                    expires: getFutureDate(72),
+                    cost: 120.0,
+                },
+            };
+
+            let agents = [
+                {
+                    id: 1,
+                    firstName: "Sarah",
+                    lastName: "Jenkins",
+                    email: "sarah.j@example.com",
+                    phone: "+1 (555) 123-4567",
+                    status: "Active",
+                    photo: "https://i.pravatar.cc/150?u=sarah",
+                    aptitudes: ["Electrician", "Reader"],
+                    pendingInstructions: [101, 102, 103, 104],
+                    organizations: ["Apex Global"],
+                    schedules: ["Morning Shift"],
+                },
+                {
+                    id: 2,
+                    firstName: "Michael",
+                    lastName: "Chen",
+                    email: "m.chen@example.com",
+                    phone: "",
+                    status: "Pending",
+                    photo: "",
+                    aptitudes: [],
+                    pendingInstructions: [],
+                    invitationExpires: getFutureDate(24),
+                    organizations: [],
+                    schedules: [],
+                },
+                {
+                    id: 3,
+                    firstName: "Elena",
+                    lastName: "Rodriguez",
+                    email: "elena.r@example.com",
+                    phone: "+1 (555) 456-7890",
+                    status: "Inactive",
+                    photo: "https://i.pravatar.cc/150?u=elena",
+                    aptitudes: ["Auditor", "Plumber"],
+                    pendingInstructions: [],
+                    deactivationDate: getPastDate(12),
+                    organizations: [],
+                    schedules: [],
+                },
+                {
+                    id: 6,
+                    firstName: "Julian",
+                    lastName: "Vance",
+                    email: "j.vance@example.com",
+                    phone: "",
+                    status: "Pending",
+                    photo: "",
+                    aptitudes: [],
+                    pendingInstructions: [],
+                    invitationExpires: getFutureDate(6),
+                    organizations: [],
+                    schedules: [],
+                },
+                {
+                    id: 8,
+                    firstName: "Sophie",
+                    lastName: "Bayer",
+                    email: "sophie.b@example.com",
+                    phone: "+1 (555) 000-1111",
+                    status: "Active",
+                    photo: "https://i.pravatar.cc/150?u=sophie",
+                    aptitudes: ["Auditor"],
+                    pendingInstructions: [201, 202, 203],
+                    organizations: ["Zenith Tech", "Nova Solutions"],
+                    schedules: ["Flex-On-Demand"],
+                },
+                {
+                    id: 10,
+                    firstName: "David",
+                    lastName: "Miller",
+                    email: "d.miller@example.com",
+                    status: "Active",
+                    photo: "https://i.pravatar.cc/150?u=david",
+                    aptitudes: ["Plumber"],
+                    pendingInstructions: [301],
+                    organizations: ["Apex Global"],
+                    schedules: ["Morning Shift"],
+                },
+                {
+                    id: 11,
+                    firstName: "Emma",
+                    lastName: "Watson",
+                    email: "e.watson@example.com",
+                    status: "Active",
+                    photo: "https://i.pravatar.cc/150?u=emma",
+                    aptitudes: ["Reader"],
+                    pendingInstructions: [302],
+                    organizations: ["Nova Solutions"],
+                    schedules: ["Swing Shift"],
+                },
+                {
+                    id: 12,
+                    firstName: "Lucas",
+                    lastName: "Silva",
+                    email: "l.silva@example.com",
+                    status: "Pending",
+                    photo: "",
+                    aptitudes: [],
+                    pendingInstructions: [],
+                    invitationExpires: getFutureDate(36),
+                    organizations: [],
+                    schedules: [],
+                },
+                {
+                    id: 13,
+                    firstName: "Aria",
+                    lastName: "Gupta",
+                    email: "a.gupta@example.com",
+                    status: "Active",
+                    photo: "https://i.pravatar.cc/150?u=aria",
+                    aptitudes: ["Auditor", "Electrician"],
+                    pendingInstructions: [],
+                    organizations: ["Zenith Tech"],
+                    schedules: ["Graveyard"],
+                },
+                {
+                    id: 14,
+                    firstName: "Marcus",
+                    lastName: "Thorne",
+                    email: "m.thorne@example.com",
+                    status: "Inactive",
+                    photo: "https://i.pravatar.cc/150?u=marcus",
+                    aptitudes: ["Plumber"],
+                    pendingInstructions: [],
+                    deactivationDate: getPastDate(5),
+                    organizations: [],
+                    schedules: [],
+                },
+                {
+                    id: 15,
+                    firstName: "Chloe",
+                    lastName: "Simmons",
+                    email: "c.simmons@example.com",
+                    status: "Active",
+                    photo: "https://i.pravatar.cc/150?u=chloe",
+                    aptitudes: ["Reader"],
+                    pendingInstructions: [],
+                    organizations: ["Beacon Inc"],
+                    schedules: ["Morning Shift"],
+                },
+                {
+                    id: 16,
+                    firstName: "Nathan",
+                    lastName: "Drake",
+                    email: "n.drake@example.com",
+                    status: "Active",
+                    photo: "https://i.pravatar.cc/150?u=nathan",
+                    aptitudes: ["Auditor"],
+                    pendingInstructions: [],
+                    organizations: ["Velocity Hub"],
+                    schedules: ["Flex-On-Demand"],
+                },
+                {
+                    id: 17,
+                    firstName: "Isabella",
+                    lastName: "Rossi",
+                    email: "i.rossi@example.com",
+                    status: "Pending",
+                    photo: "",
+                    aptitudes: [],
+                    pendingInstructions: [],
+                    invitationExpires: getFutureDate(12),
+                    organizations: [],
+                    schedules: [],
+                },
+                {
+                    id: 18,
+                    firstName: "Xavier",
+                    lastName: "King",
+                    email: "x.king@example.com",
+                    status: "Active",
+                    photo: "https://i.pravatar.cc/150?u=xavier",
+                    aptitudes: ["Electrician"],
+                    pendingInstructions: [],
+                    organizations: ["Nova Solutions"],
+                    schedules: ["Swing Shift"],
+                },
+                {
+                    id: 19,
+                    firstName: "Leila",
+                    lastName: "Hassan",
+                    email: "l.hassan@example.com",
+                    status: "Active",
+                    photo: "https://i.pravatar.cc/150?u=leila",
+                    aptitudes: ["Reader", "Auditor"],
+                    pendingInstructions: [],
+                    organizations: ["Apex Global"],
+                    schedules: ["Graveyard"],
+                },
+                {
+                    id: 20,
+                    firstName: "Felix",
+                    lastName: "Müller",
+                    email: "f.muller@example.com",
+                    status: "Inactive",
+                    photo: "https://i.pravatar.cc/150?u=felix",
+                    aptitudes: ["Plumber"],
+                    pendingInstructions: [],
+                    deactivationDate: getPastDate(45),
+                    organizations: [],
+                    schedules: [],
+                },
+                {
+                    id: 21,
+                    firstName: "Grace",
+                    lastName: "O'Malley",
+                    email: "g.omalley@example.com",
+                    status: "Active",
+                    photo: "https://i.pravatar.cc/150?u=grace",
+                    aptitudes: ["Electrician"],
+                    pendingInstructions: [],
+                    organizations: ["Zenith Tech"],
+                    schedules: ["Weekend Rush"],
+                },
+                {
+                    id: 22,
+                    firstName: "Hiroshi",
+                    lastName: "Sato",
+                    email: "h.sato@example.com",
+                    status: "Pending",
+                    photo: "",
+                    aptitudes: [],
+                    pendingInstructions: [],
+                    invitationExpires: getFutureDate(48),
+                    organizations: [],
+                    schedules: [],
+                },
+                {
+                    id: 23,
+                    firstName: "Sienna",
+                    lastName: "Brooks",
+                    email: "s.brooks@example.com",
+                    status: "Active",
+                    photo: "https://i.pravatar.cc/150?u=sienna",
+                    aptitudes: ["Reader"],
+                    pendingInstructions: [],
+                    organizations: ["Beacon Inc"],
+                    schedules: ["Peak Hours"],
+                },
+                {
+                    id: 24,
+                    firstName: "Oscar",
+                    lastName: "Wilde",
+                    email: "o.wilde@example.com",
+                    status: "Active",
+                    photo: "https://i.pravatar.cc/150?u=oscar",
+                    aptitudes: ["Auditor"],
+                    pendingInstructions: [],
+                    organizations: ["Starlight Core"],
+                    schedules: ["Morning Shift"],
+                },
+                {
+                    id: 25,
+                    firstName: "Zoe",
+                    lastName: "Kravitz",
+                    email: "z.kravitz@example.com",
+                    status: "Active",
+                    photo: "https://i.pravatar.cc/150?u=zoe",
+                    aptitudes: ["Plumber"],
+                    pendingInstructions: [],
+                    organizations: ["Nova Solutions"],
+                    schedules: ["Flex-On-Demand"],
+                },
+                {
+                    id: 26,
+                    firstName: "Victor",
+                    lastName: "Hugo",
+                    email: "v.hugo@example.com",
+                    status: "Inactive",
+                    photo: "https://i.pravatar.cc/150?u=victor",
+                    aptitudes: ["Electrician"],
+                    pendingInstructions: [],
+                    deactivationDate: getPastDate(2),
+                    organizations: [],
+                    schedules: [],
+                },
+                {
+                    id: 27,
+                    firstName: "Maya",
+                    lastName: "Angelou",
+                    email: "m.angelou@example.com",
+                    status: "Active",
+                    photo: "https://i.pravatar.cc/150?u=maya",
+                    aptitudes: ["Auditor", "Reader"],
+                    pendingInstructions: [],
+                    organizations: ["Horizon Logistics"],
+                    schedules: ["Swing Shift"],
+                },
+                {
+                    id: 28,
+                    firstName: "Leo",
+                    lastName: "Tolstoy",
+                    email: "l.tolstoy@example.com",
+                    status: "Pending",
+                    photo: "",
+                    aptitudes: [],
+                    pendingInstructions: [],
+                    invitationExpires: getFutureDate(24),
+                    organizations: [],
+                    schedules: [],
+                },
+                {
+                    id: 29,
+                    firstName: "Nina",
+                    lastName: "Simone",
+                    email: "n.simone@example.com",
+                    status: "Active",
+                    photo: "https://i.pravatar.cc/150?u=nina",
+                    aptitudes: ["Electrician"],
+                    pendingInstructions: [],
+                    organizations: ["Beacon Inc"],
+                    schedules: ["Graveyard"],
+                },
+            ];
+
+            let currentFilter = "all";
+            let searchQuery = "";
+            let currentLinkAgent = null;
+            let tempOrgs = [];
+            let tempSchedules = [];
+            let reassignSourceAgent = null;
+            let selectedInstructionIds = [];
+            let selectedTargetAgentId = null;
+            let instructionTypeFilter = "all";
+
+            function navigateTo(view, agentName = "") {
+                const dirView = document.getElementById("directory-view");
+                const insView = document.getElementById("instructions-view");
+                if (view === "instructions") {
+                    document.getElementById(
+                        "instruction-agent-name",
+                    ).textContent = `Managing tasks for ${agentName}`;
+                    dirView.classList.add("hidden");
+                    insView.classList.remove("hidden");
+                    window.scrollTo(0, 0);
+                } else {
+                    insView.classList.add("hidden");
+                    dirView.classList.remove("hidden");
+                }
+            }
+
+            function previewImage(input) {
+                if (input.files && input.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        document.getElementById("edit-photo-preview").src =
+                            e.target.result;
+                    };
+                    reader.readAsDataURL(input.files[0]);
+                }
+            }
+
+            function toggleReassignModal(show, agentId = null) {
+                const modal = document.getElementById("reassign-modal");
+                if (show) {
+                    const agent = agents.find((a) => a.id == agentId);
+                    if (!agent || agent.pendingInstructions.length === 0) {
+                        showToast(
+                            "No pending instructions to reassign.",
+                            "bg-orange-600",
+                        );
+                        return;
+                    }
+                    reassignSourceAgent = agent;
+                    selectedInstructionIds = [];
+                    selectedTargetAgentId = null;
+                    instructionTypeFilter = "all";
+                    document.getElementById("reassign-agent-name").textContent =
+                        `${agent.firstName} ${agent.lastName}`;
+                    document.getElementById("instruction-sub-search").value =
+                        "";
+                    updateReassignSummary();
+                    renderReassignLists();
+                    modal.classList.remove("hidden");
+                    document.body.style.overflow = "hidden"; // Lock body scroll
+                } else {
+                    modal.classList.add("hidden");
+                    document.body.style.overflow = "auto"; // Unlock body scroll
+                }
+            }
+
+            function setInstructionTypeFilter(type) {
+                instructionTypeFilter = type;
+                document
+                    .querySelectorAll(".sub-filter-btn")
+                    .forEach((btn) => btn.classList.remove("active"));
+                document
+                    .getElementById(`sub-filter-${type.toLowerCase()}`)
+                    .classList.add("active");
+                renderReassignLists();
+            }
+
+            function renderReassignLists() {
+                const instructionList = document.getElementById(
+                    "instruction-reassign-list",
+                );
+                const targetAgentList =
+                    document.getElementById("target-agent-list");
+                const subSearch = document
+                    .getElementById("instruction-sub-search")
+                    .value.toLowerCase();
+
+                // Filter instructions
+                const filteredInstructions =
+                    reassignSourceAgent.pendingInstructions.filter((id) => {
+                        const data = instructionData[id];
+                        if (!data) return false;
+
+                        const matchesSearch =
+                            data.property.toLowerCase().includes(subSearch) ||
+                            data.address.toLowerCase().includes(subSearch);
+                        const matchesType =
+                            instructionTypeFilter === "all" ||
+                            data.type === instructionTypeFilter;
+
+                        return matchesSearch && matchesType;
+                    });
+
+                instructionList.innerHTML = filteredInstructions
+                    .map((id) => {
+                        const data = instructionData[id] || {
+                            utility: "N/A",
+                            type: "Task",
+                            property: "Unknown",
+                            address: "N/A",
+                            expires: getFutureDate(1),
+                            cost: 0,
+                        };
+                        const isSelected = selectedInstructionIds.includes(id);
+                        const utilityClass = `tag-${data.utility.toLowerCase()}`;
+                        const typeClass = `type-${data.type.toLowerCase()}`;
+
+                        return `
+                    <div onclick="toggleInstructionSelection(${id})" class="instruction-item cursor-pointer p-3 rounded-xl border bg-white flex flex-col gap-2 transition-all group ${isSelected ? "selected" : "hover:border-blue-300"}">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <div class="w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${isSelected ? "bg-blue-600 border-blue-600" : "border-gray-300 group-hover:border-blue-400"}">
+                                    ${isSelected ? '<svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>' : ""}
+                                </div>
+                                <span class="utility-tag ${utilityClass}">${data.utility}</span>
+                            </div>
+                            <span class="type-chip ${typeClass}">${data.type.toUpperCase()}</span>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-start gap-2">
+                                <p class="text-xs font-bold text-gray-800 truncate">${data.property}</p>
+                                ${data.cost ? `<span class="instruction-cost-label whitespace-nowrap">R${data.cost.toFixed(2)}</span>` : ""}
+                            </div>
+                            <p class="text-[10px] text-gray-500 font-medium truncate">${data.address}</p>
+                        </div>
+                    </div>`;
+                    })
+                    .join("");
+
+                if (filteredInstructions.length === 0) {
+                    instructionList.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs italic">No matching tasks found</div>`;
+                }
+
+                const otherAgents = agents.filter(
+                    (a) =>
+                        a.id !== reassignSourceAgent.id &&
+                        a.status === "Active",
+                );
+                targetAgentList.innerHTML = otherAgents
+                    .map((agent) => {
+                        const isSelected = selectedTargetAgentId === agent.id;
+                        const taskCount = agent.pendingInstructions.length;
+
+                        return `
+                    <div onclick="selectTargetAgent(${agent.id})" class="target-agent cursor-pointer p-3 rounded-xl border bg-white flex items-center gap-4 transition-all ${isSelected ? "selected" : "hover:border-green-200"}">
+                        <img src="${agent.photo || `https://ui-avatars.com/api/?name=${agent.firstName}+${agent.lastName}&background=404068&color=faa919`}" class="w-10 h-10 rounded-full border shadow-sm">
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                                <p class="text-sm font-bold text-gray-800 truncate">${agent.firstName}</p>
+                                <div class="workload-badge">${taskCount} tasks</div>
+                            </div>
+                        </div>
+                    </div>`;
+                    })
+                    .join("");
+            }
+
+            function toggleInstructionSelection(id) {
+                if (selectedInstructionIds.includes(id)) {
+                    selectedInstructionIds = selectedInstructionIds.filter(
+                        (i) => i !== id,
+                    );
+                } else {
+                    selectedInstructionIds.push(id);
+                }
+                updateReassignSummary();
+                renderReassignLists();
+            }
+
+            function selectAllInstructions() {
+                if (
+                    selectedInstructionIds.length ===
+                    reassignSourceAgent.pendingInstructions.length
+                ) {
+                    selectedInstructionIds = [];
+                } else {
+                    selectedInstructionIds = [
+                        ...reassignSourceAgent.pendingInstructions,
+                    ];
+                }
+                updateReassignSummary();
+                renderReassignLists();
+            }
+
+            function selectTargetAgent(id) {
+                selectedTargetAgentId = id;
+                updateReassignSummary();
+                renderReassignLists();
+            }
+
+            function updateReassignSummary() {
+                const summaryContainer = document.getElementById(
+                    "reassign-summary-content",
+                );
+                const targetAgent = agents.find(
+                    (a) => a.id === selectedTargetAgentId,
+                );
+
+                const totalCost = selectedInstructionIds.reduce((sum, id) => {
+                    return sum + (instructionData[id]?.cost || 0);
+                }, 0);
+
+                if (selectedInstructionIds.length > 0) {
+                    let html = `
+                    <div class="summary-pill flex items-center gap-1">
+                        ${selectedInstructionIds.length} Task${selectedInstructionIds.length > 1 ? "s" : ""} Selected
+                    </div>
+                    <div class="summary-pill !bg-green-50 !text-green-700 !border-green-200">
+                        Total Value: R${totalCost.toFixed(2)}
+                    </div>
+                `;
+
+                    if (targetAgent) {
+                        html += `
+                        <div class="flex items-center gap-1 ml-2">
+                            <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                            <span class="text-green-600 font-bold">${targetAgent.firstName}</span>
+                        </div>
+                    `;
+                    } else {
+                        html += `<span class="text-[10px] text-orange-500 italic ml-2">Select a recipient...</span>`;
+                    }
+                    summaryContainer.innerHTML = html;
+                } else {
+                    summaryContainer.innerHTML = `<span class="italic text-gray-400">Select instructions from the left panel...</span>`;
+                }
+            }
+
+            function executeReassignment() {
+                if (selectedInstructionIds.length === 0) {
+                    showToast(
+                        "Please select at least one task.",
+                        "bg-orange-600",
+                    );
+                    return;
+                }
+                if (!selectedTargetAgentId) {
+                    showToast(
+                        "Please select a recipient agent.",
+                        "bg-orange-600",
+                    );
+                    return;
+                }
+
+                const targetAgent = agents.find(
+                    (a) => a.id === selectedTargetAgentId,
+                );
+                reassignSourceAgent.pendingInstructions =
+                    reassignSourceAgent.pendingInstructions.filter(
+                        (id) => !selectedInstructionIds.includes(id),
+                    );
+                targetAgent.pendingInstructions.push(...selectedInstructionIds);
+
+                showToast(
+                    `Successfully moved ${selectedInstructionIds.length} tasks to ${targetAgent.firstName}.`,
+                );
+                toggleReassignModal(false);
+                renderGrid();
+            }
+
+            function toggleLinkModal(show, agentId = null) {
+                const modal = document.getElementById("link-modal");
+                if (show) {
+                    const agent = agents.find((a) => a.id == agentId);
+                    if (!agent) return;
+                    currentLinkAgent = agent;
+                    document.getElementById("link-agent-name").textContent =
+                        `${agent.firstName} ${agent.lastName}`;
+                    tempOrgs = [...(agent.organizations || [])];
+                    tempSchedules = [...(agent.schedules || [])];
+                    renderLinkSelection();
+                    modal.classList.remove("hidden");
+                    document.body.style.overflow = "hidden";
+                } else {
+                    modal.classList.add("hidden");
+                    document.body.style.overflow = "auto";
+                }
+            }
+
+            function renderLinkSelection() {
+                const orgList = document.getElementById("org-list");
+                const schedList = document.getElementById("schedule-list");
+                orgList.innerHTML = organizations
+                    .map((org) => {
+                        const isSelected = tempOrgs.includes(org);
+                        return `<button onclick="toggleSelection('org', '${org}')" class="selection-chip px-4 py-2 rounded-xl text-xs font-bold ${isSelected ? "selected" : "bg-gray-50 text-gray-500"}">${org.toUpperCase()}</button>`;
+                    })
+                    .join("");
+                schedList.innerHTML = schedules
+                    .map((sched) => {
+                        const isSelected = tempSchedules.includes(sched);
+                        return `<button onclick="toggleSelection('sched', '${sched}')" class="selection-chip px-4 py-2 rounded-xl text-xs font-bold ${isSelected ? "selected" : "bg-gray-50 text-gray-500"}">${sched.toUpperCase()}</button>`;
+                    })
+                    .join("");
+            }
+
+            function toggleSelection(type, value) {
+                if (type === "org") {
+                    if (tempOrgs.includes(value))
+                        tempOrgs = tempOrgs.filter((o) => o !== value);
+                    else tempOrgs.push(value);
+                } else {
+                    if (tempSchedules.includes(value))
+                        tempSchedules = tempSchedules.filter(
+                            (s) => s !== value,
+                        );
+                    else tempSchedules.push(value);
+                }
+                renderLinkSelection();
+            }
+
+            function saveLinks() {
+                if (currentLinkAgent) {
+                    currentLinkAgent.organizations = [...tempOrgs];
+                    currentLinkAgent.schedules = [...tempSchedules];
+                    showToast("Links updated!");
+                    toggleLinkModal(false);
+                    renderGrid();
+                }
+            }
+
+            function toggleEditModal(show, agentId = null) {
+                const modal = document.getElementById("edit-modal");
+                if (show) {
+                    const agent = agents.find((a) => a.id == agentId);
+                    if (!agent || agent.status !== "Active") return;
+                    document.getElementById("edit-agent-id").value = agent.id;
+                    document.getElementById("edit-firstname").value =
+                        agent.firstName || "";
+                    document.getElementById("edit-lastname").value =
+                        agent.lastName || "";
+                    document.getElementById("edit-phone").value =
+                        agent.phone || "";
+                    const preview =
+                        document.getElementById("edit-photo-preview");
+                    preview.src =
+                        agent.photo ||
+                        `https://ui-avatars.com/api/?name=${agent.firstName}+${agent.lastName}&background=404068&color=faa919`;
+                    document
+                        .querySelectorAll(".aptitude-checkbox")
+                        .forEach(
+                            (c) =>
+                                (c.checked = agent.aptitudes.includes(c.value)),
+                        );
+                    modal.classList.remove("hidden");
+                    document.body.style.overflow = "hidden";
+                } else {
+                    modal.classList.add("hidden");
+                    document.body.style.overflow = "auto";
+                }
+            }
+
+            function toggleDeactivateConfirmModal(show, agentId = null) {
+                const modal = document.getElementById(
+                    "deactivate-confirm-modal",
+                );
+                const confirmBtn = document.getElementById(
+                    "deactivate-confirm-btn",
+                );
+                if (show) {
+                    confirmBtn.onclick = () => {
+                        const agent = agents.find((a) => a.id === agentId);
+                        if (agent) {
+                            agent.status = "Inactive";
+                            agent.deactivationDate = new Date().toISOString();
+                            updateStatsInTabs();
+                            renderGrid();
+                            showToast("Agent deactivated.", "bg-red-600");
+                            toggleDeactivateConfirmModal(false);
+                        }
+                    };
+                    modal.classList.remove("hidden");
+                    document.body.style.overflow = "hidden";
+                } else {
+                    modal.classList.add("hidden");
+                    document.body.style.overflow = "auto";
+                }
+            }
+
+            function handleEditSubmit(event) {
+                event.preventDefault();
+                const id = document.getElementById("edit-agent-id").value;
+                const agent = agents.find((a) => a.id == id);
+                if (agent) {
+                    agent.firstName =
+                        document.getElementById("edit-firstname").value;
+                    agent.lastName =
+                        document.getElementById("edit-lastname").value;
+                    agent.phone = document.getElementById("edit-phone").value;
+                    agent.photo =
+                        document.getElementById("edit-photo-preview").src;
+                    const apts = [];
+                    document
+                        .querySelectorAll(".aptitude-checkbox:checked")
+                        .forEach((c) => apts.push(c.value));
+                    agent.aptitudes = apts;
+                    renderGrid();
+                    toggleEditModal(false);
+                    showToast("Agent updated!");
+                }
+            }
+
+            function removeAgent(id) {
+                agents = agents.filter((a) => a.id !== id);
+                updateStatsInTabs();
+                renderGrid();
+                showToast("Agent removed.", "bg-red-600");
+            }
+
+            function activateAgent(id) {
+                const agent = agents.find((a) => a.id === id);
+                if (agent) {
+                    agent.status = "Active";
+                    updateStatsInTabs();
+                    renderGrid();
+                    showToast("Agent activated!");
+                }
+            }
+
+            function resendInvitation(id) {
+                showToast("Invitation resent.");
+            }
+
+            function toggleInviteModal(show) {
+                const modal = document.getElementById("invite-modal");
+                if (show) modal.classList.remove("hidden");
+                else {
+                    modal.classList.add("hidden");
+                    document.getElementById("invite-form").reset();
+                }
+            }
+
+            function handleInviteSubmit(event) {
+                event.preventDefault();
+                const formData = new FormData(event.target);
+                agents.push({
+                    id: Date.now(),
+                    firstName: formData.get("firstName"),
+                    lastName: formData.get("lastName"),
+                    email: formData.get("email"),
+                    status: "Pending",
+                    photo: "",
+                    aptitudes: [],
+                    organizations: [],
+                    schedules: [],
+                    pendingInstructions: [],
+                    invitationExpires: getFutureDate(48),
+                });
+                updateStatsInTabs();
+                renderGrid();
+                toggleInviteModal(false);
+                showToast("Invitation sent!");
+            }
+
+            function showToast(msg, bgColor = "bg-green-600") {
+                const toast = document.getElementById("toast");
+                const bg = document.getElementById("toast-bg");
+                bg.className = `${bgColor} text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 font-bold`;
+                document.getElementById("toast-message").textContent = msg;
+                toast.classList.remove("hidden", "translate-y-20");
+                setTimeout(() => toast.classList.add("translate-y-20"), 3000);
+            }
+
+            function renderGrid() {
+                const grid = document.getElementById("agent-grid");
+                const emptyState = document.getElementById("empty-state");
+                const filtered = agents.filter((agent) => {
+                    const matchesFilter =
+                        currentFilter === "all" ||
+                        agent.status === currentFilter;
+                    const searchStr =
+                        `${agent.firstName} ${agent.lastName} ${agent.email}`.toLowerCase();
+                    return matchesFilter && searchStr.includes(searchQuery);
+                });
+
+                if (filtered.length === 0) {
+                    grid.classList.add("hidden");
+                    emptyState.classList.remove("hidden");
+                } else {
+                    grid.classList.remove("hidden");
+                    emptyState.classList.add("hidden");
+                    grid.innerHTML = filtered
+                        .map((agent) => createAgentCard(agent))
+                        .join("");
+                }
+            }
+
+            function createAgentCard(agent) {
+                const photoSrc =
+                    agent.photo ||
+                    `https://ui-avatars.com/api/?name=${agent.firstName}+${agent.lastName}&background=404068&color=faa919`;
+                const isActive = agent.status === "Active";
+                const isPending = agent.status === "Pending";
+                const isInactive = agent.status === "Inactive";
+                const statusColors = {
+                    Active: "bg-green-100 text-green-800 border-green-200",
+                    Pending: "bg-orange-100 text-orange-800 border-orange-200",
+                    Inactive: "bg-red-100 text-red-800 border-red-200",
+                };
+
+                let infoHtml = "";
+                if (isPending) {
+                    const expDate = new Date(agent.invitationExpires);
+                    const hoursLeft = Math.max(
+                        0,
+                        Math.floor((expDate - new Date()) / (1000 * 60 * 60)),
+                    );
+                    const formattedDate = expDate.toLocaleString([], {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    });
+                    infoHtml = `
+                    <div class="info-alert expiry-alert mt-4">
+                        <div class="flex items-center gap-1.5 font-bold mb-0.5">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Expires: ${hoursLeft}h left
+                        </div>
+                        <div class="text-[10px] opacity-70 font-medium">${formattedDate}</div>
+                    </div>`;
+                } else if (isInactive) {
+                    const deacDate = new Date(agent.deactivationDate);
+                    const daysInactive = Math.floor(
+                        (new Date() - deacDate) / (1000 * 60 * 60 * 24),
+                    );
+                    const formattedDeac = deacDate.toLocaleString([], {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    });
+                    infoHtml = `
+                    <div class="info-alert deactivation-alert mt-4">
+                        <div class="flex items-center gap-1.5 font-bold mb-0.5">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                            Record Inactive (${daysInactive} ${daysInactive === 1 ? "day" : "days"})
+                        </div>
+                        <div class="text-[10px] opacity-70 font-medium">${formattedDeac}</div>
+                    </div>`;
+                }
+
+                const aptitudesHtml =
+                    agent.aptitudes.length > 0
+                        ? `<div class="flex flex-wrap gap-1 mt-2">${agent.aptitudes.map((skill) => `<span class="aptitude-tag">${skill}</span>`).join("")}</div>`
+                        : "";
+                const linksHtml = isActive
+                    ? `<div class="mt-2 flex flex-wrap gap-1">${(agent.organizations || []).map((o) => `<span class="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[9px] font-bold border border-blue-100 uppercase">${o}</span>`).join("")}</div>`
+                    : "";
+
+                let instructionsHtml = "";
+                if (isActive && agent.pendingInstructions.length > 0) {
+                    const totalCost = agent.pendingInstructions.reduce(
+                        (sum, id) => {
+                            return sum + (instructionData[id]?.cost || 0);
+                        },
+                        0,
+                    );
+
+                    instructionsHtml = `
+                    <div class="mt-3 flex items-center justify-between">
+                        <div class="text-xs font-semibold flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-[#404068]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                            </svg>
+                            <a href="#" onclick="event.stopPropagation(); navigateTo('instructions', '${agent.firstName} ${agent.lastName}'); return false;" class="instructions-link">
+                                ${agent.pendingInstructions.length} Instructions
+                            </a>
+                        </div>
+                        ${totalCost > 0 ? `<div class="cost-badge" title="Total instruction value">R${totalCost.toFixed(2)}</div>` : ""}
+                    </div>`;
+                }
+
+                let actionsHtml = "";
+                if (isPending) {
+                    actionsHtml = `<div class="flex gap-2 w-full"><button onclick="removeAgent(${agent.id})" class="flex-1 py-1 text-[10px] font-bold text-red-600 bg-red-50 rounded-lg border border-red-100">Cancel</button><button onclick="resendInvitation(${agent.id})" class="flex-1 py-1 text-[10px] font-bold text-orange-600 bg-orange-50 rounded-lg border border-orange-100">Resend</button></div>`;
+                } else if (isInactive) {
+                    actionsHtml = `<button onclick="activateAgent(${agent.id})" class="w-full py-1 text-xs font-bold text-green-700 bg-green-50 rounded-lg border border-green-100">Activate Record</button>`;
+                } else {
+                    actionsHtml = `
+                    <div class="flex flex-wrap gap-1.5 w-full">
+                        <button onclick="event.stopPropagation(); toggleEditModal(true, ${agent.id});" class="flex-1 min-w-[30%] py-1 text-[10px] font-bold text-gray-700 bg-gray-50 rounded-lg border border-gray-200">Edit</button>
+                        <button onclick="event.stopPropagation(); toggleLinkModal(true, ${agent.id});" class="flex-1 min-w-[30%] py-1 text-[10px] font-bold text-blue-600 bg-blue-50 rounded-lg border border-blue-100">Link</button>
+                        <button onclick="event.stopPropagation(); toggleReassignModal(true, ${agent.id});" class="flex-1 min-w-[30%] py-1 text-[10px] font-bold text-purple-600 bg-purple-50 rounded-lg border border-purple-100">Reassign</button>
+                    </div>`;
+                }
+
+                const deactivationTrigger = isActive
+                    ? `
+                <div class="absolute top-4 right-4 z-10 tooltip tooltip-left md:tooltip-bottom" data-tip="Deactivate?">
+                    <button onclick="event.stopPropagation(); toggleDeactivateConfirmModal(true, ${agent.id})" class="deactivate-icon p-1 rounded-full hover:bg-red-50">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
+                    </button>
+                </div>
+            `
+                    : "";
+
+                return `
+                <div class="agent-card bg-white rounded-2xl border border-gray-200 p-5 flex flex-col items-start relative ${isActive ? "clickable shadow-sm" : ""}" onclick="${isActive ? `toggleEditModal(true, ${agent.id})` : ""}">
+                    ${deactivationTrigger}
+                    <div class="flex items-start w-full mb-4">
+                        <img class="h-14 w-14 rounded-full object-cover border-2 border-white shadow-sm mr-4" src="${photoSrc}">
+                        <div class="flex-1 min-w-0 pr-6">
+                            <h3 class="text-base font-bold text-gray-900 truncate">${agent.firstName} ${agent.lastName}</h3>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold border ${statusColors[agent.status]}">${agent.status}</span>
+                            ${aptitudesHtml}${linksHtml}
+                        </div>
+                    </div>
+                    <div class="space-y-1 w-full text-[11px] mb-4">
+                        <div class="text-gray-500 truncate font-medium">${agent.email}</div>
+                        ${instructionsHtml}${infoHtml}
+                    </div>
+                    <div class="mt-auto pt-3 border-t border-gray-100 w-full">${actionsHtml}</div>
+                </div>`;
+            }
+
+            function updateStatsInTabs() {
+                document.getElementById("count-all").textContent =
+                    agents.length;
+                document.getElementById("count-active").textContent =
+                    agents.filter((a) => a.status === "Active").length;
+                document.getElementById("count-pending").textContent =
+                    agents.filter((a) => a.status === "Pending").length;
+                document.getElementById("count-inactive").textContent =
+                    agents.filter((a) => a.status === "Inactive").length;
+            }
+
+            function filterAgents(status) {
+                currentFilter = status;
+                document.querySelectorAll(".filter-btn").forEach((btn) => {
+                    btn.classList.remove("bg-white", "shadow-sm", "active");
+                    btn.classList.add("text-white/80");
+                });
+                const activeBtn = document.getElementById(
+                    `filter-${status.toLowerCase()}`,
+                );
+                activeBtn.classList.add("bg-white", "shadow-sm", "active");
+                activeBtn.classList.remove("text-white/80");
+                renderGrid();
+            }
+
+            function handleSearch() {
+                searchQuery = document
+                    .getElementById("agent-search")
+                    .value.toLowerCase();
+                renderGrid();
+            }
+
+            window.onload = () => {
+                updateStatsInTabs();
+                renderGrid();
+            };
+        </script>
+    </body>
+</html>

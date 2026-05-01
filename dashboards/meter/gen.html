@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Generator Performance & Recovery Dashboard</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+        <style>
+            .heatmap-container {
+                width: 100%;
+                height: 850px;
+            }
+            .recovery-chart-container {
+                width: 100%;
+                height: 300px;
+            }
+            .card {
+                background: white;
+                border-radius: 0.75rem;
+                box-shadow:
+                    0 4px 6px -1px rgb(0 0 0 / 0.1),
+                    0 2px 4px -2px rgb(0 0 0 / 0.1);
+                padding: 1.5rem;
+            }
+            select {
+                cursor: pointer;
+                appearance: none;
+                background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+                background-repeat: no-repeat;
+                background-position: right 0.5rem center;
+                background-size: 1em;
+            }
+            .nav-btn:disabled {
+                opacity: 0.3;
+                cursor: not-allowed;
+            }
+            /* Custom Branding Styles */
+            .brand-bg {
+                background-color: #404068;
+            }
+            .brand-text {
+                color: #faa919;
+            }
+            .brand-border {
+                border-color: #faa919;
+            }
+        </style>
+    </head>
+    <body class="bg-slate-100 text-slate-900 font-sans min-h-screen">
+        <!-- Header Section -->
+        <header
+            class="brand-bg brand-text p-6 shadow-xl mt-4 mx-4 rounded-t-3xl"
+        >
+            <div
+                class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4"
+            >
+                <div>
+                    <h1 class="text-3xl font-black tracking-tight">
+                        Generator Ops Dashboard
+                    </h1>
+                    <p
+                        class="text-slate-300 text-sm font-medium opacity-80 uppercase tracking-widest"
+                    >
+                        Industrial Site #42 — Performance Matrix
+                    </p>
+                </div>
+
+                <!-- Generator Metadata -->
+                <div class="flex gap-4">
+                    <div
+                        class="bg-white/10 px-5 py-2 rounded-2xl border border-white/20 backdrop-blur-sm text-center"
+                    >
+                        <span
+                            class="text-[10px] text-slate-300 block uppercase font-black tracking-widest mb-0.5"
+                            >Generator ID</span
+                        >
+                        <span class="text-xl font-mono font-bold"
+                            >GEN-TX-0892</span
+                        >
+                    </div>
+                    <div
+                        class="bg-white/10 px-5 py-2 rounded-2xl border border-white/20 backdrop-blur-sm text-center"
+                    >
+                        <span
+                            class="text-[10px] text-slate-300 block uppercase font-black tracking-widest mb-0.5"
+                            >Connected Meters</span
+                        >
+                        <span class="text-xl font-mono font-bold"
+                            >14 Units</span
+                        >
+                    </div>
+                    <!-- Added Tariff Information -->
+                    <div
+                        class="bg-amber-500/20 px-5 py-2 rounded-2xl border border-amber-500/30 backdrop-blur-sm text-center"
+                    >
+                        <span
+                            class="text-[10px] text-amber-200 block uppercase font-black tracking-widest mb-0.5"
+                            >Active Tariff</span
+                        >
+                        <span class="text-xl font-mono font-bold"
+                            >R 125.00<span class="text-xs opacity-60 ml-1"
+                                >/hr</span
+                            ></span
+                        >
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 pb-12 space-y-6 pt-6">
+            <!-- Top Level Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="card border-l-4 border-amber-400">
+                    <span
+                        class="text-[11px] text-slate-400 uppercase font-black tracking-widest block mb-1"
+                        >Monthly Total Charge</span
+                    >
+                    <span
+                        id="stat-main-charge"
+                        class="text-2xl font-mono font-bold text-slate-800"
+                        >R 0.00</span
+                    >
+                    <p class="text-[10px] text-slate-400 mt-2">
+                        Sum of hourly consumption costs
+                    </p>
+                </div>
+                <div class="card border-l-4 border-emerald-500">
+                    <span
+                        class="text-[11px] text-slate-400 uppercase font-black tracking-widest block mb-1"
+                        >Monthly Total Recovery</span
+                    >
+                    <span
+                        id="stat-main-recovery"
+                        class="text-2xl font-mono font-bold text-slate-800"
+                        >R 0.00</span
+                    >
+                    <p class="text-[10px] text-slate-400 mt-2">
+                        Sum of recovered operational costs
+                    </p>
+                </div>
+                <div class="card border-l-4 border-blue-500">
+                    <span
+                        class="text-[11px] text-slate-400 uppercase font-black tracking-widest block mb-1"
+                        >Avg. Monthly Recovery</span
+                    >
+                    <span
+                        id="stat-avg-recovery"
+                        class="text-2xl font-mono font-bold text-slate-800"
+                        >R 0.00</span
+                    >
+                    <p class="text-[10px] text-slate-400 mt-2">
+                        Based on current 12-month window
+                    </p>
+                </div>
+            </div>
+
+            <!-- Rolling 12-Month Recovery Chart -->
+            <div class="card">
+                <div
+                    class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4"
+                >
+                    <div class="flex flex-col">
+                        <h2 class="text-lg font-bold flex items-center gap-2">
+                            <svg
+                                class="w-5 h-5 text-emerald-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
+                                ></path>
+                            </svg>
+                            Monthly Recovery Performance
+                        </h2>
+                        <p
+                            id="recovery-chart-subtitle"
+                            class="text-[10px] text-slate-400 font-semibold uppercase tracking-widest mt-0.5"
+                        >
+                            Rolling 12-Month window
+                        </p>
+                    </div>
+                    <div
+                        class="flex items-center gap-2 bg-slate-50 p-1 rounded-lg border border-slate-200"
+                    >
+                        <button
+                            onclick="shiftChartWindow(-12)"
+                            class="p-1.5 hover:bg-white hover:shadow-sm rounded transition-all text-slate-600"
+                            title="Go back 1 year"
+                        >
+                            <svg
+                                class="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+                                ></path>
+                            </svg>
+                        </button>
+                        <span
+                            class="text-[10px] font-bold text-slate-400 px-2 uppercase tracking-tighter"
+                            >Shift Window</span
+                        >
+                        <button
+                            id="btn-rolling-forward"
+                            onclick="shiftChartWindow(12)"
+                            class="p-1.5 hover:bg-white hover:shadow-sm rounded transition-all text-slate-600 disabled:opacity-20"
+                            title="Go forward 1 year"
+                        >
+                            <svg
+                                class="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                                ></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div
+                    id="recovery-delta-chart"
+                    class="recovery-chart-container"
+                ></div>
+            </div>
+
+            <!-- Single-Row Navigation & Consolidated Stats -->
+            <div class="flex justify-center mb-8">
+                <div
+                    class="flex flex-wrap items-center justify-between gap-2 bg-white p-2 rounded-xl shadow-sm border border-slate-200 w-full"
+                >
+                    <!-- Left: Navigation Group -->
+                    <div class="flex items-center gap-2">
+                        <div
+                            class="flex items-center bg-slate-50 rounded-lg p-0.5 border border-slate-100"
+                        >
+                            <button
+                                onclick="changeMonth(-1)"
+                                class="nav-btn p-1.5 hover:bg-white hover:shadow-sm rounded transition-all"
+                            >
+                                <svg
+                                    class="w-4 h-4 text-slate-600"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M15 19l-7-7 7-7"
+                                    ></path>
+                                </svg>
+                            </button>
+                            <button
+                                id="btn-next"
+                                onclick="changeMonth(1)"
+                                class="nav-btn p-1.5 hover:bg-white hover:shadow-sm rounded transition-all"
+                            >
+                                <svg
+                                    class="w-4 h-4 text-slate-600"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M9 5l7 7-7 7"
+                                    ></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-1.5 ml-1">
+                            <select
+                                id="select-month"
+                                onchange="handleSelectChange()"
+                                class="pl-2 pr-7 py-1 text-xs font-bold border border-slate-200 rounded-md bg-white text-slate-700 min-w-[100px]"
+                            >
+                                <option value="0">January</option>
+                                <option value="1">February</option>
+                                <option value="2">March</option>
+                                <option value="3">April</option>
+                                <option value="4">May</option>
+                                <option value="5">June</option>
+                                <option value="6">July</option>
+                                <option value="7">August</option>
+                                <option value="8">September</option>
+                                <option value="9">October</option>
+                                <option value="10">November</option>
+                                <option value="11">December</option>
+                            </select>
+                            <select
+                                id="select-year"
+                                onchange="handleSelectChange()"
+                                class="pl-2 pr-7 py-1 text-xs font-bold border border-slate-200 rounded-md bg-white text-slate-700"
+                            >
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                        <div class="h-6 w-[1px] bg-slate-200 mx-1"></div>
+                        <button
+                            onclick="goToCurrentMonth()"
+                            class="px-3 py-1 text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-md transition-all whitespace-nowrap uppercase tracking-tighter"
+                        >
+                            Reset Today
+                        </button>
+                    </div>
+
+                    <!-- Right: High-level Metrics -->
+                    <div
+                        class="flex items-center gap-4 bg-slate-50/50 px-4 py-1.5 rounded-lg border border-slate-100 ml-auto"
+                    >
+                        <div class="flex items-center gap-2">
+                            <span
+                                class="text-[9px] font-black uppercase text-slate-400 tracking-wider"
+                                >Active:</span
+                            >
+                            <span
+                                id="nav-stat-hours"
+                                class="text-xs font-bold text-slate-700 font-mono"
+                                >0.0h</span
+                            >
+                        </div>
+                        <div class="h-4 w-[1px] bg-slate-200"></div>
+                        <div class="flex items-center gap-2">
+                            <span
+                                class="text-[9px] font-black uppercase text-slate-400 tracking-wider"
+                                >Charge:</span
+                            >
+                            <span
+                                id="nav-stat-charge"
+                                class="text-xs font-bold text-slate-700 font-mono"
+                                >R 0.00</span
+                            >
+                        </div>
+                        <div class="h-4 w-[1px] bg-slate-200"></div>
+                        <div class="flex items-center gap-2">
+                            <span
+                                class="text-[9px] font-black uppercase text-slate-400 tracking-wider"
+                                >Recovery:</span
+                            >
+                            <span
+                                id="nav-stat-recovery"
+                                class="text-xs font-bold text-slate-700 font-mono"
+                                >R 0.00</span
+                            >
+                        </div>
+                        <div class="h-4 w-[1px] bg-slate-200"></div>
+                        <div class="flex items-center gap-2">
+                            <span
+                                class="text-[9px] font-black uppercase text-slate-400 tracking-wider"
+                                >Rate:</span
+                            >
+                            <span
+                                id="nav-stat-rate"
+                                class="text-xs font-bold font-mono transition-colors duration-300"
+                                >0.0%</span
+                            >
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Heatmap Section -->
+            <div class="card">
+                <div
+                    class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b border-slate-50 pb-4"
+                >
+                    <div class="flex flex-col">
+                        <h2 class="text-lg font-bold flex items-center gap-2">
+                            <svg
+                                class="w-5 h-5 text-blue-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                                ></path>
+                            </svg>
+                            Daily Operational Matrix
+                        </h2>
+                        <p
+                            class="text-[10px] text-slate-400 font-semibold uppercase tracking-widest mt-0.5"
+                        >
+                            Highlight:
+                            <span class="text-red-500"
+                                >Red if &lt;95% Recovery</span
+                            >
+                            /
+                            <span class="text-emerald-600"
+                                >Green if &ge;95%</span
+                            >
+                        </p>
+                    </div>
+                    <div
+                        class="flex items-center gap-4 text-[10px] font-bold uppercase tracking-wider"
+                    >
+                        <span class="flex items-center gap-1.5"
+                            ><span
+                                class="w-3 h-3 bg-blue-600 rounded-sm"
+                            ></span>
+                            100% Run</span
+                        >
+                        <span class="flex items-center gap-1.5"
+                            ><span
+                                class="w-3 h-3 bg-blue-200 rounded-sm border border-slate-100"
+                            ></span>
+                            Partial</span
+                        >
+                        <span class="flex items-center gap-1.5"
+                            ><span
+                                class="w-3 h-3 bg-slate-50 rounded-sm border border-slate-200"
+                            ></span>
+                            Idle</span
+                        >
+                    </div>
+                </div>
+                <div id="heatmap-chart" class="heatmap-container"></div>
+            </div>
+        </main>
+
+        <script>
+            const HOURS = [
+                "12a",
+                "1a",
+                "2a",
+                "3a",
+                "4a",
+                "5a",
+                "6a",
+                "7a",
+                "8a",
+                "9a",
+                "10a",
+                "11a",
+                "12p",
+                "1p",
+                "2p",
+                "3p",
+                "4p",
+                "5p",
+                "6p",
+                "7p",
+                "8p",
+                "9p",
+                "10p",
+                "11p",
+            ];
+            const MONTHS = [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun",
+                "Jul",
+                "Aug",
+                "Sep",
+                "Oct",
+                "Nov",
+                "Dec",
+            ];
+            const BASE_TARIFF = 125.0; // Consistent rate across calculations
+
+            let heatmapChart, deltaChart;
+            let viewDate = new Date();
+            viewDate.setDate(1);
+
+            let chartEndDate = new Date();
+            chartEndDate.setDate(1);
+
+            // Helper to download CSV
+            function downloadCSV(filename, rows) {
+                const content =
+                    "data:text/csv;charset=utf-8," +
+                    rows.map((e) => e.join(",")).join("\n");
+                const encodedUri = encodeURI(content);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", filename);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            function getRawStatsForMonth(year, month) {
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const daily = [];
+                const heatmap = [];
+                const seed = year + month;
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    let dayRuntime = 0;
+                    for (let h = 0; h < 24; h++) {
+                        const val = Math.sin(seed + d + h) * 10000;
+                        const random = val - Math.floor(val);
+
+                        let runtimeVal = 0;
+                        if (h >= 7 && h <= 18) {
+                            if (random > 0.85)
+                                runtimeVal = Math.round(random * 100) / 100;
+                            else if (random > 0.15) runtimeVal = 1.0;
+                            else
+                                runtimeVal =
+                                    random > 0.05
+                                        ? Math.round(random * 0.3 * 100) / 100
+                                        : 0;
+                        } else {
+                            runtimeVal =
+                                random > 0.94
+                                    ? Math.round(random * 0.4 * 100) / 100
+                                    : 0;
+                        }
+
+                        heatmap.push([h, d - 1, runtimeVal]);
+                        dayRuntime += runtimeVal;
+                    }
+                    const cost = dayRuntime * BASE_TARIFF;
+                    const variance = 0.88 + Math.sin(d * (seed + 2)) * 0.14;
+                    const recovery = dayRuntime * (BASE_TARIFF * variance);
+
+                    daily.push({
+                        day: d,
+                        runtime: dayRuntime,
+                        cost: cost,
+                        recovery: recovery,
+                        recoveryPercent: cost > 0 ? (recovery / cost) * 100 : 0,
+                        delta: recovery - cost,
+                    });
+                }
+                return { heatmap, daily, daysInMonth };
+            }
+
+            function getRollingAnnualPerformance(endDate) {
+                const results = [];
+                const tempDate = new Date(endDate);
+                tempDate.setMonth(tempDate.getMonth() - 11);
+
+                for (let i = 0; i < 12; i++) {
+                    const y = tempDate.getFullYear();
+                    const m = tempDate.getMonth();
+                    const data = getRawStatsForMonth(y, m);
+                    const totalCharge = data.daily.reduce(
+                        (sum, d) => sum + d.cost,
+                        0,
+                    );
+                    const totalRecovery = data.daily.reduce(
+                        (sum, d) => sum + d.recovery,
+                        0,
+                    );
+                    const totalDelta = data.daily.reduce(
+                        (sum, d) => sum + d.delta,
+                        0,
+                    );
+
+                    results.push({
+                        monthName: `${MONTHS[m]} '${String(y).slice(-2)}`,
+                        month: m,
+                        year: y,
+                        charge: totalCharge,
+                        recovery: totalRecovery,
+                        delta: totalDelta,
+                        isTarget:
+                            y === viewDate.getFullYear() &&
+                            m === viewDate.getMonth(),
+                    });
+
+                    tempDate.setMonth(tempDate.getMonth() + 1);
+                }
+                return results;
+            }
+
+            function populateYearSelector() {
+                const select = document.getElementById("select-year");
+                const currentYear = new Date().getFullYear();
+                select.innerHTML = "";
+                for (let i = currentYear - 5; i <= currentYear; i++) {
+                    const opt = document.createElement("option");
+                    opt.value = i;
+                    opt.textContent = i;
+                    if (i === currentYear) opt.selected = true;
+                    select.appendChild(opt);
+                }
+            }
+
+            function handleSelectChange() {
+                const m = parseInt(
+                    document.getElementById("select-month").value,
+                );
+                const y = parseInt(
+                    document.getElementById("select-year").value,
+                );
+                viewDate = new Date(y, m, 1);
+                updateDashboard(false);
+            }
+
+            function changeMonth(delta) {
+                viewDate.setMonth(viewDate.getMonth() + delta);
+                updateDashboard(false);
+            }
+
+            function shiftChartWindow(months) {
+                chartEndDate.setMonth(chartEndDate.getMonth() + months);
+                updateDashboard(true);
+            }
+
+            function goToCurrentMonth() {
+                viewDate = new Date();
+                viewDate.setDate(1);
+                chartEndDate = new Date(viewDate);
+                updateDashboard(true);
+            }
+
+            function updateDashboard(forceChartRefresh = true) {
+                const year = viewDate.getFullYear();
+                const month = viewDate.getMonth();
+
+                document.getElementById("select-month").value = month;
+                document.getElementById("select-year").value = year;
+
+                const now = new Date();
+                const isFuture = new Date(year, month + 1, 1) > now;
+                document.getElementById("btn-next").disabled = isFuture;
+                document.getElementById("btn-rolling-forward").disabled =
+                    chartEndDate >= now;
+
+                const currentMonthData = getRawStatsForMonth(year, month);
+                const rollingData = getRollingAnnualPerformance(chartEndDate);
+
+                renderStats(currentMonthData, rollingData);
+                renderHeatmap(currentMonthData);
+                renderRollingRecoveryChart(rollingData);
+            }
+
+            function renderStats(data, rollingData) {
+                const totalHours = data.daily.reduce(
+                    (a, b) => a + b.runtime,
+                    0,
+                );
+                const totalCost = data.daily.reduce((a, b) => a + b.cost, 0);
+                const totalRecovery = data.daily.reduce(
+                    (a, b) => a + b.recovery,
+                    0,
+                );
+                const recoveryPct =
+                    totalCost > 0 ? (totalRecovery / totalCost) * 100 : 0;
+
+                const avgMonthlyRecovery =
+                    rollingData.reduce((a, b) => a + b.recovery, 0) /
+                    rollingData.length;
+
+                const fmt = (val) =>
+                    `R ${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                const fmtShort = (val) =>
+                    `R ${val.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+
+                document.getElementById("stat-main-charge").innerText =
+                    fmt(totalCost);
+                document.getElementById("stat-main-recovery").innerText =
+                    fmt(totalRecovery);
+                document.getElementById("stat-avg-recovery").innerText =
+                    fmt(avgMonthlyRecovery);
+
+                document.getElementById("nav-stat-hours").innerText =
+                    `${totalHours.toFixed(1)}h`;
+                document.getElementById("nav-stat-charge").innerText =
+                    fmtShort(totalCost);
+                document.getElementById("nav-stat-recovery").innerText =
+                    fmtShort(totalRecovery);
+
+                const rateEl = document.getElementById("nav-stat-rate");
+                rateEl.innerText = `${recoveryPct.toFixed(1)}%`;
+
+                if (recoveryPct < 95) {
+                    rateEl.classList.remove("text-emerald-600");
+                    rateEl.classList.add("text-red-600");
+                } else {
+                    rateEl.classList.remove("text-red-600");
+                    rateEl.classList.add("text-emerald-600");
+                }
+            }
+
+            function renderRollingRecoveryChart(rollingData) {
+                const labels = rollingData.map((d) => d.monthName);
+                const deltas = rollingData.map((d) => ({
+                    value: d.delta.toFixed(2),
+                    itemStyle: {
+                        opacity: d.isTarget ? 1 : 0.4,
+                        borderWidth: d.isTarget ? 2 : 0,
+                        borderColor: "#1e293b",
+                    },
+                    year: d.year,
+                    month: d.month,
+                }));
+
+                deltaChart.setOption(
+                    {
+                        toolbox: {
+                            right: 20,
+                            feature: {
+                                saveAsImage: { title: "Save Image" },
+                                dataView: {
+                                    readOnly: true,
+                                    title: "View Data",
+                                    lang: ["Data View", "Close", "Refresh"],
+                                },
+                                myDownloadCSV: {
+                                    show: true,
+                                    title: "Download CSV",
+                                    icon: "path://M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M10,19L12,15H9V10H15V15H12L14,19H10Z",
+                                    onclick: function () {
+                                        const headers = [
+                                            "Month",
+                                            "Year",
+                                            "Charge",
+                                            "Recovery",
+                                            "Net Delta",
+                                        ];
+                                        const rows = rollingData.map((d) => [
+                                            d.monthName,
+                                            d.year,
+                                            d.charge.toFixed(2),
+                                            d.recovery.toFixed(2),
+                                            d.delta.toFixed(2),
+                                        ]);
+                                        downloadCSV(
+                                            `rolling-recovery-${Date.now()}.csv`,
+                                            [headers, ...rows],
+                                        );
+                                    },
+                                },
+                            },
+                        },
+                        tooltip: {
+                            trigger: "axis",
+                            axisPointer: { type: "shadow" },
+                            formatter: (params) => {
+                                const val = parseFloat(params[0].value);
+                                const color = val >= 0 ? "#10b981" : "#ef4444";
+                                return `${params[0].name}<br/><span style="color:${color}; font-weight:bold">Net Recovery: R ${val.toLocaleString()}</span>`;
+                            },
+                        },
+                        grid: {
+                            top: "60px",
+                            left: "80px",
+                            right: "40px",
+                            bottom: "40px",
+                        },
+                        xAxis: {
+                            type: "category",
+                            data: labels,
+                            axisLabel: { fontSize: 10, color: "#64748b" },
+                        },
+                        yAxis: {
+                            type: "value",
+                            axisLabel: {
+                                fontSize: 10,
+                                color: "#64748b",
+                                formatter: (val) =>
+                                    `R ${Math.abs(val) >= 1000 ? (val / 1000).toFixed(0) + "k" : val}`,
+                            },
+                            splitLine: {
+                                lineStyle: { type: "dashed", color: "#e2e8f0" },
+                            },
+                        },
+                        series: [
+                            {
+                                name: "Net Recovery",
+                                type: "bar",
+                                data: deltas,
+                                itemStyle: {
+                                    color: (p) =>
+                                        p.value >= 0 ? "#10b981" : "#ef4444",
+                                    borderRadius: [4, 4, 0, 0],
+                                },
+                            },
+                        ],
+                    },
+                    true,
+                );
+
+                deltaChart.off("click");
+                deltaChart.on("click", (params) => {
+                    if (params.componentType === "series") {
+                        const dataPoint = params.data;
+                        viewDate = new Date(dataPoint.year, dataPoint.month, 1);
+                        updateDashboard(false);
+                    }
+                });
+            }
+
+            function renderHeatmap(data) {
+                const dayLabels = Array.from(
+                    { length: data.daysInMonth },
+                    (_, i) => `Day ${i + 1}`,
+                ).reverse();
+                const metricsRichData = data.daily
+                    .map((d) => {
+                        const recoveryLabel = `R ${d.recovery.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+                        const costLabel = `R ${d.cost.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+                        const hoursLabel = `${d.runtime.toFixed(1)}h`;
+                        const label =
+                            d.runtime === 0
+                                ? "—"
+                                : `${hoursLabel} | ${recoveryLabel} / ${costLabel} (${d.recoveryPercent.toFixed(0)}%)`;
+                        return {
+                            value: label,
+                            textStyle: {
+                                color:
+                                    d.runtime > 0 && d.recoveryPercent < 95
+                                        ? "#ef4444"
+                                        : "#059669",
+                            },
+                        };
+                    })
+                    .reverse();
+
+                const chartData = data.heatmap.map((item) => [
+                    item[0],
+                    data.daysInMonth - 1 - item[1],
+                    item[2],
+                ]);
+
+                heatmapChart.setOption(
+                    {
+                        toolbox: {
+                            right: 20,
+                            top: 10,
+                            feature: {
+                                saveAsImage: { title: "Save Image" },
+                                dataView: {
+                                    readOnly: true,
+                                    title: "View Data",
+                                    lang: ["Heatmap Data", "Close", "Refresh"],
+                                },
+                                myDownloadCSV: {
+                                    show: true,
+                                    title: "Download CSV",
+                                    icon: "path://M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M10,19L12,15H9V10H15V15H12L14,19H10Z",
+                                    onclick: function () {
+                                        const headers = [
+                                            "Day",
+                                            "Runtime Hours",
+                                            "Daily Charge",
+                                            "Daily Recovery",
+                                            "Recovery %",
+                                        ];
+                                        const rows = data.daily.map((d) => [
+                                            d.day,
+                                            d.runtime.toFixed(2),
+                                            d.cost.toFixed(2),
+                                            d.recovery.toFixed(2),
+                                            d.recoveryPercent.toFixed(1),
+                                        ]);
+                                        downloadCSV(
+                                            `operational-matrix-${MONTHS[viewDate.getMonth()]}-${viewDate.getFullYear()}.csv`,
+                                            [headers, ...rows],
+                                        );
+                                    },
+                                },
+                            },
+                        },
+                        tooltip: {
+                            position: "top",
+                            backgroundColor: "rgba(255, 255, 255, 0.98)",
+                            borderColor: "#e2e8f0",
+                            borderWidth: 1,
+                            textStyle: { color: "#1e293b", fontSize: 12 },
+                            formatter: (p) => {
+                                const dayIdx = data.daysInMonth - 1 - p.data[1];
+                                const dayStats = data.daily[dayIdx];
+                                const runtimeFrac = p.data[2];
+                                const mins = Math.floor(runtimeFrac * 60);
+                                const secs = Math.round(
+                                    (runtimeFrac * 60 - mins) * 60,
+                                );
+                                const colorStyle =
+                                    dayStats.recoveryPercent < 95
+                                        ? "color: #ef4444"
+                                        : "color: #059669";
+                                let runtimeStr =
+                                    runtimeFrac === 1
+                                        ? "Full Hour (60m)"
+                                        : runtimeFrac === 0
+                                          ? "Idle (0m)"
+                                          : `Partial: ${mins}m ${secs}s`;
+                                return `<div class="p-1">
+                                    <div class="font-bold border-b border-slate-100 mb-2 pb-1 text-slate-500 uppercase text-[10px]">Day ${dayStats.day} • ${HOURS[p.data[0]]}</div>
+                                    <div class="mb-1">Hour Runtime: <b class="text-blue-600">${runtimeStr}</b></div>
+                                    <div class="mb-1">Day Total: <b>${dayStats.runtime.toFixed(2)} hrs</b></div>
+                                    <div class="mb-1">Day Recovery: <b>R ${dayStats.recovery.toFixed(2)}</b></div>
+                                    <div class="pt-1 border-t border-slate-50">Day Ratio: <span style="${colorStyle}; font-weight: bold">${dayStats.recoveryPercent.toFixed(1)}%</span></div>
+                                </div>`;
+                            },
+                        },
+                        grid: {
+                            top: "70px",
+                            bottom: "50px",
+                            left: "80px",
+                            right: "280px",
+                        },
+                        xAxis: [
+                            {
+                                type: "category",
+                                position: "bottom",
+                                data: HOURS,
+                                splitArea: { show: true },
+                                axisLabel: {
+                                    fontSize: 10,
+                                    color: "#64748b",
+                                    fontWeight: "bold",
+                                },
+                            },
+                            {
+                                type: "category",
+                                position: "top",
+                                data: HOURS,
+                                axisLabel: {
+                                    fontSize: 10,
+                                    color: "#64748b",
+                                    fontWeight: "bold",
+                                },
+                            },
+                        ],
+                        yAxis: [
+                            {
+                                type: "category",
+                                data: dayLabels,
+                                splitArea: { show: true },
+                                axisLabel: { fontSize: 10, color: "#64748b" },
+                            },
+                            {
+                                type: "category",
+                                data: metricsRichData,
+                                position: "right",
+                                axisLine: { show: false },
+                                axisTick: { show: false },
+                                axisLabel: { fontSize: 10, fontWeight: "bold" },
+                            },
+                        ],
+                        visualMap: {
+                            show: false,
+                            min: 0,
+                            max: 1,
+                            inRange: {
+                                color: [
+                                    "#f8fafc",
+                                    "#dbeafe",
+                                    "#3b82f6",
+                                    "#1d4ed8",
+                                ],
+                            },
+                        },
+                        series: [
+                            {
+                                type: "heatmap",
+                                data: chartData,
+                                itemStyle: {
+                                    borderColor: "#f1f5f9",
+                                    borderWidth: 1,
+                                },
+                            },
+                        ],
+                    },
+                    true,
+                );
+            }
+
+            window.onload = () => {
+                heatmapChart = echarts.init(
+                    document.getElementById("heatmap-chart"),
+                );
+                deltaChart = echarts.init(
+                    document.getElementById("recovery-delta-chart"),
+                );
+                populateYearSelector();
+                updateDashboard();
+                window.addEventListener("resize", () => {
+                    heatmapChart.resize();
+                    deltaChart.resize();
+                });
+            };
+        </script>
+    </body>
+</html>

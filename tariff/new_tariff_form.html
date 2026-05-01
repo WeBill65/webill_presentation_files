@@ -1,0 +1,997 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Utility Tariff Registration</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <style>
+            :root {
+                --brand-primary: #404068;
+                --brand-accent: #faa919;
+                --brand-hover: #35355a;
+            }
+
+            body {
+                background-color: white;
+                font-family:
+                    ui-sans-serif,
+                    system-ui,
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    "Segoe UI",
+                    Roboto,
+                    "Helvetica Neue",
+                    Arial,
+                    sans-serif;
+            }
+
+            .btn-custom {
+                background-color: var(--brand-primary);
+                color: white;
+                transition: all 0.2s ease;
+            }
+
+            .btn-custom:hover:not(:disabled) {
+                color: var(--brand-accent);
+                background-color: var(--brand-hover);
+            }
+
+            .btn-disabled {
+                background-color: #9ca3af;
+                cursor: not-allowed !important;
+                opacity: 0.6;
+            }
+
+            .scroll-container {
+                max-height: 450px;
+                overflow-y: auto;
+                scrollbar-width: thin;
+                scrollbar-color: var(--brand-primary) #f3f4f6;
+            }
+
+            .scroll-container::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            .scroll-container::-webkit-scrollbar-thumb {
+                background-color: var(--brand-primary);
+                border-radius: 10px;
+            }
+
+            .modal-overlay {
+                background-color: rgba(0, 0, 0, 0.5);
+                backdrop-filter: blur(2px);
+                display: none;
+                position: fixed;
+                inset: 0;
+                z-index: 50;
+                align-items: center;
+                justify-content: center;
+                padding: 1rem;
+            }
+
+            .modal-overlay.active {
+                display: flex;
+            }
+
+            @keyframes border-pulse {
+                0% {
+                    border-color: #818cf8;
+                    box-shadow: 0 0 0 0 rgba(129, 140, 248, 0.4);
+                }
+                70% {
+                    border-color: #6366f1;
+                    box-shadow: 0 0 0 6px rgba(129, 140, 248, 0);
+                }
+                100% {
+                    border-color: #818cf8;
+                    box-shadow: 0 0 0 0 rgba(129, 140, 248, 0);
+                }
+            }
+
+            .animate-border-pulse {
+                animation: border-pulse 2s infinite;
+            }
+
+            .custom-scrollbar::-webkit-scrollbar {
+                width: 4px;
+            }
+
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+                background-color: #e2e8f0;
+                border-radius: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <div>
+            <div
+                class="bg-white overflow-hidden"
+            >
+                <!-- Header -->
+                <div
+                    class="px-8 py-6"
+                    style="background-color: var(--brand-primary)"
+                >
+                    <h2
+                        class="text-2xl font-bold"
+                        style="color: var(--brand-accent)"
+                    >
+                        Utility Tariff Registration
+                    </h2>
+                    <p class="mt-1 opacity-90 text-white">
+                        Configure pricing structures, consumption and
+                        non-consumption charges.
+                    </p>
+                </div>
+
+                <form id="tariffForm" class="p-8 space-y-8">
+                    <!-- General Info -->
+                    <section>
+                        <h3
+                            class="text-lg font-bold text-gray-800 mb-4 border-b pb-2"
+                        >
+                            General Information
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="col-span-2">
+                                <label
+                                    class="block text-sm font-semibold text-gray-700 mb-1"
+                                    >Tariff Name
+                                    <span class="text-red-500">*</span></label
+                                >
+                                <input
+                                    type="text"
+                                    id="tariffName"
+                                    required
+                                    placeholder="e.g. Residential Summer Peak"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-sm font-semibold text-gray-700 mb-1"
+                                    >Organization
+                                    <span class="text-red-500">*</span></label
+                                >
+                                <select
+                                    id="organization"
+                                    required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none bg-white"
+                                >
+                                    <option value="">
+                                        Select Organization
+                                    </option>
+                                </select>
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-sm font-semibold text-gray-700 mb-1"
+                                    >Country
+                                    <span class="text-red-500">*</span></label
+                                >
+                                <select
+                                    id="country"
+                                    required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none bg-white"
+                                >
+                                    <option value="">Select Country</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-sm font-semibold text-gray-700 mb-1"
+                                    >Utility Type
+                                    <span class="text-red-500">*</span></label
+                                >
+                                <select
+                                    id="utilityType"
+                                    required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none bg-white"
+                                >
+                                    <option value="">Select Utility</option>
+                                </select>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Consumption Charges -->
+                    <section
+                        class="bg-gray-50 rounded-xl border border-gray-200 shadow-inner overflow-hidden"
+                    >
+                        <div
+                            class="p-6 border-b border-gray-200 bg-white/50 flex justify-between items-center cursor-pointer section-toggle"
+                            data-target="consumptionContainer"
+                        >
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="p-1 rounded bg-indigo-50 text-[#404068]"
+                                    id="consumptionIcon"
+                                >
+                                    <i
+                                        data-lucide="chevron-up"
+                                        class="w-5 h-5"
+                                    ></i>
+                                </div>
+                                <h3
+                                    class="text-lg font-bold text-gray-800 flex items-center gap-2"
+                                >
+                                    <i
+                                        data-lucide="zap"
+                                        class="w-5 h-5 text-[#404068]"
+                                    ></i>
+                                    Consumption Charges
+                                </h3>
+                            </div>
+                            <div class="relative group">
+                                <div
+                                    class="absolute bottom-full right-0 mb-2 w-48 bg-gray-800 text-white text-[10px] p-2 rounded shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10 charge-tip"
+                                >
+                                    Complete general info to add charges
+                                </div>
+                                <button
+                                    type="button"
+                                    id="addConsumptionBtn"
+                                    class="btn-disabled flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all"
+                                    disabled
+                                >
+                                    <i data-lucide="plus" class="w-4 h-4"></i>
+                                    Add Charge
+                                </button>
+                            </div>
+                        </div>
+                        <div
+                            id="consumptionContainer"
+                            class="p-6 scroll-container"
+                        >
+                            <div id="consumptionList"></div>
+                            <div
+                                id="noConsumptionMsg"
+                                class="text-center py-8 text-gray-400 italic text-sm"
+                            >
+                                No consumption charges added.
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Non Consumption Charges -->
+                    <section
+                        class="bg-gray-50 rounded-xl border border-gray-200 shadow-inner overflow-hidden"
+                    >
+                        <div
+                            class="p-6 border-b border-gray-200 bg-white/50 flex justify-between items-center cursor-pointer section-toggle"
+                            data-target="nonConsumptionContainer"
+                        >
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="p-1 rounded bg-indigo-50 text-[#404068]"
+                                    id="nonConsumptionIcon"
+                                >
+                                    <i
+                                        data-lucide="chevron-up"
+                                        class="w-5 h-5"
+                                    ></i>
+                                </div>
+                                <h3
+                                    class="text-lg font-bold text-gray-800 flex items-center gap-2"
+                                >
+                                    <i
+                                        data-lucide="dollar-sign"
+                                        class="w-5 h-5 text-[#404068]"
+                                    ></i>
+                                    Non Consumption Charges
+                                </h3>
+                            </div>
+                            <div class="relative group">
+                                <div
+                                    class="absolute bottom-full right-0 mb-2 w-48 bg-gray-800 text-white text-[10px] p-2 rounded shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10 charge-tip"
+                                >
+                                    Complete general info to add charges
+                                </div>
+                                <button
+                                    type="button"
+                                    id="addNonConsumptionBtn"
+                                    class="btn-disabled flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all"
+                                    disabled
+                                >
+                                    <i data-lucide="plus" class="w-4 h-4"></i>
+                                    Add Charge
+                                </button>
+                            </div>
+                        </div>
+                        <div
+                            id="nonConsumptionContainer"
+                            class="p-6 scroll-container"
+                        >
+                            <div id="nonConsumptionList"></div>
+                            <div
+                                id="noNonConsumptionMsg"
+                                class="text-center py-8 text-gray-400 italic text-sm"
+                            >
+                                No non-consumption charges added.
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="pt-4 border-t border-gray-100 flex justify-end">
+                        <button
+                            type="submit"
+                            id="submitBtn"
+                            class="btn-disabled flex items-center gap-2 px-8 py-3 rounded-lg font-bold shadow-md"
+                            disabled
+                        >
+                            <i data-lucide="save" class="w-5 h-5"></i> Register
+                            Tariff
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Block Modal -->
+        <div id="blockModal" class="modal-overlay">
+            <div
+                class="bg-white rounded-xl shadow-2xl w-full max-w-lg my-8 overflow-hidden transform transition-all duration-200"
+            >
+                <div
+                    class="px-6 py-4 flex justify-between items-center border-b border-gray-100"
+                    style="background-color: var(--brand-primary)"
+                >
+                    <h3 class="text-lg font-bold text-white">Manage Block</h3>
+                    <button
+                        type="button"
+                        id="closeModal"
+                        class="text-gray-300 hover:text-white"
+                    >
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="p-8 space-y-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label
+                                class="block text-xs font-bold text-gray-500 uppercase mb-1"
+                                >Block Name</label
+                            >
+                            <input
+                                type="text"
+                                id="blockName"
+                                placeholder="e.g. Tiered Residential"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                            />
+                        </div>
+                        <div
+                            class="flex items-center gap-3 bg-gray-50 p-3 rounded-lg border border-gray-200"
+                        >
+                            <input
+                                type="checkbox"
+                                id="blockFallthrough"
+                                class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                            />
+                            <label
+                                for="blockFallthrough"
+                                class="text-sm font-medium text-gray-700 cursor-pointer"
+                            >
+                                Enable Fallthrough
+                                <span
+                                    class="text-xs font-normal text-gray-500 block"
+                                    >Charges carry over to next tier</span
+                                >
+                            </label>
+                        </div>
+                        <div class="pt-2">
+                            <div class="flex justify-between items-center mb-3">
+                                <label
+                                    class="text-xs font-bold text-gray-500 uppercase flex items-center gap-2"
+                                >
+                                    <i
+                                        data-lucide="layers"
+                                        class="w-3.5 h-3.5"
+                                    ></i>
+                                    Steps Configuration
+                                </label>
+                                <button
+                                    type="button"
+                                    id="addStepBtn"
+                                    class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                                >
+                                    <i
+                                        data-lucide="plus"
+                                        class="w-3.5 h-3.5"
+                                    ></i>
+                                    Add Step
+                                </button>
+                            </div>
+                            <div
+                                id="stepsList"
+                                class="space-y-3 max-h-64 overflow-y-auto custom-scrollbar pr-2"
+                            ></div>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        id="saveBlockBtn"
+                        class="btn-custom w-full py-3 text-sm font-bold rounded-lg shadow-md disabled:opacity-50 transition-all"
+                    >
+                        Create & Assign Block
+                    </button>
+                </div>
+                <div
+                    class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end"
+                >
+                    <button
+                        type="button"
+                        id="cancelModal"
+                        class="px-6 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Data Options
+            const organizations = [
+                "Municipal Power & Water",
+                "National Energy Grid",
+                "Regional Utility Group",
+                "Private Infrastructure Co.",
+            ];
+            const countries = [
+                "United States",
+                "Canada",
+                "United Kingdom",
+                "Germany",
+                "France",
+                "Australia",
+                "Japan",
+                "Brazil",
+                "India",
+            ];
+            const utilityTypes = [
+                { v: "ELECTRICITY", l: "Electricity" },
+                { v: "WATER", l: "Water" },
+                { v: "GAS", l: "Gas" },
+            ];
+            const indices = ["KWH", "KL", "KJ"];
+            const frequencies = ["Period", "Month", "Year"];
+            const denominations = ["Cents", "Rands"];
+            const seasons = ["High", "Low"];
+            const touOptions = ["Peak", "Standard", "Off"];
+            const qualifiers = ["Voltage", "Distance"];
+
+            // State
+            let state = {
+                consumptionCharges: [],
+                nonConsumptionCharges: [],
+                blocks: [
+                    {
+                        name: "Residential Tier 1",
+                        fallthrough: false,
+                        steps: [
+                            { index: 1, min: 0.0, max: 100.0 },
+                            { index: 2, min: 100.1, max: 200.0 },
+                        ],
+                    },
+                    {
+                        name: "Commercial Peak",
+                        fallthrough: true,
+                        steps: [
+                            { index: 1, min: 0.0, max: 500.0 },
+                            { index: 2, min: 500.1, max: 1000.0 },
+                        ],
+                    },
+                ],
+                activeChargeId: null,
+                modalSteps: [{ index: 1, min: 0.0, max: 0.0 }],
+            };
+
+            // DOM Elements
+            const form = document.getElementById("tariffForm");
+            const consumptionList = document.getElementById("consumptionList");
+            const nonConsumptionList =
+                document.getElementById("nonConsumptionList");
+            const blockModal = document.getElementById("blockModal");
+            const stepsList = document.getElementById("stepsList");
+
+            function init() {
+                populateSelect("organization", organizations);
+                populateSelect("country", countries);
+                populateSelect("utilityType", utilityTypes, true);
+                lucide.createIcons();
+                attachGlobalListeners();
+                validateGeneralInfo();
+            }
+
+            function populateSelect(id, list, isObject = false) {
+                const select = document.getElementById(id);
+                list.forEach((item) => {
+                    const opt = document.createElement("option");
+                    opt.value = isObject ? item.v : item;
+                    opt.textContent = isObject ? item.l : item;
+                    select.appendChild(opt);
+                });
+            }
+
+            function attachGlobalListeners() {
+                [
+                    "tariffName",
+                    "organization",
+                    "country",
+                    "utilityType",
+                ].forEach((id) => {
+                    document
+                        .getElementById(id)
+                        .addEventListener("input", validateGeneralInfo);
+                });
+
+                document.querySelectorAll(".section-toggle").forEach((el) => {
+                    el.addEventListener("click", () => {
+                        const target = document.getElementById(
+                            el.dataset.target,
+                        );
+                        const icon = el.querySelector("i");
+                        const isHidden = target.classList.toggle("hidden");
+                        icon.setAttribute(
+                            "data-lucide",
+                            isHidden ? "chevron-down" : "chevron-up",
+                        );
+                        lucide.createIcons();
+                    });
+                });
+
+                document
+                    .getElementById("addConsumptionBtn")
+                    .addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        addCharge("consumption");
+                    });
+                document
+                    .getElementById("addNonConsumptionBtn")
+                    .addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        addCharge("nonConsumption");
+                    });
+
+                document
+                    .getElementById("closeModal")
+                    .addEventListener("click", hideModal);
+                document
+                    .getElementById("cancelModal")
+                    .addEventListener("click", hideModal);
+                document
+                    .getElementById("addStepBtn")
+                    .addEventListener("click", addModalStep);
+                document
+                    .getElementById("saveBlockBtn")
+                    .addEventListener("click", handleCreateBlock);
+                document
+                    .getElementById("blockName")
+                    .addEventListener("input", updateModalSaveButton);
+
+                form.addEventListener("submit", (e) => {
+                    e.preventDefault();
+                    const btn = document.getElementById("submitBtn");
+                    btn.innerHTML = "Saving...";
+                    btn.disabled = true;
+                    setTimeout(() => {
+                        btn.innerHTML = "Success!";
+                        // Replaced alert with custom logging logic as requested by platform rules
+                        console.log("Utility Tariff successfully registered!");
+                        btn.innerHTML = "Register Tariff";
+                        btn.disabled = false;
+                    }, 1000);
+                });
+            }
+
+            function validateGeneralInfo() {
+                const name = document.getElementById("tariffName").value.trim();
+                const org = document.getElementById("organization").value;
+                const country = document.getElementById("country").value;
+                const utility = document.getElementById("utilityType").value;
+                const isValid = name && org && country && utility;
+
+                const addBtns = [
+                    document.getElementById("addConsumptionBtn"),
+                    document.getElementById("addNonConsumptionBtn"),
+                ];
+                const submitBtn = document.getElementById("submitBtn");
+                const tips = document.querySelectorAll(".charge-tip");
+
+                addBtns.forEach((btn) => {
+                    btn.disabled = !isValid;
+                    btn.className = isValid
+                        ? "btn-custom flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all"
+                        : "btn-disabled flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all";
+                });
+                submitBtn.disabled = !isValid;
+                submitBtn.className = isValid
+                    ? "btn-custom flex items-center gap-2 px-8 py-3 rounded-lg font-bold shadow-md"
+                    : "btn-disabled flex items-center gap-2 px-8 py-3 rounded-lg font-bold shadow-md";
+
+                tips.forEach((tip) => tip.classList.toggle("hidden", isValid));
+            }
+
+            function addCharge(type) {
+                const id = crypto.randomUUID();
+                const charge = {
+                    id,
+                    name: "",
+                    index: "",
+                    frequency: "",
+                    denomination: "",
+                    season: "",
+                    tou: "",
+                    qualifier: "",
+                    block: "",
+                };
+                if (type === "consumption") {
+                    state.consumptionCharges.unshift(charge);
+                    document
+                        .getElementById("noConsumptionMsg")
+                        .classList.add("hidden");
+                } else {
+                    state.nonConsumptionCharges.unshift(charge);
+                    document
+                        .getElementById("noNonConsumptionMsg")
+                        .classList.add("hidden");
+                }
+                renderCharges();
+            }
+
+            function renderCharges() {
+                consumptionList.innerHTML = "";
+                nonConsumptionList.innerHTML = "";
+                state.consumptionCharges.forEach((c) =>
+                    renderChargeItem(c, "consumption", consumptionList),
+                );
+                state.nonConsumptionCharges.forEach((c) =>
+                    renderChargeItem(c, "nonConsumption", nonConsumptionList),
+                );
+                lucide.createIcons();
+            }
+
+            function renderChargeItem(charge, type, container) {
+                const div = document.createElement("div");
+                div.id = `charge-${charge.id}`;
+                const assignedBlock = state.blocks.find(
+                    (b) => b.name === charge.block,
+                );
+                const isCompulsoryFilled =
+                    charge.name.trim() &&
+                    charge.index &&
+                    charge.frequency &&
+                    charge.denomination;
+
+                div.className = `p-4 rounded-lg border transition-all duration-300 relative group mb-3 last:mb-0 ${
+                    isCompulsoryFilled &&
+                    !assignedBlock &&
+                    type === "consumption"
+                        ? "bg-indigo-50/30 border-indigo-200"
+                        : "bg-white border-gray-300"
+                }`;
+
+                div.innerHTML = `
+                <button type="button" class="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 transition-colors remove-charge">
+                    <i data-lucide="trash-2" class="w-[18px] h-[18px]"></i>
+                </button>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 pr-8">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Charge Name <span class="text-red-500">*</span></label>
+                        <input type="text" value="${charge.name}" data-field="name" class="charge-input w-full px-3 py-1.5 border border-gray-200 rounded text-sm focus:ring-1 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Index <span class="text-red-500">*</span></label>
+                        <select data-field="index" class="charge-input w-full px-3 py-1.5 border border-gray-200 rounded text-sm bg-white">
+                            <option value="">Select</option>
+                            ${indices.map((i) => `<option value="${i}" ${charge.index === i ? "selected" : ""}>${i}</option>`).join("")}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Frequency <span class="text-red-500">*</span></label>
+                        <select data-field="frequency" class="charge-input w-full px-3 py-1.5 border border-gray-200 rounded text-sm bg-white">
+                            <option value="">Select</option>
+                            ${frequencies.map((f) => `<option value="${f}" ${charge.frequency === f ? "selected" : ""}>${f}</option>`).join("")}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Denomination <span class="text-red-500">*</span></label>
+                        <select data-field="denomination" class="charge-input w-full px-3 py-1.5 border border-gray-200 rounded text-sm bg-white">
+                            <option value="">Select</option>
+                            ${denominations.map((d) => `<option value="${d}" ${charge.denomination === d ? "selected" : ""}>${d}</option>`).join("")}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Season</label>
+                        <select data-field="season" class="charge-input w-full px-3 py-1.5 border border-gray-200 rounded text-sm bg-white">
+                            <option value="">Select</option>
+                            ${seasons.map((s) => `<option value="${s}" ${charge.season === s ? "selected" : ""}>${s}</option>`).join("")}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">TOU</label>
+                        <select data-field="tou" class="charge-input w-full px-3 py-1.5 border border-gray-200 rounded text-sm bg-white">
+                            <option value="">Select</option>
+                            ${touOptions.map((t) => `<option value="${t}" ${charge.tou === t ? "selected" : ""}>${t}</option>`).join("")}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Qualifier</label>
+                        <select data-field="qualifier" class="charge-input w-full px-3 py-1.5 border border-gray-200 rounded text-sm bg-white">
+                            <option value="">Select</option>
+                            ${qualifiers.map((q) => `<option value="${q}" ${charge.qualifier === q ? "selected" : ""}>${q}</option>`).join("")}
+                        </select>
+                    </div>
+                    <div class="md:col-span-1 block-config-section">
+                        ${type === "consumption" ? renderBlockUI(charge, assignedBlock, isCompulsoryFilled) : ""}
+                    </div>
+                </div>
+            `;
+
+                container.appendChild(div);
+
+                div.querySelector(".remove-charge").addEventListener(
+                    "click",
+                    () => removeCharge(charge.id, type),
+                );
+                div.querySelectorAll(".charge-input").forEach((input) => {
+                    input.addEventListener("input", (e) => {
+                        charge[e.target.dataset.field] = e.target.value;
+                        const isNowReady =
+                            charge.name.trim() &&
+                            charge.index &&
+                            charge.frequency &&
+                            charge.denomination;
+                        const blockSection = div.querySelector(
+                            ".block-config-section",
+                        );
+                        if (blockSection) {
+                            const block = state.blocks.find(
+                                (b) => b.name === charge.block,
+                            );
+                            blockSection.innerHTML = renderBlockUI(
+                                charge,
+                                block,
+                                isNowReady,
+                            );
+                            lucide.createIcons();
+                            const btn =
+                                blockSection.querySelector(".assign-block-btn");
+                            if (btn)
+                                btn.addEventListener("click", () =>
+                                    showModal(charge.id),
+                                );
+                            const assignedUI =
+                                blockSection.querySelector(
+                                    ".assigned-block-ui",
+                                );
+                            if (assignedUI)
+                                assignedUI.addEventListener("click", () =>
+                                    showModal(charge.id),
+                                );
+                        }
+
+                        if (
+                            isNowReady &&
+                            !charge.block &&
+                            type === "consumption"
+                        ) {
+                            div.className =
+                                "p-4 rounded-lg border transition-all duration-300 relative group mb-3 last:mb-0 bg-indigo-50/30 border-indigo-200";
+                        } else {
+                            div.className =
+                                "p-4 rounded-lg border transition-all duration-300 relative group mb-3 last:mb-0 bg-white border-gray-300";
+                        }
+                    });
+                });
+
+                const blockBtn = div.querySelector(".assign-block-btn");
+                if (blockBtn)
+                    blockBtn.addEventListener("click", () =>
+                        showModal(charge.id),
+                    );
+                const assignedUI = div.querySelector(".assigned-block-ui");
+                if (assignedUI)
+                    assignedUI.addEventListener("click", () =>
+                        showModal(charge.id),
+                    );
+            }
+
+            function renderBlockUI(charge, block, isReady) {
+                if (!block) {
+                    return `
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-bold text-gray-500 uppercase">Block Configuration</label>
+                        ${isReady ? `<span class="flex items-center gap-1 text-[9px] font-bold text-indigo-600 animate-pulse"><i data-lucide="unlock" class="w-2.5 h-2.5"></i> Ready</span>` : ""}
+                    </div>
+                    <div class="group/btn relative">
+                        ${!isReady ? `<div class="absolute bottom-full left-0 mb-2 w-32 bg-gray-700 text-white text-[9px] p-2 rounded opacity-0 group-hover/btn:opacity-100 pointer-events-none transition-opacity z-20">Fill mandatory fields first</div>` : ""}
+                        <button type="button" class="assign-block-btn w-full flex items-center justify-between px-3 py-1.5 border rounded text-sm transition-all ${
+                            isReady
+                                ? "border-indigo-400 text-indigo-700 bg-white hover:bg-indigo-50 hover:shadow-sm cursor-pointer border-2 animate-border-pulse"
+                                : "border-dashed border-gray-300 text-gray-400 bg-gray-50/50 cursor-not-allowed"
+                        }" ${!isReady ? "disabled" : ""}>
+                            <span>Assign Block</span>
+                            <i data-lucide="box" class="w-3.5 h-3.5 ${isReady ? "text-indigo-500" : ""}"></i>
+                        </button>
+                    </div>
+                `;
+                } else {
+                    return `
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Block Configuration</label>
+                    <div class="assigned-block-ui group cursor-pointer border border-indigo-200 rounded-md p-2 bg-indigo-50/30 hover:bg-indigo-50 hover:border-indigo-300 transition-all shadow-sm">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="text-[10px] font-bold text-indigo-700 truncate max-w-[80px]">${block.name}</span>
+                            <div class="flex items-center gap-1">
+                                ${block.fallthrough ? `<span class="text-[8px] bg-indigo-200 text-indigo-700 px-1 rounded font-black tracking-tighter">FT</span>` : ""}
+                                <i data-lucide="box" class="w-2.5 h-2.5 text-indigo-400"></i>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-1">
+                            ${block.steps
+                                .map(
+                                    (step) => `
+                                <div class="flex items-center text-[9px] bg-white border border-indigo-100 rounded px-1 text-indigo-600 font-medium">
+                                    ${step.min}<i data-lucide="arrow-right" class="w-2 h-2 mx-0.5 text-indigo-300"></i>${step.max}
+                                </div>
+                            `,
+                                )
+                                .join("")}
+                        </div>
+                    </div>
+                `;
+                }
+            }
+
+            function removeCharge(id, type) {
+                if (type === "consumption") {
+                    state.consumptionCharges = state.consumptionCharges.filter(
+                        (c) => c.id !== id,
+                    );
+                    if (state.consumptionCharges.length === 0)
+                        document
+                            .getElementById("noConsumptionMsg")
+                            .classList.remove("hidden");
+                } else {
+                    state.nonConsumptionCharges =
+                        state.nonConsumptionCharges.filter((c) => c.id !== id);
+                    if (state.nonConsumptionCharges.length === 0)
+                        document
+                            .getElementById("noNonConsumptionMsg")
+                            .classList.remove("hidden");
+                }
+                renderCharges();
+            }
+
+            // Modal Operations
+            function showModal(chargeId) {
+                state.activeChargeId = chargeId;
+                state.modalSteps = [{ index: 1, min: 0.0, max: 0.0 }];
+                document.getElementById("blockName").value = "";
+                document.getElementById("blockFallthrough").checked = false;
+                renderModalSteps();
+                blockModal.classList.add("active");
+            }
+
+            function hideModal() {
+                blockModal.classList.remove("active");
+                state.activeChargeId = null;
+            }
+
+            function addModalStep() {
+                const last = state.modalSteps[state.modalSteps.length - 1];
+                const nextMin = last
+                    ? parseFloat((parseFloat(last.max) + 0.1).toFixed(1))
+                    : 0.0;
+                state.modalSteps.push({
+                    index: state.modalSteps.length + 1,
+                    min: nextMin,
+                    max: parseFloat((nextMin + 10).toFixed(1)),
+                });
+                renderModalSteps();
+            }
+
+            function removeModalStep(idx) {
+                if (state.modalSteps.length <= 1) return;
+                state.modalSteps.splice(idx, 1);
+                state.modalSteps.forEach((s, i) => (s.index = i + 1));
+                renderModalSteps();
+            }
+
+            function updateModalStep(idx, field, value) {
+                const val = parseFloat(value) || 0;
+                state.modalSteps[idx][field] = val;
+                if (field === "max") {
+                    for (let i = idx + 1; i < state.modalSteps.length; i++) {
+                        state.modalSteps[i].min = parseFloat(
+                            (state.modalSteps[i - 1].max + 0.1).toFixed(1),
+                        );
+                        if (
+                            state.modalSteps[i].max <= state.modalSteps[i].min
+                        ) {
+                            state.modalSteps[i].max = parseFloat(
+                                (state.modalSteps[i].min + 10).toFixed(1),
+                            );
+                        }
+                    }
+                }
+                renderModalSteps();
+            }
+
+            function renderModalSteps() {
+                stepsList.innerHTML = "";
+                const totalSteps = state.modalSteps.length;
+                state.modalSteps.forEach((step, idx) => {
+                    const isLastStep = idx === totalSteps - 1;
+                    const div = document.createElement("div");
+                    div.className =
+                        "flex items-end gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-sm mb-2";
+                    div.innerHTML = `
+                    <div class="w-12">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Index</label>
+                        <div class="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded text-sm text-center font-bold text-gray-600">${step.index}</div>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Min</label>
+                        <input type="number" step="0.1" value="${step.min}" ${idx > 0 ? "disabled" : ""} class="step-min w-full px-2 py-1.5 border border-gray-200 rounded text-sm disabled:bg-gray-50">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Max</label>
+                        <input type="number" step="0.1" value="${step.max}" class="step-max w-full px-2 py-1.5 border border-gray-200 rounded text-sm outline-none">
+                    </div>
+                    <div class="w-7 h-8 flex items-center justify-center">
+                        <button type="button" class="remove-step p-1.5 text-gray-300 hover:text-red-500 ${!isLastStep || totalSteps === 1 ? "hidden" : ""}">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                `;
+                    div.querySelector(".step-max").addEventListener(
+                        "input",
+                        (e) => updateModalStep(idx, "max", e.target.value),
+                    );
+                    if (idx === 0)
+                        div.querySelector(".step-min").addEventListener(
+                            "input",
+                            (e) => updateModalStep(idx, "min", e.target.value),
+                        );
+                    div.querySelector(".remove-step").addEventListener(
+                        "click",
+                        () => removeModalStep(idx),
+                    );
+                    stepsList.appendChild(div);
+                });
+                lucide.createIcons();
+                updateModalSaveButton();
+            }
+
+            function updateModalSaveButton() {
+                const saveBtn = document.getElementById("saveBlockBtn");
+                const name = document.getElementById("blockName").value.trim();
+                saveBtn.disabled = !name || state.modalSteps.length < 2;
+            }
+
+            function handleCreateBlock() {
+                const name = document.getElementById("blockName").value.trim();
+                if (!name || state.modalSteps.length < 2) return;
+                const newBlock = {
+                    name,
+                    fallthrough:
+                        document.getElementById("blockFallthrough").checked,
+                    steps: [...state.modalSteps],
+                };
+                state.blocks.push(newBlock);
+                const charge = state.consumptionCharges.find(
+                    (c) => c.id === state.activeChargeId,
+                );
+                if (charge) charge.block = name;
+                hideModal();
+                renderCharges();
+            }
+
+            window.onload = init;
+        </script>
+    </body>
+</html>

@@ -1,0 +1,1000 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Common Area Meter Dashboard</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+
+        <!-- PDF Generation Libraries -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+
+            :root {
+                --brand-dark: #404068;
+                --brand-gold: #faa919;
+                --primary-blue: #1e3a8a;
+            }
+
+            body {
+                font-family: "Inter", sans-serif;
+                background-color: #f8fafc;
+            }
+
+            .card {
+                @apply bg-white rounded-3xl shadow-sm border border-slate-200 p-6;
+            }
+
+            /* Branded Header Styles */
+            .brand-header {
+                background-color: var(--brand-dark);
+                color: var(--brand-gold);
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }
+
+            .header-badge {
+                @apply bg-black/20 px-3 py-2 rounded-xl border border-white/10 flex items-center gap-3 transition-colors hover:bg-black/30;
+            }
+
+            /* PERFECT OVAL Branded Export Buttons */
+            .btn-export-branded {
+                display: inline-flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 8px !important;
+                padding: 0 20px !important;
+                border-radius: 9999px !important;
+                border: 1px solid #e2e8f0 !important;
+                height: 36px !important;
+                background-color: #ffffff;
+                color: #64748b;
+                font-size: 11px !important;
+                font-weight: 700 !important;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                transition: all 0.2s ease;
+                cursor: pointer;
+                white-space: nowrap !important;
+            }
+
+            .btn-export-branded svg {
+                width: 14px !important;
+                height: 14px !important;
+                flex-shrink: 0 !important;
+                display: block !important;
+            }
+
+            .btn-export-branded:hover {
+                background-color: var(--brand-dark);
+                color: var(--brand-gold);
+                border-color: var(--brand-dark) !important;
+                box-shadow: 0 4px 10px rgba(64, 64, 104, 0.15);
+            }
+
+            /* Stats Cards */
+            .glass-card {
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
+                border-radius: 1.5rem !important;
+                position: relative;
+                overflow: hidden;
+                @apply p-6 shadow-sm flex flex-col items-start justify-center text-left transition-all;
+                padding-left: 2.5rem;
+            }
+
+            .glass-card::before {
+                content: "";
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: 6px;
+                z-index: 1;
+            }
+
+            .card-blue::before {
+                background-color: #3b82f6;
+            }
+            .card-slate::before {
+                background-color: #94a3b8;
+            }
+            .card-brand::before {
+                background-color: var(--brand-dark);
+            }
+
+            .nav-container-card {
+                background-color: #f1f5f9;
+                border: 1px solid #e2e8f0;
+                border-radius: 1rem;
+                padding: 0.35rem;
+                display: inline-flex;
+                box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+                max-width: 100%;
+                overflow-x: auto;
+            }
+
+            .nav-btn-active {
+                background-color: var(--brand-gold) !important;
+                color: var(--brand-dark) !important;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            .nav-btn-inactive {
+                color: #64748b;
+            }
+
+            .table-container {
+                @apply bg-base-100 rounded-2xl border border-base-300 overflow-hidden shadow-sm max-w-5xl mx-auto;
+            }
+
+            .table thead th {
+                background-color: var(--brand-dark) !important;
+                color: white !important;
+                @apply font-bold text-[11px] uppercase tracking-wider py-4 border-slate-600 text-center;
+            }
+
+            /* Second Header Row specific styling */
+            .table thead tr.header-row-secondary th {
+                @apply py-3 border-t border-slate-600/50 bg-slate-800/20;
+                font-size: 10px;
+            }
+
+            .table tbody td {
+                @apply py-4 border-base-200 text-center text-slate-600 font-medium;
+            }
+
+            .table tbody tr:nth-child(even) {
+                @apply bg-slate-50/50;
+            }
+            .table tbody tr:hover {
+                @apply bg-blue-50/50;
+            }
+
+            .currency-cell {
+                @apply font-mono text-right tabular-nums px-8;
+            }
+            .label-cell {
+                @apply text-left pl-8 font-bold text-slate-800;
+            }
+
+            .no-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+            .no-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        </style>
+    </head>
+    <body class="min-h-screen">
+        <header class="brand-header overflow-hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-6">
+                <div
+                    class="flex flex-col lg:flex-row justify-between items-center gap-6 mb-6"
+                >
+                    <div class="flex items-center gap-4 w-full lg:w-auto">
+                        <div
+                            class="bg-[#faa919] p-3 rounded-xl shadow-lg flex-shrink-0"
+                        >
+                            <svg
+                                class="w-6 h-6 text-[#404068]"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                                ></path>
+                            </svg>
+                        </div>
+                        <div class="truncate">
+                            <h1
+                                id="unit-name"
+                                class="text-2xl font-extrabold text-[#faa919] leading-tight tracking-tight"
+                            >
+                                Westview Residences
+                            </h1>
+                            <p
+                                id="unit-description"
+                                class="text-[11px] text-[#faa919]/80 uppercase tracking-[0.2em] font-bold"
+                            >
+                                Common Area Metering • Gary Player Views
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-white/10 mb-6"></div>
+
+                <div class="flex flex-col lg:flex-row items-center gap-6">
+                    <div
+                        class="flex flex-wrap justify-center lg:justify-start gap-3"
+                    >
+                        <div class="header-badge">
+                            <div>
+                                <p
+                                    class="text-[9px] uppercase text-[#faa919]/60 font-bold leading-none mb-1"
+                                >
+                                    Strategy
+                                </p>
+                                <p
+                                    id="strategy-type"
+                                    class="text-xs text-white font-mono"
+                                >
+                                    -
+                                </p>
+                            </div>
+                        </div>
+                        <div id="area-stat" class="hidden header-badge">
+                            <div>
+                                <p
+                                    class="text-[9px] uppercase text-[#faa919]/60 font-bold leading-none mb-1"
+                                >
+                                    Total Area
+                                </p>
+                                <p
+                                    id="total-area"
+                                    class="text-xs text-white font-medium"
+                                >
+                                    -
+                                </p>
+                            </div>
+                        </div>
+                        <div class="header-badge">
+                            <div>
+                                <p
+                                    class="text-[9px] uppercase text-[#faa919]/60 font-bold leading-none mb-1"
+                                >
+                                    Participants
+                                </p>
+                                <p
+                                    id="participant-count"
+                                    class="text-xs text-white font-medium"
+                                >
+                                    0 Units
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        class="hidden lg:block w-px h-10 bg-white/20 mx-2"
+                    ></div>
+                    <div class="lg:hidden w-full h-px bg-white/10"></div>
+
+                    <div class="flex-1 w-full overflow-hidden">
+                        <div
+                            class="flex items-center gap-3 mb-2 justify-center lg:justify-start"
+                        >
+                            <p
+                                class="text-[9px] uppercase text-[#faa919]/40 font-bold tracking-widest"
+                            >
+                                Common Area Meters
+                            </p>
+                        </div>
+                        <div
+                            id="meter-list-header"
+                            class="flex flex-wrap justify-center lg:justify-start gap-3"
+                        ></div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="glass-card card-blue">
+                    <h3
+                        class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1"
+                    >
+                        Common Area Cost
+                    </h3>
+                    <div
+                        id="label-stat-common"
+                        class="text-3xl font-bold text-slate-800"
+                    >
+                        R 0.00
+                    </div>
+                    <div class="w-8 h-1 bg-blue-500/20 rounded-full mt-3"></div>
+                </div>
+
+                <div class="glass-card card-slate">
+                    <h3
+                        class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1"
+                    >
+                        Participant Recoveries
+                    </h3>
+                    <div
+                        id="label-stat-participants"
+                        class="text-3xl font-bold text-slate-800"
+                    >
+                        R 0.00
+                    </div>
+                    <div class="w-8 h-1 bg-slate-300 rounded-full mt-3"></div>
+                </div>
+
+                <div class="glass-card card-brand">
+                    <h2
+                        class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1"
+                    >
+                        Amount Variance
+                    </h2>
+                    <div
+                        id="variance-highlight"
+                        class="text-3xl font-bold tracking-tight"
+                    >
+                        0%
+                    </div>
+                    <div
+                        id="variance-amount"
+                        class="text-sm font-semibold mt-1"
+                    >
+                        R 0.00
+                    </div>
+                    <p
+                        class="text-[9px] text-slate-500 font-medium mt-2 uppercase"
+                    >
+                        Recovery vs. Cost
+                    </p>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="flex flex-col items-center gap-4 mb-6">
+                    <div class="nav-container-card no-scrollbar">
+                        <div class="flex items-center gap-1 min-w-max">
+                            <button
+                                id="btn-monthly"
+                                onclick="updateView('monthly')"
+                                class="px-6 py-2 rounded-lg text-sm font-bold transition-all nav-btn-active"
+                            >
+                                Monthly
+                            </button>
+                            <button
+                                id="btn-daily"
+                                onclick="updateView('daily')"
+                                class="px-6 py-2 rounded-lg text-sm font-bold transition-all nav-btn-inactive"
+                            >
+                                Daily
+                            </button>
+                            <button
+                                id="btn-hourly"
+                                onclick="updateView('hourly')"
+                                class="px-6 py-2 rounded-lg text-sm font-bold transition-all nav-btn-inactive"
+                            >
+                                Hourly
+                            </button>
+                        </div>
+                    </div>
+
+                    <div
+                        id="drilldown-controls"
+                        class="hidden flex items-center gap-3"
+                    >
+                        <button
+                            onclick="goBack()"
+                            class="flex items-center gap-2 px-3 py-1 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                        >
+                            <svg
+                                class="w-3 h-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="3"
+                                    d="M15 19l-7-7 7-7"
+                                ></path>
+                            </svg>
+                            Back
+                        </button>
+                        <span
+                            id="drilldown-text"
+                            class="text-xs font-bold text-[#404068] bg-white border border-slate-200 px-3 py-1 rounded-full"
+                            >-</span
+                        >
+                    </div>
+                </div>
+
+                <div class="card mb-12">
+                    <div
+                        class="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6"
+                    >
+                        <div>
+                            <h2
+                                id="chart-title"
+                                class="text-lg font-bold text-slate-800 tracking-tight"
+                            >
+                                Common Area Reconciliation
+                            </h2>
+                            <p
+                                id="chart-subtitle"
+                                class="text-xs text-slate-500"
+                            >
+                                Tap bars to drill down | Use tools to save or
+                                export
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button
+                                onclick="downloadCSV()"
+                                class="btn-export-branded"
+                            >
+                                <svg
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2.5"
+                                        d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                    ></path>
+                                </svg>
+                                <span>CSV</span>
+                            </button>
+                            <button
+                                onclick="downloadPDF()"
+                                class="btn-export-branded"
+                            >
+                                <svg
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2.5"
+                                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                    ></path>
+                                </svg>
+                                <span>PDF</span>
+                            </button>
+                            <div
+                                class="hidden sm:flex items-center gap-2 text-[10px] font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 h-[36px]"
+                            >
+                                <div
+                                    class="w-2 h-2 rounded-full bg-blue-600"
+                                ></div>
+                                Cost
+                                <div
+                                    class="w-2 h-2 rounded-full bg-slate-400 ml-2"
+                                ></div>
+                                Recovery
+                            </div>
+                        </div>
+                    </div>
+                    <div id="main-chart" class="w-full h-[450px]"></div>
+                </div>
+
+                <div class="mt-12 mb-20">
+                    <div
+                        class="flex items-center justify-between mb-4 max-w-5xl mx-auto px-2"
+                    >
+                        <h3
+                            class="text-sm font-extrabold text-slate-500 uppercase tracking-widest"
+                        >
+                            Detailed Data Breakdown
+                        </h3>
+                        <span
+                            class="badge badge-ghost font-mono text-[10px]"
+                            id="table-view-tag"
+                            >MONTHLY VIEW</span
+                        >
+                    </div>
+                    <div class="table-container">
+                        <table class="table w-full" id="main-data-table">
+                            <thead id="data-table-head">
+                                <!-- Populated dynamically via JS -->
+                            </thead>
+                            <tbody id="data-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const config = {
+                unitName: "Westview Residences - Block A",
+                description: "Common Area Metering • Gary Player Views",
+                strategy: "Area",
+                totalArea: 4500,
+                participantCount: 12,
+                currency: "R",
+                meters: [
+                    { id: "MTR-001", type: "Electricity", icon: "⚡" },
+                    { id: "MTR-002", type: "Water", icon: "💧" },
+                    { id: "MTR-003", type: "Gas", icon: "🔥" },
+                    { id: "MTR-004", type: "Electricity", icon: "⚡" },
+                ],
+            };
+
+            const MONTH_NAMES = [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun",
+                "Jul",
+                "Aug",
+                "Sep",
+                "Oct",
+                "Nov",
+                "Dec",
+            ];
+            let currentView = "monthly";
+            let selectedMonthLabel = "";
+            let selectedDayLabel = "";
+            let chart = null;
+            let lastGeneratedData = null;
+
+            const formatCurrency = (val) =>
+                `${config.currency} ${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            const getRollingMonths = () => {
+                const today = new Date();
+                const result = [];
+                for (let i = 11; i >= 0; i--) {
+                    const d = new Date(
+                        today.getFullYear(),
+                        today.getMonth() - 1 - i,
+                        1,
+                    );
+                    result.push(
+                        MONTH_NAMES[d.getMonth()] +
+                            " " +
+                            d.getFullYear().toString().slice(-2),
+                    );
+                }
+                return result;
+            };
+
+            const generateData = (period) => {
+                const labels = [];
+                const commonData = [];
+                const participantData = [];
+                let count =
+                    period === "monthly" ? 12 : period === "daily" ? 30 : 24;
+                let multiplier =
+                    period === "monthly"
+                        ? 40000
+                        : period === "daily"
+                          ? 1200
+                          : 50;
+
+                if (period === "monthly")
+                    getRollingMonths().forEach((l) => labels.push(l));
+                else if (period === "daily")
+                    for (let i = 1; i <= 30; i++) labels.push(`${i}`);
+                else for (let i = 0; i < 24; i++) labels.push(`${i}:00`);
+
+                for (let i = 0; i < count; i++) {
+                    const base = Math.random() * multiplier + multiplier * 0.5;
+                    commonData.push(parseFloat(base.toFixed(2)));
+                    const varianceFactor = 1 + (Math.random() * 0.25 - 0.12);
+                    participantData.push(
+                        parseFloat((base * varianceFactor).toFixed(2)),
+                    );
+                }
+                lastGeneratedData = { labels, commonData, participantData };
+                return lastGeneratedData;
+            };
+
+            async function downloadPDF() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF("p", "mm", "a4");
+                const primaryColor = [64, 64, 104];
+                const goldColor = [250, 169, 25];
+
+                doc.setFillColor(...primaryColor);
+                doc.rect(0, 0, 210, 40, "F");
+
+                doc.setTextColor(...goldColor);
+                doc.setFontSize(20);
+                doc.setFont("helvetica", "bold");
+                doc.text(config.unitName, 15, 15);
+
+                doc.setFontSize(10);
+                doc.setFont("helvetica", "normal");
+                doc.text(config.description, 15, 22);
+
+                doc.setTextColor(255, 255, 255);
+                doc.text(
+                    `Strategy: ${config.strategy}  |  Participants: ${config.participantCount} Units`,
+                    15,
+                    32,
+                );
+
+                doc.setTextColor(...primaryColor);
+                doc.setFontSize(14);
+                doc.text("Executive Summary", 15, 55);
+
+                const cost =
+                    document.getElementById("label-stat-common").innerText;
+                const recov = document.getElementById(
+                    "label-stat-participants",
+                ).innerText;
+                const vari =
+                    document.getElementById("variance-highlight").innerText;
+                const variAmt =
+                    document.getElementById("variance-amount").innerText;
+
+                doc.autoTable({
+                    startY: 60,
+                    head: [
+                        [
+                            "Common Area Cost",
+                            "Recoveries",
+                            "Variance (%)",
+                            "Variance (Value)",
+                        ],
+                    ],
+                    body: [[cost, recov, vari, variAmt]],
+                    theme: "striped",
+                    headStyles: { fillColor: primaryColor },
+                });
+
+                doc.setFontSize(14);
+                doc.text(
+                    "Performance Visualization",
+                    15,
+                    doc.lastAutoTable.finalY + 15,
+                );
+                const chartImage = chart.getDataURL({
+                    type: "png",
+                    pixelRatio: 2,
+                    backgroundColor: "#fff",
+                });
+                doc.addImage(
+                    chartImage,
+                    "PNG",
+                    15,
+                    doc.lastAutoTable.finalY + 20,
+                    180,
+                    80,
+                );
+
+                doc.addPage();
+                doc.setFontSize(14);
+                doc.text(
+                    `Detailed Breakdown (${currentView.toUpperCase()})`,
+                    15,
+                    20,
+                );
+
+                // For PDF we use a flattened version of the table
+                doc.autoTable({
+                    html: "#main-data-table",
+                    startY: 25,
+                    theme: "grid",
+                    headStyles: { fillColor: primaryColor },
+                    styles: { fontSize: 8, halign: "center" },
+                    columnStyles: { 0: { halign: "left", fontStyle: "bold" } },
+                });
+
+                doc.save(
+                    `Reconciliation_Report_${currentView}_${new Date().toISOString().slice(0, 10)}.pdf`,
+                );
+            }
+
+            function downloadCSV() {
+                if (!lastGeneratedData) return;
+                const headers = [
+                    "Period",
+                    "Common Area Cost",
+                    "Participant Recoveries",
+                    "Variance",
+                    "% Recovery",
+                ];
+                const rows = lastGeneratedData.labels.map((label, idx) => {
+                    const common = lastGeneratedData.commonData[idx];
+                    const part = lastGeneratedData.participantData[idx];
+                    const diff = part - common;
+                    const rec = ((part / common) * 100).toFixed(2);
+                    return [label, common, part, diff, rec];
+                });
+                const csvContent = [headers, ...rows]
+                    .map((e) => e.join(","))
+                    .join("\n");
+                const blob = new Blob([csvContent], {
+                    type: "text/csv;charset=utf-8;",
+                });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute(
+                    "download",
+                    `reconciliation_${currentView}.csv`,
+                );
+                link.style.visibility = "hidden";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            function initDashboard() {
+                document.getElementById("unit-name").textContent =
+                    config.unitName;
+                document.getElementById("strategy-type").textContent =
+                    config.strategy;
+                document.getElementById("participant-count").textContent =
+                    `${config.participantCount} Units`;
+
+                if (config.strategy === "Area") {
+                    const areaStat = document.getElementById("area-stat");
+                    areaStat.classList.remove("hidden");
+                    document.getElementById("total-area").textContent =
+                        `${config.totalArea} m²`;
+                }
+
+                const headerList = document.getElementById("meter-list-header");
+                config.meters.forEach((m) => {
+                    headerList.innerHTML += `
+                    <div class="header-badge">
+                        <div class="text-white/90 text-xs font-bold w-6 h-6 flex items-center justify-center bg-white/5 rounded-lg border border-white/10">${m.icon}</div>
+                        <div>
+                            <p class="text-[10px] text-white font-bold leading-none">${m.id}</p>
+                            <p class="text-[8px] uppercase text-[#faa919]/60 font-bold mt-0.5">${m.type}</p>
+                        </div>
+                    </div>
+                `;
+                });
+
+                chart = echarts.init(document.getElementById("main-chart"));
+                chart.on("click", function (params) {
+                    if (currentView === "monthly") {
+                        selectedMonthLabel = params.name;
+                        updateView("daily");
+                    } else if (currentView === "daily") {
+                        selectedDayLabel = `${params.name}`;
+                        updateView("hourly");
+                    }
+                });
+
+                updateView("monthly");
+                window.addEventListener("resize", () => chart.resize());
+            }
+
+            function goBack() {
+                if (currentView === "hourly") {
+                    selectedDayLabel = "";
+                    updateView("daily");
+                } else if (currentView === "daily") {
+                    selectedMonthLabel = "";
+                    updateView("monthly");
+                }
+            }
+
+            function updateView(period) {
+                currentView = period;
+                ["hourly", "daily", "monthly"].forEach((p) => {
+                    const btn = document.getElementById(`btn-${p}`);
+                    if (btn)
+                        btn.className =
+                            p === period
+                                ? "px-6 py-2 rounded-lg text-sm font-bold transition-all nav-btn-active"
+                                : "px-6 py-2 rounded-lg text-sm font-bold transition-all nav-btn-inactive";
+                });
+
+                const drillText = document.getElementById("drilldown-text");
+                const tableHead = document.getElementById("data-table-head");
+                const viewTag = document.getElementById("table-view-tag");
+
+                const yearFull = new Date().getFullYear();
+                const yearShort = yearFull.toString().slice(-2);
+                const monthPart = selectedMonthLabel.split(" ")[0] || "";
+
+                // Header Logic
+                if (period === "monthly") {
+                    document
+                        .getElementById("drilldown-controls")
+                        .classList.add("hidden");
+                    viewTag.textContent = "MONTHLY VIEW";
+                    tableHead.innerHTML = `
+                    <tr>
+                        <th class="text-left pl-8">Month</th>
+                        <th>Total Common</th>
+                        <th>Total Participating</th>
+                        <th>Difference</th>
+                        <th>% Recovery</th>
+                    </tr>
+                `;
+                } else if (period === "daily") {
+                    document
+                        .getElementById("drilldown-controls")
+                        .classList.remove("hidden");
+                    drillText.textContent = `Daily: ${selectedMonthLabel}`;
+                    viewTag.textContent = "DAILY BREAKDOWN";
+                    tableHead.innerHTML = `
+                    <tr>
+                        <th class="text-left pl-8">Date</th>
+                        <th>Total Common</th>
+                        <th>Total Participating</th>
+                        <th>Difference</th>
+                        <th>% Recovery</th>
+                    </tr>
+                `;
+                } else {
+                    document
+                        .getElementById("drilldown-controls")
+                        .classList.remove("hidden");
+                    drillText.textContent = `Hourly Profile`;
+                    viewTag.textContent = "HOURLY PROFILE";
+                    // TWO-ROW HEADER for Hourly view
+                    // Row 1: Selected Date (e.g., 1 Aug '26)
+                    // Row 2: Column Titles starting with "Hour"
+                    tableHead.innerHTML = `
+                    <tr class="header-row-primary">
+                        <th colspan="5" class="text-center bg-[#2d2d4d] border-b border-white/5 py-2">
+                            ${selectedDayLabel} ${monthPart} '${yearShort}
+                        </th>
+                    </tr>
+                    <tr class="header-row-secondary">
+                        <th class="text-left pl-8">Hour</th>
+                        <th>Cost</th>
+                        <th>Recovery</th>
+                        <th>Difference</th>
+                        <th>% Rec.</th>
+                    </tr>
+                `;
+                }
+
+                const data = generateData(period);
+                const totalCommon = data.commonData.reduce((a, b) => a + b, 0);
+                const totalParticipants = data.participantData.reduce(
+                    (a, b) => a + b,
+                    0,
+                );
+                const totalVar = totalParticipants - totalCommon;
+                const varPercentage = ((totalVar / totalCommon) * 100).toFixed(
+                    1,
+                );
+
+                document.getElementById("label-stat-common").textContent =
+                    formatCurrency(totalCommon);
+                document.getElementById("label-stat-participants").textContent =
+                    formatCurrency(totalParticipants);
+                const varDisplay =
+                    document.getElementById("variance-highlight");
+                const varAmount = document.getElementById("variance-amount");
+                varDisplay.textContent = `${totalVar > 0 ? "+" : ""}${varPercentage}%`;
+                varAmount.textContent = `${totalVar > 0 ? "+" : ""}${formatCurrency(totalVar)}`;
+                varDisplay.className =
+                    totalVar < 0
+                        ? "text-3xl font-bold tracking-tight text-red-500"
+                        : "text-3xl font-bold tracking-tight text-emerald-600";
+                varAmount.className =
+                    totalVar < 0
+                        ? "text-sm font-semibold mt-1 text-red-400"
+                        : "text-sm font-semibold mt-1 text-emerald-500";
+
+                const tableBody = document.getElementById("data-table-body");
+                tableBody.innerHTML = "";
+                data.labels.forEach((label, idx) => {
+                    const common = data.commonData[idx];
+                    const participant = data.participantData[idx];
+                    const diff = participant - common;
+                    const recovery = ((participant / common) * 100).toFixed(1);
+
+                    let rowLabel = label;
+                    if (period === "daily")
+                        rowLabel = `${label} ${selectedMonthLabel}`;
+
+                    tableBody.innerHTML += `
+                    <tr>
+                        <td class="label-cell">${rowLabel}</td>
+                        <td class="currency-cell">${formatCurrency(common)}</td>
+                        <td class="currency-cell">${formatCurrency(participant)}</td>
+                        <td class="currency-cell font-bold ${diff < 0 ? "text-red-500" : "text-emerald-600"}">${diff > 0 ? "+" : ""}${formatCurrency(diff)}</td>
+                        <td class="font-bold text-slate-500 text-center">${recovery}%</td>
+                    </tr>
+                `;
+                });
+
+                chart.setOption({
+                    toolbox: {
+                        show: true,
+                        right: 20,
+                        top: 0,
+                        feature: {
+                            dataView: {
+                                show: true,
+                                readOnly: true,
+                                title: "Data Table",
+                            },
+                            magicType: {
+                                show: true,
+                                type: ["line", "bar"],
+                                title: { line: "Line Chart", bar: "Bar Chart" },
+                            },
+                            restore: { show: true, title: "Reset" },
+                            saveAsImage: {
+                                show: true,
+                                title: "Save Image",
+                                pixelRatio: 2,
+                            },
+                        },
+                        iconStyle: { borderColor: "#94a3b8" },
+                        emphasis: { iconStyle: { borderColor: "#faa919" } },
+                    },
+                    tooltip: {
+                        trigger: "axis",
+                        axisPointer: { type: "shadow" },
+                        backgroundColor: "rgba(255, 255, 255, 0.95)",
+                        borderColor: "#e2e8f0",
+                        borderWidth: 1,
+                        formatter: function (params) {
+                            let headerText =
+                                currentView === "daily"
+                                    ? `${params[0].name} ${selectedMonthLabel}`
+                                    : currentView === "hourly"
+                                      ? `${params[0].name} - ${selectedDayLabel} ${monthPart} '${yearShort}`
+                                      : params[0].name;
+                            let rel = `<div class="font-bold mb-2 pb-1 border-b border-slate-100 text-slate-700">${headerText}</div>`;
+                            params.forEach((p) => {
+                                rel += `<div class="flex justify-between gap-12 py-1 text-xs"><span class="text-slate-500">${p.marker} ${p.seriesName}:</span><span class="font-mono font-bold text-slate-800">R ${p.value.toLocaleString()}</span></div>`;
+                            });
+                            return rel;
+                        },
+                    },
+                    xAxis: {
+                        type: "category",
+                        data: data.labels,
+                        axisTick: { show: false },
+                        axisLine: { lineStyle: { color: "#cbd5e1" } },
+                        axisLabel: { color: "#94a3b8", fontSize: 10 },
+                    },
+                    yAxis: {
+                        type: "value",
+                        axisLabel: { color: "#94a3b8", fontSize: 10 },
+                        splitLine: {
+                            lineStyle: { type: "dashed", color: "#f1f5f9" },
+                        },
+                    },
+                    series: [
+                        {
+                            name: "Common Area Cost",
+                            type: "bar",
+                            barMaxWidth: 25,
+                            data: data.commonData,
+                            itemStyle: {
+                                color: "#2563eb",
+                                borderRadius: [4, 4, 0, 0],
+                            },
+                        },
+                        {
+                            name: "Participant Recoveries",
+                            type: "bar",
+                            barMaxWidth: 25,
+                            data: data.participantData,
+                            itemStyle: {
+                                color: "#94a3b8",
+                                borderRadius: [4, 4, 0, 0],
+                            },
+                        },
+                    ],
+                });
+            }
+            window.onload = initDashboard;
+        </script>
+    </body>
+</html>

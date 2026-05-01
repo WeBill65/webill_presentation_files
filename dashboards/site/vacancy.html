@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Vacancy Utility Dashboard</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+        <style>
+            :root {
+                --brand-bg: #404068;
+                --brand-text: #faa919;
+            }
+            .bg-brand {
+                background-color: var(--brand-bg);
+            }
+            .text-brand {
+                color: var(--brand-text);
+            }
+            .border-brand {
+                border-color: var(--brand-bg);
+            }
+            .hover-brand:hover {
+                background-color: #4e4e7d;
+            }
+
+            .card {
+                background: white;
+                border-radius: 0.75rem;
+                box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+                padding: 1.25rem;
+            }
+            .drilldown-btn {
+                background: var(--brand-bg);
+                color: var(--brand-text);
+                padding: 4px 12px;
+                border-radius: 4px;
+                font-size: 0.75rem;
+                cursor: pointer;
+            }
+            /* Custom scrollbar */
+            .custom-scroll::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            .custom-scroll::-webkit-scrollbar-track {
+                background: #f1f5f9;
+                border-radius: 10px;
+            }
+            .custom-scroll::-webkit-scrollbar-thumb {
+                background: #404068;
+                border-radius: 10px;
+            }
+
+            /* Sticky double-row table header */
+            .sticky-header-row1 th {
+                position: sticky;
+                top: 0;
+                z-index: 20;
+                background: #404068;
+            }
+            .sticky-header-row2 th {
+                position: sticky;
+                top: 37px;   /* height of first header row */
+                z-index: 19;
+                background: #f3f4f6;
+            }
+
+            .stat-divider {
+                border-top: 1px dashed #e5e7eb;
+                margin: 0.75rem 0;
+            }
+            .dl-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                padding: 6px 14px;
+                border-radius: 6px;
+                font-size: 0.72rem;
+                font-weight: 700;
+                cursor: pointer;
+                border: none;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+                transition: opacity 0.15s;
+            }
+            .dl-btn:hover { opacity: 0.82; }
+            .dl-btn-pdf    { background: #faa919; color: #404068; }
+            .dl-btn-report { background: #fff; color: #404068; border: 1.5px solid #faa919; }
+
+        </style>
+    </head>
+    <body class="bg-gray-50 text-gray-800 font-sans">
+        <!-- Header -->
+        <header class="bg-brand text-brand p-6 shadow-lg mb-8">
+            <div
+                class="max-w-[1400px] mx-auto flex justify-between items-center"
+            >
+                <h1 class="text-3xl font-bold tracking-tight uppercase">
+                    Vacancy Dashboard
+                </h1>
+                <div class="flex items-center gap-3">
+                    <button class="dl-btn dl-btn-report" onclick="downloadReport()">⬇ Report</button>
+                    <button class="dl-btn dl-btn-pdf" id="btn-dl-pdf" onclick="downloadPDF()">⬇ PDF</button>
+                    <span class="text-sm opacity-50 ml-2">Utility Participation Analysis</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-[1400px] mx-auto px-4 pb-12">
+            <!-- Top Overview Section -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Electricity Card -->
+                <div class="card border-t-4 border-brand">
+                    <div class="flex justify-between items-start mb-2">
+                        <h2 class="text-lg font-bold flex items-center">
+                            ⚡ Electricity
+                        </h2>
+                        <span
+                            class="bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase"
+                            >12.5% of Site</span
+                        >
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <p
+                                class="text-[10px] text-gray-400 uppercase font-bold"
+                            >
+                                Vacancy Charge
+                            </p>
+                            <p class="text-2xl font-bold text-brand">
+                                R 42,450
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <p
+                                class="text-[10px] text-gray-400 uppercase font-bold"
+                            >
+                                Site Total
+                            </p>
+                            <p class="text-xl font-semibold text-gray-400">
+                                R 339,600
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 mb-4">
+                        <div
+                            class="flex-1 bg-gray-100 h-1.5 rounded-full overflow-hidden"
+                        >
+                            <div
+                                class="bg-brand h-full"
+                                style="width: 12.5%"
+                            ></div>
+                        </div>
+                        <span class="text-[10px] font-bold text-brand"
+                            >12.5%</span
+                        >
+                    </div>
+
+                    <div class="stat-divider"></div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs mb-4">
+                        <div>
+                            <span
+                                class="text-gray-400 block uppercase text-[9px]"
+                                >Vac. Consumption</span
+                            >
+                            <span class="font-bold">12,400 kWh</span>
+                        </div>
+                        <div class="text-right">
+                            <span
+                                class="text-gray-400 block uppercase text-[9px]"
+                                >Site Consumption</span
+                            >
+                            <span class="font-bold">99,200 kWh</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5 text-[11px] bg-gray-50 p-2 rounded">
+                        <div class="flex justify-between">
+                            <span>Grid:</span
+                            ><span class="font-semibold">R 28,000</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Solar:</span
+                            ><span class="font-semibold">R 4,250</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Generator:</span
+                            ><span class="font-semibold">R 10,200</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Water Card -->
+                <div class="card border-t-4 border-brand">
+                    <div class="flex justify-between items-start mb-2">
+                        <h2 class="text-lg font-bold flex items-center">
+                            💧 Water
+                        </h2>
+                        <span
+                            class="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase"
+                            >8.2% of Site</span
+                        >
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <p
+                                class="text-[10px] text-gray-400 uppercase font-bold"
+                            >
+                                Vacancy Charge
+                            </p>
+                            <p class="text-2xl font-bold text-brand">
+                                R 18,200
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <p
+                                class="text-[10px] text-gray-400 uppercase font-bold"
+                            >
+                                Site Total
+                            </p>
+                            <p class="text-xl font-semibold text-gray-400">
+                                R 221,950
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 mb-4">
+                        <div
+                            class="flex-1 bg-gray-100 h-1.5 rounded-full overflow-hidden"
+                        >
+                            <div
+                                class="bg-blue-500 h-full"
+                                style="width: 8.2%"
+                            ></div>
+                        </div>
+                        <span class="text-[10px] font-bold text-brand"
+                            >8.2%</span
+                        >
+                    </div>
+
+                    <div class="stat-divider"></div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs mb-4">
+                        <div>
+                            <span
+                                class="text-gray-400 block uppercase text-[9px]"
+                                >Vac. Consumption</span
+                            >
+                            <span class="font-bold">450 kL</span>
+                        </div>
+                        <div class="text-right">
+                            <span
+                                class="text-gray-400 block uppercase text-[9px]"
+                                >Site Consumption</span
+                            >
+                            <span class="font-bold">5,480 kL</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5 text-[11px] bg-gray-50 p-2 rounded">
+                        <div class="flex justify-between">
+                            <span>Municipal:</span
+                            ><span class="font-semibold">R 12,000</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Hot Water:</span
+                            ><span class="font-semibold">R 4,500</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Borehole:</span
+                            ><span class="font-semibold">R 1,700</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gas Card -->
+                <div class="card border-t-4 border-brand">
+                    <div class="flex justify-between items-start mb-2">
+                        <h2 class="text-lg font-bold flex items-center">
+                            🔥 Gas
+                        </h2>
+                        <span
+                            class="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase"
+                            >15.1% of Site</span
+                        >
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <p
+                                class="text-[10px] text-gray-400 uppercase font-bold"
+                            >
+                                Vacancy Charge
+                            </p>
+                            <p class="text-2xl font-bold text-brand">R 6,840</p>
+                        </div>
+                        <div class="text-right">
+                            <p
+                                class="text-[10px] text-gray-400 uppercase font-bold"
+                            >
+                                Site Total
+                            </p>
+                            <p class="text-xl font-semibold text-gray-400">
+                                R 45,300
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 mb-4">
+                        <div
+                            class="flex-1 bg-gray-100 h-1.5 rounded-full overflow-hidden"
+                        >
+                            <div
+                                class="bg-red-500 h-full"
+                                style="width: 15.1%"
+                            ></div>
+                        </div>
+                        <span class="text-[10px] font-bold text-brand"
+                            >15.1%</span
+                        >
+                    </div>
+
+                    <div class="stat-divider"></div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs mb-4">
+                        <div>
+                            <span
+                                class="text-gray-400 block uppercase text-[9px]"
+                                >Vac. Consumption</span
+                            >
+                            <span class="font-bold">180 kg</span>
+                        </div>
+                        <div class="text-right">
+                            <span
+                                class="text-gray-400 block uppercase text-[9px]"
+                                >Site Consumption</span
+                            >
+                            <span class="font-bold">1,192 kg</span>
+                        </div>
+                    </div>
+
+                    <div
+                        class="flex items-center justify-between p-2 bg-gray-50 rounded mt-4"
+                    >
+                        <div
+                            class="text-[10px] font-bold text-gray-500 uppercase"
+                        >
+                            Efficiency Target
+                        </div>
+                        <div class="text-xs font-bold text-brand">70%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Month-on-Month Trend Section -->
+            <section class="card mb-8">
+                <div class="flex justify-between items-center mb-1">
+                    <div>
+                        <h2 class="text-xl font-bold text-brand uppercase tracking-wider">
+                            Month-on-Month Vacancy Trend
+                        </h2>
+                        <p class="text-xs text-gray-400 mt-1">
+                            Vacant charge as % of total site charge — combined &amp; per utility
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-[11px] text-gray-400 bg-gray-50 px-3 py-1.5 rounded-lg border border-dashed border-gray-300">
+                        <span class="inline-block w-5 border-t-2 border-dashed border-gray-400 mr-1"></span>
+                        10% benchmark
+                    </div>
+                </div>
+                <div id="trend-chart" style="width: 100%; height: 300px"></div>
+            </section>
+
+            <!-- Participation Visual Section -->
+            <section class="card mb-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2
+                        class="text-xl font-bold text-brand uppercase tracking-wider"
+                    >
+                        Vacant Unit Participation
+                        <span class="text-sm font-normal normal-case text-gray-400 ml-2" id="unit-count-label"></span>
+                    </h2>
+                    <div class="flex bg-gray-100 rounded-lg p-1">
+                        <button
+                            onclick="switchView('heatmap')"
+                            id="btn-heatmap"
+                            class="px-4 py-1 text-sm font-semibold rounded-md bg-brand text-brand"
+                        >
+                            Heat Map
+                        </button>
+                        <button
+                            onclick="switchView('table')"
+                            id="btn-table"
+                            class="px-4 py-1 text-sm font-semibold rounded-md text-gray-500"
+                        >
+                            Data Table
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Heat Map Container -->
+                <div id="heatmap-view">
+                    <div class="overflow-y-auto custom-scroll rounded-lg border border-gray-100" style="max-height: 480px">
+                        <div id="participation-heatmap" style="width: 100%;"></div>
+                    </div>
+                    <p class="text-center text-xs text-gray-400 mt-4 italic">
+                        * Click a bar to drill into that unit's detailed analytics.
+                    </p>
+                </div>
+
+                <!-- Table View Container (Hidden by default) -->
+                <div
+                    id="table-view"
+                    class="hidden overflow-auto custom-scroll rounded-lg border border-gray-100"
+                    style="max-height: 480px"
+                >
+                    <table class="w-full text-xs text-left border-collapse">
+                        <thead>
+                            <tr class="bg-brand text-brand sticky-header-row1">
+                                <th
+                                    rowspan="2"
+                                    class="p-3 border border-gray-600 rounded-tl-lg text-center"
+                                >
+                                    Unit
+                                </th>
+                                <th
+                                    colspan="3"
+                                    class="p-2 border border-gray-600 text-center"
+                                >
+                                    Electricity (⚡)
+                                </th>
+                                <th
+                                    colspan="3"
+                                    class="p-2 border border-gray-600 text-center"
+                                >
+                                    Water (💧)
+                                </th>
+                                <th
+                                    colspan="3"
+                                    class="p-2 border border-gray-600 text-center"
+                                >
+                                    Gas (🔥)
+                                </th>
+                                <th
+                                    rowspan="2"
+                                    class="p-3 border border-gray-600 rounded-tr-lg text-right"
+                                >
+                                    Total Charge
+                                </th>
+                            </tr>
+                            <tr class="bg-gray-100 text-brand sticky-header-row2">
+                                <th class="p-2 border border-gray-300">Cons</th>
+                                <th class="p-2 border border-gray-300">R</th>
+                                <th class="p-2 border border-gray-300">%</th>
+                                <th class="p-2 border border-gray-300">Cons</th>
+                                <th class="p-2 border border-gray-300">R</th>
+                                <th class="p-2 border border-gray-300">%</th>
+                                <th class="p-2 border border-gray-300">Cons</th>
+                                <th class="p-2 border border-gray-300">R</th>
+                                <th class="p-2 border border-gray-300">%</th>
+                            </tr>
+                        </thead>
+                        <tbody id="unit-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+
+        <script>
+            const units = [
+                { id: "101A", elec: { cons: 2100, charge: 8500, pct: 32 }, water: { cons: 210, charge: 3200, pct: 24 }, gas: { cons: 80,  charge: 700, pct: 15 }, totalCharge: 12400 },
+                { id: "201A", elec: { cons: 1800, charge: 7200, pct: 27 }, water: { cons: 180, charge: 2700, pct: 20 }, gas: { cons: 70,  charge: 650, pct: 14 }, totalCharge: 10550 },
+                { id: "204B", elec: { cons: 1550, charge: 6200, pct: 23 }, water: { cons: 140, charge: 2100, pct: 16 }, gas: { cons: 90,  charge: 900, pct: 19 }, totalCharge:  9200 },
+                { id: "302B", elec: { cons: 1400, charge: 5600, pct: 21 }, water: { cons: 110, charge: 1650, pct: 12 }, gas: { cons: 60,  charge: 550, pct: 12 }, totalCharge:  7800 },
+                { id: "402C", elec: { cons: 1200, charge: 4800, pct: 18 }, water: { cons: 120, charge: 1800, pct: 14 }, gas: { cons: 75,  charge: 800, pct: 17 }, totalCharge:  7400 },
+                { id: "103C", elec: { cons: 1100, charge: 4400, pct: 17 }, water: { cons: 90,  charge: 1350, pct: 10 }, gas: { cons: 45,  charge: 420, pct:  9 }, totalCharge:  6170 },
+                { id: "105A", elec: { cons: 900,  charge: 3500, pct: 13 }, water: { cons: 60,  charge: 1000, pct:  8 }, gas: { cons: 55,  charge: 600, pct: 13 }, totalCharge:  5100 },
+                { id: "205D", elec: { cons: 750,  charge: 3000, pct: 11 }, water: { cons: 75,  charge: 1125, pct:  8 }, gas: { cons: 40,  charge: 375, pct:  8 }, totalCharge:  4500 },
+                { id: "303D", elec: { cons: 550,  charge: 2100, pct:  8 }, water: { cons: 50,  charge: 800,  pct:  6 }, gas: { cons: 30,  charge: 300, pct:  6 }, totalCharge:  3200 },
+                { id: "401A", elec: { cons: 480,  charge: 1920, pct:  7 }, water: { cons: 48,  charge: 720,  pct:  5 }, gas: { cons: 25,  charge: 235, pct:  5 }, totalCharge:  2875 },
+                { id: "102B", elec: { cons: 380,  charge: 1520, pct:  6 }, water: { cons: 38,  charge: 570,  pct:  4 }, gas: { cons: 18,  charge: 170, pct:  4 }, totalCharge:  2260 },
+                { id: "304E", elec: { cons: 290,  charge: 1160, pct:  4 }, water: { cons: 30,  charge: 450,  pct:  3 }, gas: { cons: 12,  charge: 115, pct:  2 }, totalCharge:  1725 },
+            ];
+
+            // Month-on-month vacancy % data (Dec = current values matching top cards)
+            const monthlyTrend = [
+                { month: "Jan", combined:  8.4, elec:  9.2, water: 6.1, gas: 11.8 },
+                { month: "Feb", combined:  8.1, elec:  8.7, water: 5.8, gas: 11.2 },
+                { month: "Mar", combined:  8.9, elec:  9.8, water: 6.5, gas: 12.4 },
+                { month: "Apr", combined:  9.3, elec: 10.2, water: 7.0, gas: 12.9 },
+                { month: "May", combined:  9.7, elec: 10.6, water: 7.4, gas: 13.5 },
+                { month: "Jun", combined: 10.5, elec: 11.4, water: 7.9, gas: 14.0 },
+                { month: "Jul", combined: 11.2, elec: 12.1, water: 8.6, gas: 15.3 },
+                { month: "Aug", combined: 12.6, elec: 13.5, water: 9.8, gas: 16.8 },
+                { month: "Sep", combined: 12.0, elec: 13.0, water: 9.2, gas: 16.2 },
+                { month: "Oct", combined: 11.4, elec: 12.4, water: 8.7, gas: 15.7 },
+                { month: "Nov", combined: 10.9, elec: 11.8, water: 8.3, gas: 15.2 },
+                { month: "Dec", combined: 11.1, elec: 12.5, water: 8.2, gas: 15.1 },
+            ];
+
+            let heatmapChart, trendChart;
+
+            window.onload = () => {
+                document.getElementById("unit-count-label").textContent = `(${units.length} units)`;
+                renderUnitTable();
+                initTrendChart();
+                initHeatmap();
+
+                window.addEventListener("resize", () => {
+                    trendChart.resize();
+                    heatmapChart.resize();
+                });
+            };
+
+            function switchView(view) {
+                const heatmapDiv = document.getElementById("heatmap-view");
+                const tableDiv = document.getElementById("table-view");
+                const btnHeatmap = document.getElementById("btn-heatmap");
+                const btnTable = document.getElementById("btn-table");
+
+                if (view === "heatmap") {
+                    heatmapDiv.classList.remove("hidden");
+                    tableDiv.classList.add("hidden");
+                    btnHeatmap.className =
+                        "px-4 py-1 text-sm font-semibold rounded-md bg-brand text-brand";
+                    btnTable.className =
+                        "px-4 py-1 text-sm font-semibold rounded-md text-gray-500";
+                    heatmapChart.resize();
+                } else {
+                    heatmapDiv.classList.add("hidden");
+                    tableDiv.classList.remove("hidden");
+                    btnTable.className =
+                        "px-4 py-1 text-sm font-semibold rounded-md bg-brand text-brand";
+                    btnHeatmap.className =
+                        "px-4 py-1 text-sm font-semibold rounded-md text-gray-500";
+                }
+            }
+
+            function initTrendChart() {
+                trendChart = echarts.init(document.getElementById("trend-chart"));
+
+                const months   = monthlyTrend.map((d) => d.month);
+                const combined = monthlyTrend.map((d) => d.combined);
+                const elec     = monthlyTrend.map((d) => d.elec);
+                const water    = monthlyTrend.map((d) => d.water);
+                const gas      = monthlyTrend.map((d) => d.gas);
+
+                const mkSeries = (name, data, color, lineWidth, areaOpacity) => ({
+                    name,
+                    type: "line",
+                    data,
+                    smooth: true,
+                    symbol: "circle",
+                    symbolSize: 6,
+                    lineStyle: { color, width: lineWidth },
+                    itemStyle: { color },
+                    areaStyle: {
+                        color: {
+                            type: "linear",
+                            x: 0, y: 0, x2: 0, y2: 1,
+                            colorStops: [
+                                { offset: 0, color: color + Math.round(areaOpacity * 255).toString(16).padStart(2,"0") },
+                                { offset: 1, color: color + "00" },
+                            ],
+                        },
+                    },
+                    // Highlight the most recent (Dec) data point
+                    markPoint: {
+                        data: [{ type: "max", symbol: "circle", symbolSize: 9,
+                                 itemStyle: { color }, label: { show: false } }],
+                    },
+                });
+
+                trendChart.setOption({
+                    backgroundColor: "#fff",
+                    tooltip: {
+                        trigger: "axis",
+                        backgroundColor: "#404068",
+                        textStyle: { color: "#faa919", fontSize: 12 },
+                        formatter(params) {
+                            const m = params[0].axisValue;
+                            const rows = params.map(
+                                (p) => `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:5px"></span>${p.seriesName}: <b>${p.value}%</b>`,
+                            );
+                            return `<b>${m}</b><br/>${rows.join("<br/>")}`;
+                        },
+                    },
+                    legend: {
+                        data: ["Combined", "Electricity", "Water", "Gas"],
+                        top: 8,
+                        right: 16,
+                        textStyle: { fontSize: 11, color: "#555" },
+                        itemWidth: 16,
+                        itemHeight: 3,
+                    },
+                    grid: { left: 10, right: 20, top: 44, bottom: 28, containLabel: true },
+                    xAxis: {
+                        type: "category",
+                        data: months,
+                        boundaryGap: false,
+                        axisLine: { lineStyle: { color: "#e5e7eb" } },
+                        axisTick: { show: false },
+                        axisLabel: { fontSize: 11, color: "#9ca3af" },
+                    },
+                    yAxis: {
+                        type: "value",
+                        min: 0,
+                        max: 20,
+                        axisLabel: { formatter: "{value}%", fontSize: 10, color: "#9ca3af" },
+                        splitLine: { lineStyle: { color: "#f3f4f6" } },
+                    },
+                    series: [
+                        // 10% benchmark reference line rendered as its own series
+                        {
+                            name: "_benchmark",
+                            type: "line",
+                            data: months.map(() => 10),
+                            lineStyle: { color: "#d1d5db", type: "dashed", width: 1.5 },
+                            symbol: "none",
+                            tooltip: { show: false },
+                            legendHoverLink: false,
+                            silent: true,
+                            z: 0,
+                        },
+                        mkSeries("Combined",     combined, "#faa919", 3,   0.18),
+                        mkSeries("Electricity",  elec,     "#404068", 2,   0.14),
+                        mkSeries("Water",        water,    "#3b82f6", 2,   0.14),
+                        mkSeries("Gas",          gas,      "#ef4444", 2,   0.14),
+                    ],
+                });
+            }
+
+            function initHeatmap() {
+                // Height scales with unit count: 52px per bar + 80px for legend/axes
+                const chartEl = document.getElementById("participation-heatmap");
+                chartEl.style.height = Math.max(300, units.length * 52 + 80) + "px";
+
+                heatmapChart = echarts.init(chartEl);
+
+                // Sort units by total charge descending so highest-cost unit is on top
+                const sorted = [...units].sort(
+                    (a, b) => b.totalCharge - a.totalCharge,
+                );
+                const SITE_TOTAL_CHARGE = 339600 + 221950 + 45300; // 606,850
+
+                const option = {
+                    backgroundColor: "#fff",
+                    tooltip: {
+                        trigger: "axis",
+                        axisPointer: { type: "shadow" },
+                        backgroundColor: "#404068",
+                        textStyle: { color: "#faa919", fontSize: 12 },
+                        formatter(params) {
+                            const u = sorted[params[0].dataIndex];
+                            const elecPct = Math.round(
+                                (u.elec.charge / u.totalCharge) * 100,
+                            );
+                            const waterPct = Math.round(
+                                (u.water.charge / u.totalCharge) * 100,
+                            );
+                            const gasPct = Math.round(
+                                (u.gas.charge / u.totalCharge) * 100,
+                            );
+                            return (
+                                `<b style="font-size:13px">${u.id}</b><br/>` +
+                                `⚡ Electricity: <b>R ${u.elec.charge.toLocaleString()}</b> (${elecPct}%)<br/>` +
+                                `💧 Water: <b>R ${u.water.charge.toLocaleString()}</b> (${waterPct}%)<br/>` +
+                                `🔥 Gas: <b>R ${u.gas.charge.toLocaleString()}</b> (${gasPct}%)<br/>` +
+                                `<span style="font-size:13px;color:#faa919"><b>Total: R ${u.totalCharge.toLocaleString()}</b></span>`
+                            );
+                        },
+                    },
+                    legend: {
+                        data: ["Electricity", "Water", "Gas"],
+                        top: 6,
+                        right: 140,
+                        textStyle: { fontSize: 11, color: "#555" },
+                        itemWidth: 14,
+                        itemHeight: 10,
+                    },
+                    grid: {
+                        left: 55,
+                        right: 140,
+                        top: 36,
+                        bottom: 16,
+                        containLabel: false,
+                    },
+                    xAxis: {
+                        type: "value",
+                        axisLabel: {
+                            formatter: (v) =>
+                                "R " + (v / 1000).toFixed(0) + "k",
+                            fontSize: 10,
+                        },
+                        splitLine: { lineStyle: { color: "#f0f0f0" } },
+                    },
+                    yAxis: {
+                        type: "category",
+                        data: sorted.map((u) => u.id),
+                        axisLabel: {
+                            fontWeight: "bold",
+                            fontSize: 12,
+                            color: "#404068",
+                        },
+                        axisTick: { show: false },
+                    },
+                    series: [
+                        {
+                            name: "Electricity",
+                            type: "bar",
+                            stack: "charges",
+                            barWidth: 38,
+                            data: sorted.map((u) => u.elec.charge),
+                            itemStyle: { color: "#404068" },
+                            label: {
+                                show: true,
+                                position: "inside",
+                                formatter: (p) =>
+                                    p.value >= 1500
+                                        ? "R " + p.value.toLocaleString()
+                                        : "",
+                                fontSize: 11,
+                                color: "#faa919",
+                                fontWeight: "bold",
+                            },
+                        },
+                        {
+                            name: "Water",
+                            type: "bar",
+                            stack: "charges",
+                            barWidth: 38,
+                            data: sorted.map((u) => u.water.charge),
+                            itemStyle: { color: "#3b82f6" },
+                            label: {
+                                show: true,
+                                position: "inside",
+                                formatter: (p) =>
+                                    p.value >= 1000
+                                        ? "R " + p.value.toLocaleString()
+                                        : "",
+                                fontSize: 11,
+                                color: "#fff",
+                                fontWeight: "bold",
+                            },
+                        },
+                        {
+                            name: "Gas",
+                            type: "bar",
+                            stack: "charges",
+                            barWidth: 38,
+                            data: sorted.map((u) => u.gas.charge),
+                            itemStyle: {
+                                color: "#ef4444",
+                                borderRadius: [0, 4, 4, 0],
+                            },
+                            label: {
+                                show: true,
+                                position: "right",
+                                offset: [8, 0],
+                                // Show the grand total to the right of each bar
+                                formatter: (p) => {
+                                    const u = sorted[p.dataIndex];
+                                    const pct = (u.totalCharge / SITE_TOTAL_CHARGE * 100).toFixed(1);
+                                    return `R ${u.totalCharge.toLocaleString()}  (${pct}%)`;
+                                },
+                                fontSize: 14,
+                                fontWeight: "bold",
+                                color: "#404068",
+                            },
+                        },
+                    ],
+                };
+
+                heatmapChart.setOption(option);
+                heatmapChart.on("click", (params) =>
+                    focusUnit(sorted[params.dataIndex].id),
+                );
+            }
+
+            function renderUnitTable() {
+                const tbody = document.getElementById("unit-table-body");
+                tbody.innerHTML = units
+                    .map(
+                        (unit) => `
+                <tr class="border-b hover:bg-orange-50 transition-colors cursor-pointer" onclick="focusUnit('${unit.id}')">
+                    <td class="p-3 font-bold border-x text-center">${unit.id}</td>
+                    <td class="p-2 border-r">${unit.elec.cons}</td><td class="p-2 border-r font-medium">R${unit.elec.charge}</td><td class="p-2 border-r text-gray-500">${unit.elec.pct}%</td>
+                    <td class="p-2 border-r">${unit.water.cons}</td><td class="p-2 border-r font-medium">R${unit.water.charge}</td><td class="p-2 border-r text-gray-500">${unit.water.pct}%</td>
+                    <td class="p-2 border-r">${unit.gas.cons}</td><td class="p-2 border-r font-medium">R${unit.gas.charge}</td><td class="p-2 border-r text-gray-500">${unit.gas.pct}%</td>
+                    <td class="p-3 font-bold text-brand text-right border-x bg-gray-50">R ${unit.totalCharge.toLocaleString()}</td>
+                </tr>
+            `,
+                    )
+                    .join("");
+            }
+
+            function focusUnit(id) {
+                window.location.href = "unit_vacant_detail.html?unit=" + encodeURIComponent(id);
+            }
+
+            // ── Downloads ────────────────────────────────────────────────────
+            function downloadPDF() {
+                const btn = document.getElementById("btn-dl-pdf");
+                btn.textContent = "⏳ Generating…";
+                btn.disabled = true;
+                trendChart.resize();
+                heatmapChart.resize();
+
+                html2pdf()
+                    .set({
+                        margin:      [10, 10, 10, 10],
+                        filename:    "VacancyDashboard_Report.pdf",
+                        image:       { type: "jpeg", quality: 0.97 },
+                        html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+                        jsPDF:       { unit: "mm", format: "a4", orientation: "landscape" },
+                        pagebreak:   { mode: ["avoid-all", "css"] },
+                    })
+                    .from(document.body)
+                    .save()
+                    .then(() => {
+                        btn.textContent = "⬇ PDF";
+                        btn.disabled = false;
+                    });
+            }
+
+            function downloadReport() {
+                const totalVacCharge = units.reduce((s, u) => s + u.totalCharge, 0);
+                const totalElecCharge = units.reduce((s, u) => s + u.elec.charge, 0);
+                const totalWaterCharge = units.reduce((s, u) => s + u.water.charge, 0);
+                const totalGasCharge = units.reduce((s, u) => s + u.gas.charge, 0);
+
+                const unitRows = [...units]
+                    .sort((a, b) => b.totalCharge - a.totalCharge)
+                    .map(u => `
+                    <tr>
+                        <td><b>${u.id}</b></td>
+                        <td>${u.elec.cons.toLocaleString()} kWh</td>
+                        <td>R ${u.elec.charge.toLocaleString()}</td>
+                        <td>${u.elec.pct}%</td>
+                        <td>${u.water.cons.toLocaleString()} kL</td>
+                        <td>R ${u.water.charge.toLocaleString()}</td>
+                        <td>${u.water.pct}%</td>
+                        <td>${u.gas.cons.toLocaleString()} kg</td>
+                        <td>R ${u.gas.charge.toLocaleString()}</td>
+                        <td>${u.gas.pct}%</td>
+                        <td><b>R ${u.totalCharge.toLocaleString()}</b></td>
+                    </tr>`).join("");
+
+                const trendRows = monthlyTrend.map(d => `
+                    <tr>
+                        <td>${d.month}</td>
+                        <td>${d.combined}%</td>
+                        <td>${d.elec}%</td>
+                        <td>${d.water}%</td>
+                        <td>${d.gas}%</td>
+                    </tr>`).join("");
+
+                const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Vacancy Dashboard Report</title>
+  <style>
+    body  { font-family: Arial, sans-serif; color: #1e293b; margin: 40px; }
+    h1    { color: #404068; border-bottom: 3px solid #faa919; padding-bottom: 8px; }
+    h2    { color: #404068; margin-top: 32px; font-size: 1rem; text-transform: uppercase; letter-spacing: .05em; }
+    .summary { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin: 20px 0; }
+    .card    { border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
+    .card .label { font-size: 10px; text-transform: uppercase; color: #94a3b8; font-weight: 700; }
+    .card .value { font-size: 1.5rem; font-weight: 800; color: #404068; margin-top: 4px; }
+    .card .sub   { font-size: 11px; color: #64748b; margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
+    th    { background: #404068; color: #faa919; padding: 7px 9px; text-align: left; font-size: 10px; text-transform: uppercase; }
+    td    { padding: 6px 9px; border-bottom: 1px solid #f1f5f9; }
+    tr:nth-child(even) td { background: #f8fafc; }
+    .footer { margin-top: 40px; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Vacancy Dashboard Report</h1>
+  <p style="color:#64748b;font-size:13px">Generated: ${new Date().toLocaleString()}</p>
+
+  <h2>Site Summary</h2>
+  <div class="summary">
+    <div class="card"><div class="label">Total Vacancy Charge</div><div class="value">R ${totalVacCharge.toLocaleString()}</div><div class="sub">${units.length} vacant units</div></div>
+    <div class="card"><div class="label">⚡ Electricity</div><div class="value">R ${totalElecCharge.toLocaleString()}</div><div class="sub">12.5% of site · R 339,600 site total</div></div>
+    <div class="card"><div class="label">💧 Water</div><div class="value">R ${totalWaterCharge.toLocaleString()}</div><div class="sub">8.2% of site · R 221,950 site total</div></div>
+    <div class="card"><div class="label">🔥 Gas</div><div class="value">R ${totalGasCharge.toLocaleString()}</div><div class="sub">15.1% of site · R 45,300 site total</div></div>
+  </div>
+
+  <h2>Month-on-Month Vacancy % Trend</h2>
+  <table>
+    <thead><tr><th>Month</th><th>Combined %</th><th>Electricity %</th><th>Water %</th><th>Gas %</th></tr></thead>
+    <tbody>${trendRows}</tbody>
+  </table>
+
+  <h2>Vacant Unit Participation — All Units</h2>
+  <table>
+    <thead>
+      <tr>
+        <th rowspan="2">Unit</th>
+        <th colspan="3" style="text-align:center">⚡ Electricity</th>
+        <th colspan="3" style="text-align:center">💧 Water</th>
+        <th colspan="3" style="text-align:center">🔥 Gas</th>
+        <th rowspan="2">Total Charge</th>
+      </tr>
+      <tr>
+        <th>Consumption</th><th>Charge</th><th>% Site</th>
+        <th>Consumption</th><th>Charge</th><th>% Site</th>
+        <th>Consumption</th><th>Charge</th><th>% Site</th>
+      </tr>
+    </thead>
+    <tbody>${unitRows}</tbody>
+  </table>
+
+  <div class="footer">WeBill Vacancy Dashboard Report &nbsp;·&nbsp; ${new Date().getFullYear()}</div>
+</body>
+</html>`;
+
+                const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+                const url  = URL.createObjectURL(blob);
+                const a    = Object.assign(document.createElement("a"), {
+                    href: url,
+                    download: "VacancyDashboard_Report.html",
+                });
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            }
+
+        </script>
+    </body>
+</html>

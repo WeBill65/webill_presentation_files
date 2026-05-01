@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Tariff Comparison</title>
+        <!-- Tailwind and DaisyUI -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <!-- ECharts -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+        <!-- PDF Generation Libraries -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+        <style>
+            .chart-container {
+                width: 100%;
+                height: 500px;
+                min-height: 400px;
+            }
+            .custom-header {
+                background-color: #404068;
+                color: #faa919;
+                border-top-left-radius: 1.5rem;
+                border-top-right-radius: 1.5rem;
+            }
+            .header-stat-label {
+                font-size: 0.65rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #faa919;
+                font-weight: 700;
+                margin-bottom: 0.15rem;
+            }
+            .header-stat-value {
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: #ffffff;
+            }
+            .tariff-grid-scroll {
+                max-height: 65vh;
+                overflow-y: auto;
+                padding-right: 8px;
+            }
+            .baseline-row {
+                border-bottom: 1px solid #f1f5f9;
+            }
+            .baseline-row:last-child {
+                border-bottom: none;
+            }
+
+            /* Horizontal Scroll Logic for Replacements */
+            .replacement-scroll-wrapper {
+                position: relative;
+                display: flex;
+                gap: 0.75rem;
+                padding: 0.5rem 0.25rem;
+                overflow-x: auto;
+                scrollbar-width: thin;
+                scrollbar-color: #cbd5e1 transparent;
+                scroll-behavior: smooth;
+            }
+            .replacement-scroll-wrapper::-webkit-scrollbar {
+                height: 6px;
+            }
+            .replacement-scroll-wrapper::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 10px;
+            }
+
+            .modal-header-simple {
+                background-color: #404068;
+                color: #ffffff;
+                margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+                padding: 2.5rem 1.5rem;
+                border-bottom: 4px solid #faa919;
+            }
+            .replacement-option-card {
+                border: 2px solid #f1f5f9;
+                transition: all 0.2s;
+                min-width: 220px;
+                flex-shrink: 0;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                min-height: 80px;
+            }
+            .replacement-option-card.selected {
+                border-color: #404068;
+                background-color: #f8fafc;
+                box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            }
+            .utility-badge {
+                font-size: 10px;
+                font-weight: 800;
+                padding: 2px 8px;
+                border-radius: 4px;
+                background: #f1f5f9;
+                color: #64748b;
+                text-transform: uppercase;
+            }
+            #chart-loader {
+                display: none;
+                position: absolute;
+                inset: 0;
+                background: rgba(255, 255, 255, 0.8);
+                z-index: 10;
+                backdrop-filter: blur(2px);
+            }
+            .btn-pdf-disabled {
+                opacity: 0.5;
+                cursor: not-allowed !important;
+                pointer-events: none;
+                filter: grayscale(1);
+            }
+        </style>
+    </head>
+    <body class="bg-base-200 min-h-screen pb-12 font-sans text-slate-700">
+        <div class="container mx-auto px-4 py-8">
+            <!-- Header Section -->
+            <div class="flex flex-col gap-0 mb-8 shadow-xl">
+                <div class="custom-header p-6 lg:p-8 flex flex-col gap-8">
+                    <div
+                        class="flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+                    >
+                        <div>
+                            <h1
+                                class="text-2xl lg:text-3xl font-bold flex items-center gap-2"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-8 w-8"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                                    />
+                                </svg>
+                                Tariff Comparison Analysis
+                            </h1>
+                            <p class="text-[#faa919]/80 mt-1 font-medium">
+                                Structure-based impact simulation and utility
+                                variance tracking
+                            </p>
+                        </div>
+                    </div>
+
+                    <div
+                        class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-white/10"
+                    >
+                        <div class="flex flex-col">
+                            <span class="header-stat-label"
+                                >Analysis Period</span
+                            >
+                            <span
+                                id="period-range-text"
+                                class="header-stat-value"
+                                >...</span
+                            >
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="header-stat-label"
+                                >Active Utilities</span
+                            >
+                            <div
+                                class="flex flex-wrap gap-2 mt-1"
+                                id="utility-tags"
+                            >
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scenario Selection Bar -->
+                <div
+                    class="card bg-base-100 rounded-t-none border-t-0 border-base-300"
+                >
+                    <div class="card-body p-5">
+                        <div
+                            class="flex flex-col md:flex-row md:items-start justify-between gap-6"
+                        >
+                            <div class="flex items-start gap-4 flex-1">
+                                <div
+                                    class="bg-[#404068] p-2 rounded-lg text-[#faa919] mt-1 shadow-md shrink-0"
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        class="h-5 w-5"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"
+                                        />
+                                        <path
+                                            fill-rule="evenodd"
+                                            d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"
+                                            clip-rule="evenodd"
+                                        />
+                                    </svg>
+                                </div>
+                                <div class="flex-1 overflow-hidden">
+                                    <p
+                                        class="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-3"
+                                    >
+                                        Active Replacement Scenarios
+                                    </p>
+                                    <div
+                                        id="selected-tariffs-container"
+                                        class="flex flex-wrap gap-3"
+                                    ></div>
+                                </div>
+                            </div>
+                            <button
+                                onclick="tariff_modal.showModal()"
+                                class="btn btn-md bg-[#404068] hover:bg-[#323254] text-[#faa919] border-none font-bold flex items-center gap-2 px-6 shrink-0"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-5 w-5"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        d="M5 4a1 1 0 00-2 0v12a1 1 0 002 0V4zM11 4a1 1 0 10-2 0v12a1 1 0 102 0V4zM17 4a1 1 0 10-2 0v12a1 1 0 102 0V4z"
+                                    />
+                                </svg>
+                                Configure Tariffs
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Card -->
+            <div class="card bg-base-100 shadow-xl overflow-hidden mb-8">
+                <div
+                    class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white"
+                >
+                    <h2 class="font-bold text-slate-700">
+                        Consolidated Monthly Impact
+                    </h2>
+                    <div class="flex items-center gap-4">
+                        <span
+                            id="pdf-hint"
+                            class="text-[10px] font-bold text-slate-400 uppercase tracking-tight"
+                            >Select replacements to export report</span
+                        >
+                        <button
+                            id="btn-export-pdf"
+                            onclick="generatePDF()"
+                            class="btn btn-sm btn-ghost text-[#404068] gap-2 border border-slate-200 btn-pdf-disabled"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                /></svg
+                            >Export PDF
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6 bg-white relative">
+                    <div
+                        id="chart-loader"
+                        class="flex items-center justify-center"
+                    >
+                        <div class="flex flex-col items-center gap-3">
+                            <span
+                                class="loading loading-spinner loading-lg text-[#404068]"
+                            ></span>
+                            <span
+                                class="text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse"
+                                >Calculating...</span
+                            >
+                        </div>
+                    </div>
+                    <div id="main-chart" class="chart-container"></div>
+                </div>
+            </div>
+
+            <!-- Stats Section -->
+            <div id="stats-container" class="flex flex-col gap-8">
+                <div
+                    class="border-l-4 border-slate-400 bg-white p-6 shadow-sm rounded-r-xl"
+                >
+                    <h3
+                        class="text-slate-500 text-xs font-bold uppercase tracking-widest mb-4"
+                    >
+                        Baseline Comparison
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="flex flex-col">
+                            <span
+                                class="text-slate-400 text-[10px] uppercase font-bold"
+                                >Annual Baseline Cost</span
+                            >
+                            <span
+                                class="text-xl font-bold text-slate-700"
+                                id="base-annual-cost"
+                                >R 0.00</span
+                            >
+                        </div>
+                    </div>
+                </div>
+                <div
+                    id="comparison-stats-grid"
+                    class="grid grid-cols-1 lg:grid-cols-2 gap-6"
+                ></div>
+            </div>
+        </div>
+
+        <!-- TARIFF SELECTION MODAL -->
+        <dialog id="tariff_modal" class="modal modal-bottom sm:modal-middle">
+            <div
+                class="modal-box w-11/12 max-w-7xl p-0 overflow-hidden flex flex-col h-[90vh]"
+            >
+                <div class="modal-header-simple shrink-0 mb-0">
+                    <div class="flex justify-between items-start">
+                        <!-- Indented Header Text -->
+                        <div class="flex flex-col gap-1 pl-8">
+                            <h3 class="font-bold text-3xl">Site Tariffs</h3>
+                            <p class="text-slate-300 text-sm font-medium">
+                                Select replacements for each active baseline
+                                utility
+                            </p>
+                        </div>
+                        <form method="dialog">
+                            <button
+                                class="btn btn-sm btn-circle btn-ghost text-white/50 hover:text-white border-none mr-4"
+                            >
+                                ✕
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div
+                    class="flex-1 overflow-hidden flex flex-col p-6 bg-slate-50/30"
+                >
+                    <div
+                        class="tariff-grid-scroll flex-1 pr-2"
+                        id="tariff-mapping-container"
+                    >
+                        <!-- Mapping rows injected here -->
+                    </div>
+                </div>
+
+                <div class="p-6 shrink-0 border-t border-slate-100 bg-white">
+                    <form method="dialog" class="w-full">
+                        <button
+                            onclick="handleApplyChanges()"
+                            class="btn bg-[#404068] hover:bg-[#323254] text-white w-full h-14 font-bold text-lg shadow-lg"
+                        >
+                            Apply Comparison
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </dialog>
+
+        <script>
+            // --- DATA MODEL ---
+            const baselineTariffs = [
+                {
+                    id: "base_elec_1",
+                    name: "Eskom Uniflex Urban",
+                    utilityType: "Electrical Import",
+                },
+                {
+                    id: "base_sol_1",
+                    name: "Standard Feed-in",
+                    utilityType: "Solar",
+                },
+                {
+                    id: "base_gen_1",
+                    name: "Standard Diesel Bulk",
+                    utilityType: "Generator",
+                },
+                {
+                    id: "base_wat_1",
+                    name: "JHB Water Industrial",
+                    utilityType: "Water",
+                },
+                {
+                    id: "base_sew_1",
+                    name: "Municipal Sewage Standard",
+                    utilityType: "Sewage",
+                },
+                {
+                    id: "base_gas_1",
+                    name: "Egoli Gas Commercial",
+                    utilityType: "Gas",
+                },
+            ];
+
+            const replacementTariffs = [
+                {
+                    id: "rep_elec_1",
+                    name: "Eskom Megaflex (Low)",
+                    utilityType: "Electrical Import",
+                    multiplier: 0.92,
+                },
+                {
+                    id: "rep_elec_2",
+                    name: "Eskom TOU Business",
+                    utilityType: "Electrical Import",
+                    multiplier: 1.12,
+                },
+                {
+                    id: "rep_elec_3",
+                    name: "Nightsave Urban Plus",
+                    utilityType: "Electrical Import",
+                    multiplier: 0.88,
+                },
+                {
+                    id: "rep_elec_4",
+                    name: "Industrial Flex A",
+                    utilityType: "Electrical Import",
+                    multiplier: 0.95,
+                },
+                {
+                    id: "rep_elec_5",
+                    name: "Industrial Flex B",
+                    utilityType: "Electrical Import",
+                    multiplier: 1.05,
+                },
+                {
+                    id: "rep_elec_6",
+                    name: "Munic High Demand",
+                    utilityType: "Electrical Import",
+                    multiplier: 1.25,
+                },
+                {
+                    id: "rep_elec_7",
+                    name: "Munic Low Demand",
+                    utilityType: "Electrical Import",
+                    multiplier: 0.85,
+                },
+                {
+                    id: "rep_elec_8",
+                    name: "Private PPA Flat",
+                    utilityType: "Electrical Import",
+                    multiplier: 0.9,
+                },
+                {
+                    id: "rep_elec_9",
+                    name: "Renewable Swap X",
+                    utilityType: "Electrical Import",
+                    multiplier: 0.82,
+                },
+                {
+                    id: "rep_elec_10",
+                    name: "Winter Surcharge Rate",
+                    utilityType: "Electrical Import",
+                    multiplier: 1.4,
+                },
+                {
+                    id: "rep_sol_1",
+                    name: "Green Energy Rebate",
+                    utilityType: "Solar",
+                    multiplier: 0.85,
+                },
+                {
+                    id: "rep_sol_2",
+                    name: "Net-Metering Plus",
+                    utilityType: "Solar",
+                    multiplier: 0.75,
+                },
+                {
+                    id: "rep_gen_1",
+                    name: "Efficiency Optimized Rate",
+                    utilityType: "Generator",
+                    multiplier: 0.82,
+                },
+                {
+                    id: "rep_wat_1",
+                    name: "Borehole Integrated Tier",
+                    utilityType: "Water",
+                    multiplier: 0.65,
+                },
+                {
+                    id: "rep_sew_1",
+                    name: "Fixed Industrial Sewage",
+                    utilityType: "Sewage",
+                    multiplier: 0.95,
+                },
+                {
+                    id: "rep_gas_1",
+                    name: "Bulk Natural Gas Swap",
+                    utilityType: "Gas",
+                    multiplier: 0.8,
+                },
+            ];
+
+            const utilityIcons = {
+                "Electrical Import": '<path d="M13 10V3L4 14h7v7l9-11h-7z" />',
+                Solar: '<path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M16.243 17.657l.707.707M7.757 6.343l.707.707M12 8a4 4 0 100 8 4 4 0 000-8z" />',
+                Generator:
+                    '<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />',
+                Water: '<path d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4a2 2 0 012-2m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />',
+                Sewage: '<path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />',
+                Gas: '<path d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" /><path d="M9.879 16.121A3 3 0 1012.015 11L11 14l-2.121 2.121z" />',
+            };
+
+            // --- STATE ---
+            let activeMappings = {};
+            let isFirstRun = true;
+            let myChart = null;
+
+            const rawData = {
+                prev: [
+                    6500, 6300, 6100, 5900, 5500, 5300, 5400, 5800, 6200, 6466,
+                    5511, 5692,
+                ],
+                x_axis_data: [
+                    "Nov '23",
+                    "Dec '23",
+                    "Jan '24",
+                    "Feb '24",
+                    "Mar '24",
+                    "Apr '24",
+                    "May '24",
+                    "Jun '24",
+                    "Jul '24",
+                    "Aug '24",
+                    "Sep '24",
+                    "Oct '24",
+                ],
+            };
+
+            function formatZAR(num) {
+                return (
+                    "R " +
+                    num.toLocaleString("en-ZA", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                    })
+                );
+            }
+
+            function handleApplyChanges() {
+                const loader = document.getElementById("chart-loader");
+                loader.style.display = "flex";
+                setTimeout(() => {
+                    isFirstRun = false;
+                    loader.style.display = "none";
+                    updateUI();
+                }, 1000);
+            }
+
+            function toggleSelection(baseId, repId) {
+                if (activeMappings[baseId] === repId) {
+                    delete activeMappings[baseId];
+                } else {
+                    activeMappings[baseId] = repId;
+                }
+                renderMappingUI();
+            }
+
+            function renderMappingUI() {
+                const container = document.getElementById(
+                    "tariff-mapping-container",
+                );
+                container.innerHTML = "";
+
+                baselineTariffs.forEach((base) => {
+                    const replacements = replacementTariffs.filter(
+                        (r) => r.utilityType === base.utilityType,
+                    );
+                    const selectedRepId = activeMappings[base.id];
+
+                    const row = document.createElement("div");
+                    row.className =
+                        "baseline-row py-6 flex flex-col lg:flex-row lg:items-center gap-6";
+
+                    row.innerHTML = `
+                        <!-- Baseline Info (Fixed Width Section) -->
+                        <div class="lg:w-80 shrink-0">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-8 h-8 rounded-lg bg-[#404068]/10 text-[#404068] flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        ${utilityIcons[base.utilityType] || ""}
+                                    </svg>
+                                </div>
+                                <span class="utility-badge">${base.utilityType}</span>
+                            </div>
+                            <h4 class="font-bold text-slate-800 text-lg leading-tight">${base.name}</h4>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Ref: ${base.id}</p>
+                        </div>
+
+                        <!-- Options Gallery (Scrollable Section) -->
+                        <div class="flex-1 min-w-0 overflow-hidden relative">
+                            <div class="replacement-scroll-wrapper">
+                                ${replacements
+                                    .map((rep) => {
+                                        const isSelected =
+                                            selectedRepId === rep.id;
+                                        return `
+                                        <div onclick="toggleSelection('${base.id}', '${rep.id}')"
+                                             class="replacement-option-card cursor-pointer p-4 rounded-xl ${isSelected ? "selected" : "bg-white hover:border-slate-300"}">
+                                            <div class="flex justify-between items-start mb-2">
+                                                <span class="text-[9px] font-extrabold uppercase ${isSelected ? "text-[#404068]" : "text-slate-300"}">Tariff Option</span>
+                                                ${isSelected ? '<div class="text-[#404068] bg-[#404068]/10 p-0.5 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg></div>' : ""}
+                                            </div>
+                                            <p class="text-sm font-bold text-slate-700 leading-snug line-clamp-2">${rep.name}</p>
+                                        </div>
+                                    `;
+                                    })
+                                    .join("")}
+                                ${replacements.length === 0 ? '<div class="p-8 border border-dashed border-slate-200 rounded-xl text-center text-xs text-slate-400 font-medium italic w-full">No alternative tariffs available.</div>' : ""}
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(row);
+                });
+            }
+
+            function updateUI() {
+                const selectionContainer = document.getElementById(
+                    "selected-tariffs-container",
+                );
+                const comparisonGrid = document.getElementById(
+                    "comparison-stats-grid",
+                );
+                const btnExport = document.getElementById("btn-export-pdf");
+                const hintExport = document.getElementById("pdf-hint");
+
+                selectionContainer.innerHTML = "";
+                comparisonGrid.innerHTML = "";
+
+                const baseTotal = rawData.prev.reduce((a, b) => a + b, 0);
+                let combinedMultiplier = 1.0;
+                const activeIds = Object.entries(activeMappings);
+
+                if (activeIds.length > 0 && !isFirstRun) {
+                    btnExport.classList.remove("btn-pdf-disabled");
+                    btnExport.classList.add("btn-outline");
+                    hintExport.style.display = "none";
+                } else {
+                    btnExport.classList.add("btn-pdf-disabled");
+                    hintExport.style.display = "inline-block";
+                }
+
+                if (activeIds.length === 0) {
+                    selectionContainer.innerHTML =
+                        '<span class="text-xs text-slate-400 italic">No replacements mapped. Portfolio matches site baseline.</span>';
+                } else {
+                    activeIds.forEach(([baseId, repId]) => {
+                        const base = baselineTariffs.find(
+                            (b) => b.id === baseId,
+                        );
+                        const rep = replacementTariffs.find(
+                            (r) => r.id === repId,
+                        );
+                        combinedMultiplier *= rep.multiplier;
+
+                        const pill = document.createElement("div");
+                        pill.className =
+                            "bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm flex flex-col";
+                        pill.innerHTML = `
+                            <span class="text-[8px] font-extrabold text-[#404068] uppercase">${base.utilityType}</span>
+                            <div class="flex items-center gap-2 text-[11px]">
+                                <span class="font-medium text-slate-400 truncate max-w-[100px]">${base.name}</span>
+                                <svg class="w-2.5 h-2.5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 5l7 7-7 7"/></svg>
+                                <span class="font-bold text-slate-700 truncate max-w-[120px]">${rep.name}</span>
+                            </div>
+                        `;
+                        selectionContainer.appendChild(pill);
+                    });
+                }
+
+                if (activeIds.length === 0 && !isFirstRun) {
+                    comparisonGrid.innerHTML = `
+                         <div class="lg:col-span-2 p-12 flex flex-col items-center text-center opacity-60">
+                            <p class="font-bold text-slate-600">No active comparison scenarios</p>
+                            <p class="text-xs text-slate-400">Use the Configuration tool to simulate alternative tariff impacts.</p>
+                         </div>
+                    `;
+                } else if (!isFirstRun) {
+                    const scenarioTotal = baseTotal * combinedMultiplier;
+                    const variance = scenarioTotal - baseTotal;
+
+                    const card = document.createElement("div");
+                    card.className =
+                        "card bg-white shadow-xl lg:col-span-2 border-l-4 border-[#404068]";
+                    card.innerHTML = `
+                        <div class="card-body p-6">
+                            <div class="flex justify-between items-start mb-6">
+                                <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Simulated Portfolio Impact</h3>
+                                <div class="badge badge-outline border-slate-200 text-slate-400 text-[10px] font-bold">${activeIds.length} Mappings Active</div>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                                <div><p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Projected Annual</p><p class="text-xl font-bold text-[#404068]" id="pdf-scenario-annual">${formatZAR(scenarioTotal)}</p></div>
+                                <div><p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Variance (ZAR)</p><p class="text-xl font-bold ${variance > 0 ? "text-error" : "text-emerald-500"}" id="pdf-variance">${variance > 0 ? "+" : ""}${formatZAR(variance)}</p></div>
+                                <div><p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Impact %</p><p class="text-xl font-bold text-slate-700" id="pdf-net">${((combinedMultiplier - 1) * 100).toFixed(1)}%</p></div>
+                                <div><p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Monthly Delta</p><p class="text-xl font-bold text-slate-700">${formatZAR(variance / 12)}</p></div>
+                            </div>
+                        </div>
+                    `;
+                    comparisonGrid.appendChild(card);
+                }
+
+                updateChart(combinedMultiplier);
+            }
+
+            function updateChart(multiplier) {
+                if (!myChart) return;
+                const hasReplacements = Object.keys(activeMappings).length > 0;
+                const series = [
+                    {
+                        name: "Baseline",
+                        type: "bar",
+                        data: rawData.prev,
+                        itemStyle: { color: "#cbd5e1", opacity: 0.6 },
+                        barMaxWidth: 20,
+                    },
+                ];
+
+                if (!isFirstRun && hasReplacements) {
+                    series.push({
+                        name: "Replacement Simulation",
+                        type: "bar",
+                        data: rawData.prev.map((v) => v * multiplier),
+                        itemStyle: { color: "#404068" },
+                        barMaxWidth: 20,
+                    });
+                }
+
+                myChart.setOption(
+                    {
+                        tooltip: { trigger: "axis" },
+                        legend: { bottom: 0 },
+                        grid: {
+                            left: "1%",
+                            right: "1%",
+                            bottom: "15%",
+                            containLabel: true,
+                        },
+                        xAxis: { type: "category", data: rawData.x_axis_data },
+                        yAxis: {
+                            type: "value",
+                            axisLabel: {
+                                formatter: (v) =>
+                                    "R" + (v / 1000).toFixed(0) + "k",
+                            },
+                        },
+                        series: series,
+                    },
+                    true,
+                );
+            }
+
+            function generatePDF() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF("p", "mm", "a4");
+                const pageWidth = doc.internal.pageSize.getWidth();
+
+                doc.setFillColor(64, 64, 104);
+                doc.rect(0, 0, pageWidth, 40, "F");
+                doc.setTextColor(250, 169, 25);
+                doc.setFontSize(18);
+                doc.text("Tariff Comparison Analysis", 15, 20);
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(10);
+                doc.text(
+                    `Generated: ${new Date().toLocaleDateString()} | Scenario: Replacement Simulation`,
+                    15,
+                    30,
+                );
+
+                const chartUrl = myChart.getDataURL({
+                    pixelRatio: 2,
+                    backgroundColor: "#fff",
+                });
+                doc.addImage(chartUrl, "PNG", 15, 50, pageWidth - 30, 80);
+
+                doc.autoTable({
+                    startY: 140,
+                    head: [["Metric", "Value"]],
+                    body: [
+                        [
+                            "Annual Baseline Cost",
+                            document.getElementById("base-annual-cost")
+                                .innerText,
+                        ],
+                        [
+                            "Projected Annual Cost",
+                            document.getElementById("pdf-scenario-annual")
+                                ?.innerText || "-",
+                        ],
+                        [
+                            "Annual Variance",
+                            document.getElementById("pdf-variance")
+                                ?.innerText || "-",
+                        ],
+                        [
+                            "Net Percent Change",
+                            document.getElementById("pdf-net")?.innerText ||
+                                "-",
+                        ],
+                    ],
+                    theme: "striped",
+                    headStyles: { fillColor: [64, 64, 104] },
+                });
+
+                const mappingRows = Object.entries(activeMappings).map(
+                    ([baseId, repId]) => {
+                        const b = baselineTariffs.find((t) => t.id === baseId);
+                        const r = replacementTariffs.find(
+                            (t) => t.id === repId,
+                        );
+                        return [
+                            b.utilityType,
+                            b.name,
+                            r.name,
+                            `${((r.multiplier - 1) * 100).toFixed(1)}%`,
+                        ];
+                    },
+                );
+
+                doc.autoTable({
+                    startY: doc.lastAutoTable.finalY + 10,
+                    head: [
+                        [
+                            "Utility Type",
+                            "Current Baseline",
+                            "Simulated Replacement",
+                            "Impact",
+                        ],
+                    ],
+                    body: mappingRows,
+                    theme: "grid",
+                    headStyles: { fillColor: [64, 64, 104] },
+                });
+
+                doc.save(
+                    `Tariff_Comparison_${new Date().toISOString().split("T")[0]}.pdf`,
+                );
+            }
+
+            function initDashboard() {
+                const chartDom = document.getElementById("main-chart");
+                myChart = echarts.init(chartDom);
+
+                document.getElementById("period-range-text").innerText =
+                    `${rawData.x_axis_data[0]} — ${rawData.x_axis_data[11]}`;
+                document.getElementById("base-annual-cost").innerText =
+                    formatZAR(rawData.prev.reduce((a, b) => a + b, 0));
+
+                const utilityTags = document.getElementById("utility-tags");
+                const uniqueUtilities = [
+                    ...new Set(baselineTariffs.map((t) => t.utilityType)),
+                ];
+                uniqueUtilities.forEach((u) => {
+                    const span = document.createElement("span");
+                    span.className =
+                        "badge badge-sm bg-white/10 border-white/20 text-white font-medium";
+                    span.innerText = u;
+                    utilityTags.appendChild(span);
+                });
+
+                renderMappingUI();
+                updateUI();
+                window.addEventListener("resize", () => myChart.resize());
+            }
+
+            window.onload = initDashboard;
+        </script>
+    </body>
+</html>

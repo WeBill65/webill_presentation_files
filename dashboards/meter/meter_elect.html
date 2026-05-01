@@ -1,0 +1,995 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Meter ABCD - Gary Player Views Dashboard</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+        <style>
+            :root {
+                --brand-dark: #404068;
+                --brand-gold: #faa919;
+            }
+
+            .chart-container {
+                height: 400px;
+                width: 100%;
+            }
+
+            /* Responsive height for smaller screens */
+            @media (max-width: 640px) {
+                .chart-container {
+                    height: 300px;
+                }
+            }
+
+            .glass-card {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(229, 231, 235, 1);
+                transition: transform 0.2s ease;
+            }
+
+            .hidden-chart {
+                display: none;
+            }
+
+            /* Branded Header Styles */
+            .brand-header {
+                background-color: var(--brand-dark);
+                color: var(--brand-gold);
+                border-top-left-radius: 1rem;
+                border-top-right-radius: 1rem;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }
+
+            @media (min-width: 768px) {
+                .brand-header {
+                    border-top-left-radius: 1.5rem;
+                    border-top-right-radius: 1.5rem;
+                }
+            }
+
+            /* Centered Nav Styling */
+            .nav-container-card {
+                background-color: #f1f5f9;
+                border: 1px solid #e2e8f0;
+                border-radius: 1rem;
+                padding: 0.35rem;
+                display: inline-flex;
+                box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+                max-width: 100%;
+                overflow-x: auto;
+            }
+
+            .nav-btn-active {
+                background-color: var(--brand-gold) !important;
+                color: var(--brand-dark) !important;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            .nav-btn-inactive {
+                color: #64748b;
+            }
+
+            .nav-btn-inactive:hover {
+                background-color: rgba(0, 0, 0, 0.05);
+                color: var(--brand-dark);
+            }
+
+            .sticky-wrapper {
+                position: sticky;
+                top: 0;
+                z-index: 50;
+                padding: 0 0.5rem;
+                background: transparent;
+            }
+
+            /* Custom Scrollbar for the data table */
+            .custom-scrollbar::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-track {
+                background: #f1f5f9;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 10px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: #94a3b8;
+            }
+
+            .no-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+            .no-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+
+            /* Fix for table header sticking in modal */
+            .modal-table-header {
+                position: sticky;
+                top: 0;
+                background: #f8fafc;
+                z-index: 20;
+            }
+        </style>
+    </head>
+    <body class="bg-slate-50 text-slate-900 font-sans min-h-screen">
+        <!-- Data Table Modal -->
+        <div
+            id="data-modal"
+            class="fixed inset-0 z-[100] hidden flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm"
+        >
+            <div
+                class="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            >
+                <div
+                    class="p-4 border-b flex justify-between items-center bg-slate-50"
+                >
+                    <div class="pr-4">
+                        <h3
+                            id="modal-title"
+                            class="font-bold text-slate-800 text-base sm:text-lg truncate"
+                        >
+                            Chart Data View
+                        </h3>
+                        <p id="modal-subtitle" class="text-xs text-slate-500">
+                            Raw values for the current selection
+                        </p>
+                    </div>
+                    <button
+                        onclick="closeDataModal()"
+                        class="flex-shrink-0 p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400"
+                    >
+                        <svg
+                            class="w-6 h-6"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"
+                            ></path>
+                        </svg>
+                    </button>
+                </div>
+                <div
+                    id="modal-content"
+                    class="overflow-auto custom-scrollbar flex-grow"
+                >
+                    <!-- Table injected here -->
+                </div>
+                <div class="p-4 border-t bg-slate-50 flex justify-end">
+                    <button
+                        onclick="closeDataModal()"
+                        class="w-full sm:w-auto px-8 py-2.5 bg-slate-800 text-white text-sm font-bold rounded-xl hover:bg-slate-900 transition-colors"
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header Section -->
+        <div class="sticky-wrapper sm:pt-2">
+            <header class="brand-header overflow-hidden">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div
+                        class="flex flex-col lg:flex-row justify-between items-center gap-6"
+                    >
+                        <!-- Branding -->
+                        <div class="flex items-center gap-3 w-full lg:w-auto">
+                            <div
+                                class="bg-[#faa919] p-2.5 rounded-xl shadow-lg flex-shrink-0"
+                            >
+                                <svg
+                                    class="w-6 h-6 text-[#404068]"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                                    ></path>
+                                </svg>
+                            </div>
+                            <div class="truncate">
+                                <h1
+                                    class="text-xl font-extrabold text-[#faa919] leading-tight"
+                                >
+                                    Meter ABCD
+                                </h1>
+                                <p
+                                    class="text-[10px] text-[#faa919]/80 uppercase tracking-widest font-bold"
+                                >
+                                    Electricity Monitor • Gary Player
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Meter Meta Info -->
+                        <div
+                            class="flex flex-wrap justify-center lg:justify-end gap-2 sm:gap-3 w-full lg:w-auto"
+                        >
+                            <div
+                                class="bg-black/20 px-3 py-2 rounded-xl border border-white/10 flex items-center gap-3 flex-grow lg:flex-grow-0"
+                            >
+                                <div class="min-w-0">
+                                    <p
+                                        class="text-[9px] uppercase text-[#faa919]/60 font-bold leading-none mb-1"
+                                    >
+                                        Meter No.
+                                    </p>
+                                    <p
+                                        class="text-xs text-white font-mono truncate"
+                                    >
+                                        ELE-99827-GP
+                                    </p>
+                                </div>
+                                <span
+                                    class="bg-[#faa919] text-[#404068] text-[9px] font-bold px-2 py-0.5 rounded shadow-sm"
+                                    >3-Phase</span
+                                >
+                            </div>
+                            <div
+                                class="bg-black/20 px-3 py-2 rounded-xl border border-white/10 flex-grow lg:flex-grow-0 text-center sm:text-left"
+                            >
+                                <p
+                                    class="text-[9px] uppercase text-[#faa919]/60 font-bold leading-none mb-1"
+                                >
+                                    Tariff
+                                </p>
+                                <p class="text-xs text-white font-medium">
+                                    Business TOU-L1
+                                </p>
+                            </div>
+                            <div
+                                class="bg-black/20 px-3 py-2 rounded-xl border border-white/10 flex-grow lg:flex-grow-0 text-center sm:text-left"
+                            >
+                                <p
+                                    class="text-[9px] uppercase text-[#faa919]/60 font-bold leading-none mb-1"
+                                >
+                                    Mode
+                                </p>
+                                <p class="text-xs text-white font-medium">
+                                    Post-Paid
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+        </div>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+            <!-- Metrics Cards -->
+            <div
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8"
+            >
+                <div
+                    class="glass-card p-5 sm:p-6 rounded-2xl shadow-sm border-l-4 border-l-[#faa919]"
+                >
+                    <p
+                        class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1"
+                    >
+                        Total Charges (YTD)
+                    </p>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-900">
+                        R 84,210.50
+                    </h2>
+                    <div
+                        class="text-xs text-green-600 flex items-center mt-2 font-semibold"
+                    >
+                        <svg
+                            class="w-3.5 h-3.5 mr-1"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                        2.4% vs last month
+                    </div>
+                </div>
+                <div class="glass-card p-5 sm:p-6 rounded-2xl shadow-sm">
+                    <p
+                        class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1"
+                    >
+                        Max Demand
+                    </p>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-900">
+                        142.5 KVA
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-2">Recorded Mar 12</p>
+                </div>
+                <div class="glass-card p-5 sm:p-6 rounded-2xl shadow-sm">
+                    <p
+                        class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1"
+                    >
+                        Peak KWH
+                    </p>
+                    <h2 class="text-xl sm:text-2xl font-bold text-blue-600">
+                        1,240 kWh
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-2">
+                        35% of total consumption
+                    </p>
+                </div>
+                <div class="glass-card p-5 sm:p-6 rounded-2xl shadow-sm">
+                    <p
+                        class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1"
+                    >
+                        Avg Power Factor
+                    </p>
+                    <h2
+                        class="text-xl sm:text-2xl font-bold text-slate-900"
+                        id="pf-metric"
+                    >
+                        0.94
+                    </h2>
+                    <p class="text-xs text-amber-600 mt-2 italic font-semibold">
+                        Target > 0.95
+                    </p>
+                </div>
+            </div>
+
+            <!-- Centered Navigation Tabs -->
+            <div class="flex justify-center mb-8 px-2">
+                <div class="nav-container-card no-scrollbar">
+                    <div class="flex items-center gap-1 min-w-max">
+                        <button
+                            id="view-monthly"
+                            onclick="setView('monthly')"
+                            class="px-4 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all nav-btn-active"
+                        >
+                            Monthly
+                        </button>
+                        <button
+                            id="view-daily"
+                            onclick="setView('daily')"
+                            class="px-4 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all nav-btn-inactive"
+                        >
+                            Daily
+                        </button>
+                        <button
+                            id="view-hourly"
+                            onclick="setView('hourly')"
+                            class="px-4 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all nav-btn-inactive"
+                        >
+                            Hourly
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Content -->
+            <div class="space-y-6 sm:space-y-8">
+                <div class="glass-card p-4 sm:p-6 rounded-2xl shadow-sm">
+                    <div
+                        class="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6"
+                    >
+                        <div>
+                            <h3
+                                class="text-base sm:text-lg font-bold text-slate-800"
+                            >
+                                Consumption Profile
+                            </h3>
+                            <p
+                                class="text-xs text-slate-500"
+                                id="consumption-subtitle"
+                            >
+                                Monthly KWH (Peak, Std, Off, Total) & KVARH
+                            </p>
+                        </div>
+                        <div class="w-full sm:w-auto text-center sm:text-right">
+                            <span
+                                id="drilldown-notice"
+                                class="inline-block text-[9px] sm:text-[10px] font-bold uppercase tracking-widest bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full border border-blue-100 shadow-sm"
+                                >Click elements to drill down</span
+                            >
+                        </div>
+                    </div>
+                    <div id="consumption-chart" class="chart-container"></div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+                    <div
+                        id="kva-card"
+                        class="glass-card p-4 sm:p-6 rounded-2xl shadow-sm"
+                    >
+                        <div class="mb-4">
+                            <h3
+                                class="text-base sm:text-lg font-bold text-slate-800"
+                            >
+                                Maximum Demand
+                            </h3>
+                            <p class="text-xs text-slate-500">
+                                Peak network utilization (kVA)
+                            </p>
+                        </div>
+                        <div id="kva-chart" class="chart-container"></div>
+                    </div>
+
+                    <div
+                        id="pf-card"
+                        class="glass-card p-4 sm:p-6 rounded-2xl shadow-sm"
+                    >
+                        <div class="mb-4">
+                            <h3
+                                class="text-base sm:text-lg font-bold text-slate-800"
+                            >
+                                Power Factor Efficiency
+                            </h3>
+                            <p class="text-xs text-slate-500">
+                                Tracking against 0.95 efficiency target
+                            </p>
+                        </div>
+                        <div id="pf-chart" class="chart-container"></div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-4 sm:p-6 rounded-2xl shadow-sm">
+                    <div class="mb-6">
+                        <h3
+                            class="text-base sm:text-lg font-bold text-slate-800"
+                        >
+                            Billing Charges (ZAR)
+                        </h3>
+                        <p class="text-xs text-slate-500">
+                            Breakdown of calculated costs per interval
+                        </p>
+                    </div>
+                    <div id="charges-chart" class="chart-container"></div>
+                </div>
+            </div>
+        </main>
+
+        <script>
+            const RATES = {
+                PEAK: 3.85,
+                STANDARD: 2.1,
+                OFF_PEAK: 1.45,
+                KVARH: 0.25,
+            };
+            let currentView = "monthly";
+            let consumptionChart, kvaChart, pfChart, chargesChart;
+            let isSyncing = false;
+
+            const generateData = () => {
+                const months = [
+                    "Jan 24",
+                    "Feb 24",
+                    "Mar 24",
+                    "Apr 24",
+                    "May 24",
+                    "Jun 24",
+                    "Jul 24",
+                    "Aug 24",
+                    "Sep 24",
+                    "Oct 24",
+                    "Nov 24",
+                    "Dec 24",
+                    "Jan 25",
+                    "Feb 25",
+                    "Mar 25",
+                    "Apr 25",
+                    "May 25",
+                    "Jun 25",
+                    "Jul 25",
+                ];
+                return {
+                    monthly: months.map((m) => ({
+                        label: m,
+                        peak: 800 + Math.random() * 400,
+                        std: 1200 + Math.random() * 500,
+                        off: 1500 + Math.random() * 600,
+                        kvarh: 300 + Math.random() * 150,
+                        maxKva: 120 + Math.random() * 40,
+                        pf: 0.92 + Math.random() * 0.06,
+                    })),
+                    daily: Array.from({ length: 30 }, (_, i) => ({
+                        label: `${i + 1}`,
+                        peak: 30 + Math.random() * 20,
+                        std: 40 + Math.random() * 20,
+                        off: 50 + Math.random() * 20,
+                        kvarh: 10 + Math.random() * 10,
+                        maxKva: 100 + Math.random() * 50,
+                        pf: 0.88 + Math.random() * 0.1,
+                    })),
+                    hourly: Array.from({ length: 24 }, (_, i) => ({
+                        label: `${i}:00`,
+                        peak:
+                            (i >= 7 && i <= 10) || (i >= 18 && i <= 20)
+                                ? 5 + Math.random() * 5
+                                : 0,
+                        std:
+                            (i >= 6 && i < 7) ||
+                            (i > 10 && i < 18) ||
+                            (i > 20 && i < 22)
+                                ? 4 + Math.random() * 4
+                                : 0,
+                        off: i >= 22 || i < 6 ? 3 + Math.random() * 3 : 0,
+                        kvarh: 1 + Math.random() * 2,
+                        maxKva: null,
+                        pf: 0.85 + Math.random() * 0.12,
+                    })),
+                };
+            };
+
+            const meterData = generateData();
+
+            function closeDataModal() {
+                document.getElementById("data-modal").classList.add("hidden");
+                document.body.style.overflow = "auto";
+            }
+
+            function openStyledDataView(chartInstance, title) {
+                const option = chartInstance.getOption();
+                const xAxis = option.xAxis[0].data;
+                const series = option.series;
+                const modal = document.getElementById("data-modal");
+                const content = document.getElementById("modal-content");
+
+                document.getElementById("modal-title").innerText =
+                    title + " Data View";
+                document.body.style.overflow = "hidden";
+
+                let tableHtml = `
+                    <div class="min-w-full overflow-x-auto">
+                        <table class="w-full text-left text-xs sm:text-sm border-collapse">
+                            <thead>
+                                <tr>
+                                    <th class="modal-table-header p-3 font-bold text-slate-700 border-b border-slate-200">Interval</th>
+                                    ${series.map((s) => `<th class="modal-table-header p-3 font-bold text-slate-700 border-b border-slate-200 whitespace-nowrap">${s.name}</th>`).join("")}
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                `;
+
+                xAxis.forEach((label, idx) => {
+                    tableHtml += `
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="p-3 font-semibold text-slate-800 bg-slate-50/30 whitespace-nowrap">${label}</td>
+                            ${series
+                                .map((s) => {
+                                    const val = s.data[idx];
+                                    const displayVal =
+                                        typeof val === "number"
+                                            ? val.toLocaleString(undefined, {
+                                                  minimumFractionDigits: 2,
+                                                  maximumFractionDigits: 2,
+                                              })
+                                            : val || "-";
+                                    return `<td class="p-3 text-slate-600 tabular-nums">${displayVal}</td>`;
+                                })
+                                .join("")}
+                        </tr>
+                    `;
+                });
+
+                tableHtml += `</tbody></table></div>`;
+                content.innerHTML = tableHtml;
+                modal.classList.remove("hidden");
+            }
+
+            function downloadCSV(chartInstance, fileName) {
+                const option = chartInstance.getOption();
+                const xAxis = option.xAxis[0].data;
+                const series = option.series;
+                let csv =
+                    "Interval," + series.map((s) => s.name).join(",") + "\n";
+                xAxis.forEach((label, index) => {
+                    let row = [`"${label}"`];
+                    series.forEach((s) => {
+                        row.push(
+                            s.data[index] !== undefined ? s.data[index] : "",
+                        );
+                    });
+                    csv += row.join(",") + "\n";
+                });
+                const blob = new Blob([csv], {
+                    type: "text/csv;charset=utf-8;",
+                });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", `${fileName}_${currentView}.csv`);
+                link.style.visibility = "hidden";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            const getToolbox = (chartRef, title) => ({
+                show: true,
+                right: 5,
+                top: 0,
+                orient: "horizontal",
+                itemSize: 15,
+                itemGap: 10,
+                feature: {
+                    myCustomTable: {
+                        show: true,
+                        title: "Table View",
+                        icon: "path://M4 4h16v16H4zm2 4h12M6 12h12M6 16h12M8 4v16",
+                        onclick: function () {
+                            openStyledDataView(
+                                chartRef,
+                                title.replace(/_/g, " "),
+                            );
+                        },
+                    },
+                    myDownloadCSV: {
+                        show: true,
+                        title: "Export CSV",
+                        icon: "path://M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z",
+                        onclick: function () {
+                            downloadCSV(chartRef, title.replace(/\s+/g, "_"));
+                        },
+                    },
+                    saveAsImage: {
+                        show: true,
+                        title: "Export PNG",
+                        pixelRatio: 2,
+                    },
+                },
+            });
+
+            function initCharts() {
+                consumptionChart = echarts.init(
+                    document.getElementById("consumption-chart"),
+                );
+                kvaChart = echarts.init(document.getElementById("kva-chart"));
+                pfChart = echarts.init(document.getElementById("pf-chart"));
+                chargesChart = echarts.init(
+                    document.getElementById("charges-chart"),
+                );
+
+                window.addEventListener("resize", () => {
+                    [consumptionChart, kvaChart, pfChart, chargesChart].forEach(
+                        (c) => c && c.resize(),
+                    );
+                });
+
+                const charts = [
+                    consumptionChart,
+                    kvaChart,
+                    pfChart,
+                    chargesChart,
+                ];
+                charts.forEach((c) => {
+                    c.on("datazoom", (p) => {
+                        if (isSyncing) return;
+                        isSyncing = true;
+                        charts
+                            .filter((tc) => tc !== c)
+                            .forEach((t) =>
+                                t.dispatchAction({ type: "dataZoom", ...p }),
+                            );
+                        isSyncing = false;
+                    });
+                    c.on("click", (params) => {
+                        if (currentView === "monthly") setView("daily");
+                        else if (currentView === "daily") setView("hourly");
+                    });
+                });
+            }
+
+            function updateCharts(view) {
+                const data = meterData[view];
+                const labels = data.map((d) => d.label);
+
+                // Adaptive dataZoom
+                const showSlider = window.innerWidth > 768;
+                const startValue = Math.max(
+                    0,
+                    data.length - (showSlider ? 8 : 12),
+                );
+                const endValue = data.length - 1;
+
+                const zoom = [
+                    {
+                        type: "slider",
+                        show: view === "monthly",
+                        startValue: startValue,
+                        endValue: endValue,
+                        bottom: 0,
+                        height: 15,
+                        textStyle: { fontSize: 9 },
+                    },
+                    {
+                        type: "inside",
+                        startValue: startValue,
+                        endValue: endValue,
+                    },
+                ];
+
+                const grid = {
+                    top: "15%",
+                    left: "3%",
+                    right: "3%",
+                    bottom: view === "monthly" ? "15%" : "10%",
+                    containLabel: true,
+                };
+
+                const commonAxisLabel = { fontSize: 10, color: "#64748b" };
+
+                consumptionChart.setOption(
+                    {
+                        toolbox: getToolbox(consumptionChart, "Consumption"),
+                        tooltip: {
+                            trigger: "axis",
+                            axisPointer: { type: "shadow" },
+                        },
+                        legend: {
+                            top: 0,
+                            left: "center",
+                            itemWidth: 10,
+                            textStyle: { fontSize: 10 },
+                        },
+                        dataZoom: zoom,
+                        grid: grid,
+                        xAxis: {
+                            type: "category",
+                            data: labels,
+                            axisLabel: commonAxisLabel,
+                        },
+                        yAxis: [
+                            {
+                                type: "value",
+                                name: "kWh",
+                                axisLabel: commonAxisLabel,
+                                nameTextStyle: { fontSize: 10 },
+                            },
+                            {
+                                type: "value",
+                                name: "kVARh",
+                                position: "right",
+                                splitLine: { show: false },
+                                axisLabel: commonAxisLabel,
+                                nameTextStyle: { fontSize: 10 },
+                            },
+                        ],
+                        series: [
+                            {
+                                name: "Peak KWH",
+                                type: "bar",
+                                stack: "t",
+                                data: data.map((d) => d.peak),
+                                color: "#ef4444",
+                            },
+                            {
+                                name: "Std KWH",
+                                type: "bar",
+                                stack: "t",
+                                data: data.map((d) => d.std),
+                                color: "#fbbf24",
+                            },
+                            {
+                                name: "Off KWH",
+                                type: "bar",
+                                stack: "t",
+                                data: data.map((d) => d.off),
+                                color: "#10b981",
+                            },
+                            {
+                                name: "Reactive",
+                                type: "line",
+                                yAxisIndex: 1,
+                                data: data.map((d) => d.kvarh),
+                                color: "#6366f1",
+                                smooth: true,
+                                symbol: "none",
+                            },
+                        ],
+                    },
+                    true,
+                );
+
+                if (view === "hourly")
+                    document
+                        .getElementById("kva-card")
+                        .classList.add("hidden-chart");
+                else {
+                    document
+                        .getElementById("kva-card")
+                        .classList.remove("hidden-chart");
+                    kvaChart.setOption(
+                        {
+                            toolbox: getToolbox(kvaChart, "Max_Demand"),
+                            tooltip: { trigger: "axis" },
+                            dataZoom: zoom,
+                            grid: grid,
+                            xAxis: {
+                                type: "category",
+                                data: labels,
+                                axisLabel: commonAxisLabel,
+                            },
+                            yAxis: {
+                                type: "value",
+                                name: "kVA",
+                                axisLabel: commonAxisLabel,
+                                nameTextStyle: { fontSize: 10 },
+                            },
+                            series: [
+                                {
+                                    name: "Max KVA",
+                                    type: "line",
+                                    data: data.map((d) => d.maxKva),
+                                    color: "#3b82f6",
+                                    areaStyle: {
+                                        color: "rgba(59, 130, 246, 0.1)",
+                                    },
+                                    smooth: true,
+                                },
+                            ],
+                        },
+                        true,
+                    );
+                }
+
+                pfChart.setOption(
+                    {
+                        toolbox: getToolbox(pfChart, "Power_Factor"),
+                        tooltip: { trigger: "axis" },
+                        dataZoom: zoom,
+                        grid: grid,
+                        xAxis: {
+                            type: "category",
+                            data: labels,
+                            axisLabel: commonAxisLabel,
+                        },
+                        yAxis: {
+                            type: "value",
+                            name: "PF",
+                            min: 0.7,
+                            max: 1.0,
+                            axisLabel: commonAxisLabel,
+                            nameTextStyle: { fontSize: 10 },
+                        },
+                        series: [
+                            {
+                                name: "Power Factor",
+                                type: "line",
+                                data: data.map((d) => d.pf.toFixed(3)),
+                                color: "#8b5cf6",
+                                markLine: {
+                                    data: [
+                                        {
+                                            yAxis: 0.95,
+                                            lineStyle: {
+                                                color: "#ef4444",
+                                                type: "dashed",
+                                            },
+                                        },
+                                    ],
+                                },
+                                symbol: "circle",
+                            },
+                        ],
+                    },
+                    true,
+                );
+
+                chargesChart.setOption(
+                    {
+                        toolbox: getToolbox(chargesChart, "Billing"),
+                        tooltip: {
+                            trigger: "axis",
+                            axisPointer: { type: "shadow" },
+                        },
+                        legend: {
+                            top: 0,
+                            left: "center",
+                            itemWidth: 10,
+                            textStyle: { fontSize: 10 },
+                        },
+                        dataZoom: zoom,
+                        grid: grid,
+                        xAxis: {
+                            type: "category",
+                            data: labels,
+                            axisLabel: commonAxisLabel,
+                        },
+                        yAxis: {
+                            type: "value",
+                            name: "ZAR",
+                            axisLabel: commonAxisLabel,
+                            nameTextStyle: { fontSize: 10 },
+                        },
+                        series: [
+                            {
+                                name: "Peak Cost",
+                                type: "bar",
+                                stack: "c",
+                                color: "#ef4444",
+                                data: data.map((d) => d.peak * RATES.PEAK),
+                            },
+                            {
+                                name: "Std Cost",
+                                type: "bar",
+                                stack: "c",
+                                color: "#fbbf24",
+                                data: data.map((d) => d.std * RATES.STANDARD),
+                            },
+                            {
+                                name: "Off Cost",
+                                type: "bar",
+                                stack: "c",
+                                color: "#10b981",
+                                data: data.map((d) => d.off * RATES.OFF_PEAK),
+                            },
+                            {
+                                name: "Reactive Cost",
+                                type: "bar",
+                                stack: "c",
+                                color: "#6366f1",
+                                data: data.map((d) => d.kvarh * RATES.KVARH),
+                            },
+                        ],
+                    },
+                    true,
+                );
+
+                const avgPf =
+                    data.reduce((a, b) => a + (b.pf || 0), 0) /
+                    (data.filter((d) => d.pf !== null).length || 1);
+                document.getElementById("pf-metric").innerText =
+                    avgPf.toFixed(2);
+            }
+
+            function setView(view) {
+                currentView = view;
+                const buttons = ["monthly", "daily", "hourly"];
+                buttons.forEach((b) => {
+                    const el = document.getElementById(`view-${b}`);
+                    el.className =
+                        b === view
+                            ? "px-4 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all nav-btn-active"
+                            : "px-4 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all nav-btn-inactive";
+                });
+
+                const sub = document.getElementById("consumption-subtitle");
+                const notice = document.getElementById("drilldown-notice");
+
+                if (view === "monthly") {
+                    sub.innerText = "Monthly Consumption Profile (KWH & KVARH)";
+                    notice.innerText =
+                        "Tap charts to drill down into Daily detail";
+                    notice.classList.remove("hidden");
+                } else if (view === "daily") {
+                    sub.innerText = "Daily KWH Profile for the Month";
+                    notice.innerText = "Tap charts to view Hourly profile";
+                    notice.classList.remove("hidden");
+                } else {
+                    sub.innerText = "Typical Hourly Demand Profile";
+                    notice.classList.add("hidden");
+                }
+
+                updateCharts(view);
+                // Ensure layout adjustment is handled
+                setTimeout(() => {
+                    [consumptionChart, kvaChart, pfChart, chargesChart].forEach(
+                        (c) => c && c.resize(),
+                    );
+                }, 200);
+            }
+
+            window.onload = () => {
+                initCharts();
+                setView("monthly");
+            };
+        </script>
+    </body>
+</html>

@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Meter Dashboard</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <!-- Lucide Icons -->
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <style>
+            :root {
+                --brand-bg: #404068;
+                --brand-text: #faa919;
+            }
+            body {
+                background-color: #ffffff;
+                color: #1f2937;
+                font-size: 14px; /* Global font size reduction */
+            }
+            .brand-header {
+                background-color: var(--brand-bg);
+                color: var(--brand-text);
+                /* Added rounded top corners */
+                border-top-left-radius: 1.5rem;
+                border-top-right-radius: 1.5rem;
+            }
+            .tab-pill.active {
+                background-color: var(--brand-text);
+                color: var(--brand-bg);
+            }
+            .badge-brand {
+                background-color: var(--brand-text);
+                color: var(--brand-bg);
+                border: none;
+            }
+            .no-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+            .no-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        </style>
+    </head>
+    <body class="min-h-screen">
+        <!-- Sticky Container for Header and Tabs -->
+        <div class="sticky top-0 z-50 bg-white pt-4">
+            <!-- Added pt-4 to show rounded corners -->
+            <!-- Main Header -->
+            <header class="brand-header px-6 py-4 shadow-lg max-w-5xl mx-auto">
+                <div class="w-full">
+                    <!-- Title and Meter Number Row -->
+                    <div
+                        class="flex flex-wrap justify-between items-center mb-2 gap-2"
+                    >
+                        <div class="flex items-center gap-2">
+                            <div
+                                id="utility-icon-container"
+                                class="p-1.5 bg-[#faa919] text-[#404068] rounded-lg shadow-inner"
+                            >
+                                <!-- Icon injected by JS -->
+                            </div>
+                            <h1
+                                class="text-xl font-bold tracking-tight text-white"
+                            >
+                                Meter Dashboard:
+                                <span
+                                    id="meter-number"
+                                    class="font-mono font-medium text-[#faa919] ml-1"
+                                    >--</span
+                                >
+                            </h1>
+                        </div>
+                        <div id="meter-tag-container"></div>
+                    </div>
+
+                    <!-- Unit Row -->
+                    <div
+                        id="meter-unit"
+                        class="text-xs font-normal opacity-80 italic text-white/70 mb-4"
+                    >
+                        --
+                    </div>
+
+                    <!-- Details Row (Provider, Tariff, Mode, Phase) -->
+                    <div
+                        class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-3 border-t border-white/10"
+                    >
+                        <div class="flex flex-col">
+                            <span
+                                class="text-[9px] uppercase font-bold text-[#faa919] leading-none mb-1"
+                                >Provider</span
+                            >
+                            <span
+                                id="provider-name"
+                                class="text-xs font-semibold text-white truncate"
+                                >--</span
+                            >
+                        </div>
+                        <div class="flex flex-col">
+                            <span
+                                class="text-[9px] uppercase font-bold text-[#faa919] leading-none mb-1"
+                                >Tariff</span
+                            >
+                            <span
+                                id="tariff-name"
+                                class="text-xs font-semibold text-white truncate"
+                                >--</span
+                            >
+                        </div>
+                        <div class="flex flex-col">
+                            <span
+                                class="text-[9px] uppercase font-bold text-[#faa919] leading-none mb-1"
+                                >Mode</span
+                            >
+                            <span
+                                id="billing-mode"
+                                class="text-xs font-semibold text-white uppercase truncate"
+                                >--</span
+                            >
+                        </div>
+                        <div id="phase-container" class="flex flex-col hidden">
+                            <span
+                                class="text-[9px] uppercase font-bold text-[#faa919] leading-none mb-1"
+                                >Phase</span
+                            >
+                            <span
+                                id="phase-value"
+                                class="text-xs font-semibold text-white truncate"
+                                >--</span
+                            >
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Navigation Tabs (Sticky below header) -->
+            <nav class="bg-white border-b border-gray-200">
+                <div class="max-w-5xl mx-auto px-4 py-3">
+                    <div
+                        class="flex flex-wrap gap-1 p-1 bg-gray-100 rounded-lg overflow-x-auto no-scrollbar border border-gray-200"
+                    >
+                        <button
+                            onclick="switchTab('charges')"
+                            class="tab-pill active px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200"
+                        >
+                            Charges & Consumptions
+                        </button>
+                        <button
+                            onclick="switchTab('reads')"
+                            class="tab-pill px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 text-gray-500 hover:bg-gray-200"
+                        >
+                            Reads
+                        </button>
+                        <button
+                            onclick="switchTab('comparison')"
+                            class="tab-pill px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 text-gray-500 hover:bg-gray-200"
+                        >
+                            Comparison
+                        </button>
+                        <button
+                            onclick="switchTab('projection')"
+                            class="tab-pill px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 text-gray-500 hover:bg-gray-200"
+                        >
+                            Projection
+                        </button>
+                        <button
+                            onclick="switchTab('check')"
+                            class="tab-pill px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 text-gray-500 hover:bg-gray-200"
+                        >
+                            Check
+                        </button>
+                        <button
+                            onclick="switchTab('generator')"
+                            class="tab-pill px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 text-gray-500 hover:bg-gray-200"
+                        >
+                            Generator
+                        </button>
+                    </div>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Content Area -->
+        <main class="max-w-5xl mx-auto p-4">
+            <div
+                id="tab-content"
+                class="rounded-xl border border-gray-200 shadow-sm min-h-[150vh] overflow-hidden"
+            >
+                <div id="content-placeholder">
+                    <div
+                        class="loading loading-spinner loading-md text-primary"
+                    ></div>
+                    <p class="mt-4 text-xs text-gray-500">Loading data...</p>
+                </div>
+            </div>
+        </main>
+
+        <script>
+            // Mock Data Configuration
+            const meterData = {
+                utilityType: "Electricity",
+                meterNumber: "EM-998273641",
+                unit: "Unit 402, Block B - Sandton Heights, Johannesburg South",
+                provider: "City of Johannesburg",
+                tariff: "Residential Standard (Step 1)",
+                mode: "Prepaid",
+                phase: 3,
+                meterCategory: "Check",
+            };
+
+            function initDashboard() {
+                document.getElementById("meter-number").innerText =
+                    meterData.meterNumber;
+                document.getElementById("meter-unit").innerText =
+                    meterData.unit;
+                document.getElementById("provider-name").innerText =
+                    meterData.provider;
+                document.getElementById("tariff-name").innerText =
+                    meterData.tariff;
+                document.getElementById("billing-mode").innerText =
+                    meterData.mode;
+
+                const iconContainer = document.getElementById(
+                    "utility-icon-container",
+                );
+                let iconName = "zap";
+                if (meterData.utilityType === "Water") iconName = "droplet";
+                if (meterData.utilityType === "Gas") iconName = "flame";
+                iconContainer.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4"></i>`;
+
+                const tagContainer = document.getElementById(
+                    "meter-tag-container",
+                );
+                if (meterData.meterCategory !== "Standard") {
+                    tagContainer.innerHTML = `<span class="badge badge-brand font-bold text-[9px] px-2 py-0 h-5 border border-[#404068]/20">${meterData.meterCategory.toUpperCase()}</span>`;
+                }
+
+                if (meterData.utilityType === "Electricity") {
+                    document
+                        .getElementById("phase-container")
+                        .classList.remove("hidden");
+                    document.getElementById("phase-value").innerText =
+                        `${meterData.phase} Phase`;
+                }
+
+                lucide.createIcons();
+                switchTab("charges");
+            }
+
+            function switchTab(tabName) {
+                const buttons = document.querySelectorAll(".tab-pill");
+                buttons.forEach((btn) => {
+                    btn.classList.remove(
+                        "active",
+                        "bg-[#faa919]",
+                        "text-[#404068]",
+                    );
+                    btn.classList.add("text-gray-500");
+                });
+
+                const activeBtn = Array.from(buttons).find((b) =>
+                    b.innerText.toLowerCase().includes(tabName.slice(0, 3)),
+                );
+                if (activeBtn) {
+                    activeBtn.classList.add(
+                        "active",
+                        "bg-[#faa919]",
+                        "text-[#404068]",
+                    );
+                    activeBtn.classList.remove("text-gray-500");
+                }
+
+                const content = document.getElementById("tab-content");
+
+                if (tabName === "charges") {
+                    content.className =
+                        "rounded-xl border border-gray-200 shadow-sm min-h-[150vh] overflow-hidden";
+                    loadIframeTab(content, "meter_elect.html", ".sticky-wrapper");
+                    return;
+                }
+
+                if (tabName === "reads") {
+                    content.className =
+                        "rounded-xl border border-gray-200 shadow-sm min-h-[150vh] overflow-hidden";
+                    loadIframeTab(content, "meter_reads.html", ".brand-header");
+                    return;
+                }
+
+                if (tabName === "comparison") {
+                    content.className =
+                        "rounded-xl border border-gray-200 shadow-sm min-h-[150vh] overflow-hidden";
+                    loadIframeTab(content, "comparison.html", ".custom-header");
+                    return;
+                }
+
+                if (tabName === "projection") {
+                    content.className =
+                        "rounded-xl border border-gray-200 shadow-sm min-h-[150vh] overflow-hidden";
+                    loadIframeTab(content, "projection.html", ".branded-header");
+                    return;
+                }
+
+                if (tabName === "check") {
+                    content.className =
+                        "rounded-xl border border-gray-200 shadow-sm min-h-[150vh] overflow-hidden";
+                    loadIframeTab(content, "check.html", ".header-brand");
+                    return;
+                }
+
+                if (tabName === "generator") {
+                    content.className =
+                        "rounded-xl border border-gray-200 shadow-sm min-h-[150vh] overflow-hidden";
+                    loadIframeTab(content, "gen.html", "header");
+                    return;
+                }
+
+                // Restore default card styling for other tabs
+                content.className =
+                    "bg-gray-50 rounded-xl p-6 border border-gray-200 text-center shadow-sm min-h-[150vh]";
+
+                const titles = {
+                    check: "Check",
+                    generator: "Generator",
+                };
+
+                content.innerHTML = `
+                <div class="animate-in fade-in slide-in-from-bottom-1 duration-300">
+                    <h3 class="text-sm font-bold mb-4 text-gray-700 text-left uppercase tracking-wider">${titles[tabName]}</h3>
+                    <div class="space-y-4">
+                        ${Array(6)
+                            .fill(0)
+                            .map(
+                                (_, i) => `
+                            <div class="bg-white p-4 rounded-lg border border-gray-100 text-left">
+                                <p class="text-xs font-bold text-gray-400">Record #${1000 + i}</p>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">Entry ${i + 1}</span>
+                                    <span class="font-mono text-[#404068]">--</span>
+                                </div>
+                            </div>
+                        `,
+                            )
+                            .join("")}
+                    </div>
+                </div>
+            `;
+            }
+
+            function loadIframeTab(content, src, headerSelector) {
+                content.innerHTML = "";
+
+                const iframe = document.createElement("iframe");
+                iframe.src = src;
+                iframe.style.cssText =
+                    "width:100%;height:1150px;border:none;display:block;";
+
+                iframe.addEventListener("load", function () {
+                    try {
+                        const iDoc =
+                            iframe.contentDocument ||
+                            iframe.contentWindow.document;
+
+                        // Inject stylesheet into the iframe to hide the header
+                        const style = iDoc.createElement("style");
+                        style.textContent =
+                            headerSelector +
+                            " { display: none !important; }" +
+                            "body { padding-top: 0 !important; margin-top: 0 !important; }";
+                        iDoc.head.appendChild(style);
+
+                        // Trigger chart initialisation if the page uses ECharts
+                        const iWin = iframe.contentWindow;
+                        if (typeof iWin.initCharts === "function") iWin.initCharts();
+                        if (typeof iWin.setView === "function") iWin.setView("monthly");
+
+                        // Resize after ECharts has had time to paint
+                        setTimeout(() => {
+                            const h = iDoc.documentElement.scrollHeight;
+                            iframe.style.height = Math.max(1150, h) + "px";
+
+                            // Force any ECharts instances to repaint at the new width
+                            ["consumptionChart", "kvaChart", "pfChart", "chargesChart"].forEach((name) => {
+                                if (iWin[name] && typeof iWin[name].resize === "function")
+                                    iWin[name].resize();
+                            });
+                        }, 800);
+                    } catch (e) {
+                        // Cross-origin or file:// restriction — iframe still renders the full page
+                    }
+                });
+
+                content.appendChild(iframe);
+            }
+
+            window.onload = initDashboard;
+        </script>
+    </body>
+</html>

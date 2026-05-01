@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Utility Season Manager</title>
+        <!-- Tailwind CSS -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <!-- daisyUI -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <style>
+            .month-card {
+                transition: all 0.2s ease-in-out;
+                cursor: pointer;
+                min-height: 80px;
+            }
+
+            .month-card:hover {
+                filter: brightness(0.9);
+            }
+
+            .high-season {
+                background-color: #ef4444;
+                color: white;
+            }
+            .low-season {
+                background-color: #22c55e;
+                color: white;
+            }
+
+            .custom-header {
+                background-color: #404068 !important;
+            }
+            .custom-header-title {
+                color: #faa919 !important;
+            }
+            .custom-header-subtext {
+                color: #ffffff !important;
+            }
+
+            .btn-save-custom {
+                background-color: #404068 !important;
+                border-color: #404068 !important;
+                color: #ffffff !important;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .btn-save-custom:hover,
+            .btn-save-custom:active,
+            .btn-save-custom.active-state {
+                color: #faa919 !important;
+            }
+
+            .btn-save-custom:hover {
+                filter: brightness(1.1);
+            }
+
+            /* Fix layout to support internal scrolling */
+            body,
+            html {
+                height: 100%;
+                overflow: hidden;
+            }
+
+            .app-container {
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* The scrollable area */
+            .scroll-area {
+                flex: 1;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .sticky-footer {
+                background-color: white;
+                border-top: 1px solid #e2e8f0;
+                z-index: 20;
+            }
+        </style>
+    </head>
+    <body class="bg-slate-100">
+        <!-- Main Wrapper ensuring the card fits the screen height -->
+        <div class="app-container p-0 sm:p-4 md:p-6 lg:p-8">
+            <div
+                class="max-w-4xl mx-auto w-full bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col h-full"
+            >
+                <!-- Fixed Header -->
+                <div class="custom-header p-5 md:p-6 flex-none">
+                    <h1
+                        class="text-lg sm:text-xl md:text-2xl font-bold custom-header-title"
+                    >
+                        Utility Season Configuration
+                    </h1>
+                    <p
+                        class="custom-header-subtext text-xs md:text-sm opacity-90"
+                    >
+                        Create or update seasonal utility schedules and
+                        metadata.
+                    </p>
+                </div>
+
+                <!-- Form wraps both the scrollable area and the footer -->
+                <form
+                    id="seasonForm"
+                    class="flex flex-col flex-1 overflow-hidden"
+                >
+                    <!-- Scrollable Content Area -->
+                    <div
+                        class="scroll-area p-4 sm:p-6 md:p-8 space-y-6 md:space-y-8"
+                    >
+                        <!-- Metadata Section -->
+                        <div
+                            class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6"
+                        >
+                            <div class="form-control w-full">
+                                <label class="label pt-0">
+                                    <span
+                                        class="label-text font-semibold text-slate-700"
+                                        >Name
+                                        <span class="text-red-500"
+                                            >*</span
+                                        ></span
+                                    >
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="e.g. Summer Peak 2024"
+                                    class="input input-bordered w-full focus:input-primary"
+                                />
+                            </div>
+
+                            <div class="form-control w-full">
+                                <label class="label pt-0">
+                                    <span
+                                        class="label-text font-semibold text-slate-700"
+                                        >Country
+                                        <span class="text-red-500"
+                                            >*</span
+                                        ></span
+                                    >
+                                </label>
+                                <select
+                                    required
+                                    class="select select-bordered w-full font-normal focus:select-primary"
+                                >
+                                    <option value="" disabled selected>
+                                        Select a country
+                                    </option>
+                                    <option value="US">United States</option>
+                                    <option value="UK">United Kingdom</option>
+                                    <option value="CA">Canada</option>
+                                </select>
+                            </div>
+
+                            <div class="form-control w-full">
+                                <label class="label pt-0">
+                                    <span
+                                        class="label-text font-semibold text-slate-700"
+                                        >Organization</span
+                                    >
+                                </label>
+                                <select
+                                    class="select select-bordered w-full font-normal focus:select-primary"
+                                >
+                                    <option value="" disabled selected>
+                                        Select an organization
+                                    </option>
+                                    <option value="energy-corp">
+                                        Energy Corp Global
+                                    </option>
+                                    <option value="city-grid">
+                                        City Grid Utilities
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="form-control md:pt-9">
+                                <label
+                                    class="label cursor-pointer justify-start gap-4 py-0"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        id="isPublic"
+                                        class="checkbox checkbox-primary"
+                                    />
+                                    <span
+                                        class="label-text font-semibold text-slate-700"
+                                        >Make this season public?</span
+                                    >
+                                </label>
+                            </div>
+
+                            <div class="form-control md:col-span-2">
+                                <label class="label pt-0">
+                                    <span
+                                        class="label-text font-semibold text-slate-700"
+                                        >Description</span
+                                    >
+                                </label>
+                                <textarea
+                                    class="textarea textarea-bordered h-24 focus:textarea-primary"
+                                    placeholder="Provide context about this seasonal utility cycle..."
+                                ></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Seasonality Section -->
+                        <div class="border-t border-slate-200 pt-6 md:pt-8">
+                            <div
+                                class="flex flex-col sm:flex-row sm:items-end justify-between mb-6 gap-4"
+                            >
+                                <div class="flex-1">
+                                    <h2
+                                        class="text-base sm:text-lg font-bold text-slate-800"
+                                    >
+                                        Season Configuration
+                                    </h2>
+                                    <p
+                                        class="text-xs sm:text-sm text-slate-500"
+                                    >
+                                        Click on a month to toggle season type.
+                                    </p>
+                                </div>
+                                <div
+                                    class="flex items-center space-x-4 bg-slate-50 p-2 rounded-lg border border-slate-200"
+                                >
+                                    <div
+                                        class="flex items-center text-[10px] sm:text-xs font-medium"
+                                    >
+                                        <span
+                                            class="badge badge-error badge-xs mr-2"
+                                        ></span>
+                                        High
+                                    </div>
+                                    <div
+                                        class="flex items-center text-[10px] sm:text-xs font-medium"
+                                    >
+                                        <span
+                                            class="badge badge-success badge-xs mr-2"
+                                        ></span>
+                                        Low
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div
+                                id="monthsGrid"
+                                class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3"
+                            >
+                                <!-- JS Populated -->
+                            </div>
+                        </div>
+
+                        <!-- Extra padding to ensure content isn't cut off behind footer on some browsers -->
+                        <div class="h-4"></div>
+                    </div>
+
+                    <!-- Truly Sticky/Fixed Footer at the bottom of the card -->
+                    <div
+                        class="sticky-footer p-4 sm:px-6 md:px-8 flex flex-col-reverse sm:flex-row justify-end gap-3 flex-none"
+                    >
+                        <button
+                            type="button"
+                            class="btn btn-ghost border-slate-300 w-full sm:w-auto"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            id="saveBtn"
+                            class="btn btn-save-custom w-full sm:w-auto px-8 shadow-md"
+                        >
+                            Save Season Profile
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Toast -->
+        <div
+            id="toastContainer"
+            class="toast toast-bottom toast-center hidden z-50"
+        >
+            <div class="alert alert-neutral text-white">
+                <span id="toastMessage">Season saved successfully!</span>
+            </div>
+        </div>
+
+        <script>
+            const monthNames = [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun",
+                "Jul",
+                "Aug",
+                "Sep",
+                "Oct",
+                "Nov",
+                "Dec",
+            ];
+            const highMonths = [5, 6, 7];
+            const seasonState = monthNames.map((name, index) => ({
+                name,
+                isHigh: highMonths.includes(index),
+            }));
+
+            const monthsGrid = document.getElementById("monthsGrid");
+            const form = document.getElementById("seasonForm");
+            const saveBtn = document.getElementById("saveBtn");
+            const toastContainer = document.getElementById("toastContainer");
+
+            function renderMonths() {
+                monthsGrid.innerHTML = "";
+                seasonState.forEach((month, index) => {
+                    const card = document.createElement("div");
+                    card.className = `month-card flex flex-col items-center justify-center p-2 rounded-xl border-2 shadow-sm select-none ${
+                        month.isHigh
+                            ? "high-season border-red-600"
+                            : "low-season border-green-600"
+                    }`;
+                    card.innerHTML = `
+                        <span class="text-[9px] uppercase font-bold opacity-80">${index + 1}</span>
+                        <span class="text-base sm:text-lg font-black">${month.name}</span>
+                        <span class="text-[8px] mt-1 font-bold uppercase">${month.isHigh ? "High" : "Low"}</span>
+                    `;
+                    card.onclick = () => {
+                        seasonState[index].isHigh = !seasonState[index].isHigh;
+                        renderMonths();
+                    };
+                    monthsGrid.appendChild(card);
+                });
+            }
+
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                toastContainer.classList.remove("hidden");
+                setTimeout(() => toastContainer.classList.add("hidden"), 3000);
+            };
+
+            window.onload = renderMonths;
+        </script>
+    </body>
+</html>

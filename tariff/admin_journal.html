@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Administrator Journal</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <style>
+            .bg-brand-primary { background-color: #404068; }
+            .text-brand-accent { color: #faa919; }
+            .border-brand-accent { border-color: #faa919; }
+
+            .sticky-header th {
+                position: sticky;
+                top: 0;
+                z-index: 20;
+                background-color: #404068;
+            }
+            .sticky-header th:first-child { border-top-left-radius: 0.75rem; }
+            .sticky-header th:last-child  { border-top-right-radius: 0.75rem; }
+
+            .log-row { transition: background-color 0.15s ease-in-out; }
+            .log-row:hover { background-color: #f1f5f9 !important; }
+
+            .table-scroll-container {
+                max-height: 520px;
+                overflow-y: auto;
+                overflow-x: auto;
+            }
+            .table-scroll-container::-webkit-scrollbar { width: 6px; }
+            .table-scroll-container::-webkit-scrollbar-track { background: #f8fafc; }
+            .table-scroll-container::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 10px;
+            }
+            .table-scroll-container::-webkit-scrollbar-thumb:hover { background: #404068; }
+        </style>
+    </head>
+    <body class="bg-gray-100 min-h-screen font-sans">
+        <div class="max-w-7xl mx-auto p-2 sm:p-4 md:p-8 space-y-4 sm:space-y-6">
+
+            <!-- Header -->
+            <header class="bg-brand-primary p-6 sm:p-8 shadow-lg rounded-t-xl sm:rounded-t-2xl">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div class="flex items-center gap-4">
+                        <a href="journals.html"
+                           class="btn btn-sm bg-white/10 hover:bg-white/20 text-white border-white/20 gap-2">
+                            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                            Back
+                        </a>
+                        <div>
+                            <h1 class="text-2xl sm:text-3xl font-bold text-brand-accent">
+                                Administrator Journal
+                            </h1>
+                            <p class="text-white text-sm opacity-90 mt-0.5">
+                                Full audit log of administrator-level tariff actions
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2 bg-white/10 border border-white/20 rounded-lg px-4 py-2">
+                            <i data-lucide="shield-check" class="w-5 h-5 text-brand-accent"></i>
+                            <span class="text-white text-sm font-semibold">Administrator Access</span>
+                        </div>
+                        <select id="actionFilter" onchange="applyFilter()"
+                                class="select select-bordered select-sm bg-white/10 text-white border-white/20 focus:outline-none">
+                            <option value="all" class="text-gray-800">All Actions</option>
+                            <option value="CREATE" class="text-gray-800">Create</option>
+                            <option value="EDIT"   class="text-gray-800">Edit</option>
+                            <option value="DELETE" class="text-gray-800">Delete</option>
+                            <option value="APPROVE" class="text-gray-800">Approve</option>
+                        </select>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Stats row -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="stat bg-white shadow rounded-xl border-l-4 border-l-[#404068] py-3 px-4">
+                    <div class="stat-title text-xs text-gray-500">Total Actions</div>
+                    <div class="stat-value text-xl text-slate-800" id="stat-total">0</div>
+                </div>
+                <div class="stat bg-white shadow rounded-xl border-l-4 border-l-emerald-400 py-3 px-4">
+                    <div class="stat-title text-xs text-gray-500">Approved</div>
+                    <div class="stat-value text-xl text-slate-800" id="stat-approve">0</div>
+                </div>
+                <div class="stat bg-white shadow rounded-xl border-l-4 border-l-blue-400 py-3 px-4">
+                    <div class="stat-title text-xs text-gray-500">Created</div>
+                    <div class="stat-value text-xl text-slate-800" id="stat-create">0</div>
+                </div>
+                <div class="stat bg-white shadow rounded-xl border-l-4 border-l-red-400 py-3 px-4">
+                    <div class="stat-title text-xs text-gray-500">Deleted</div>
+                    <div class="stat-value text-xl text-slate-800" id="stat-delete">0</div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="bg-white rounded-b-xl sm:rounded-b-2xl shadow-md overflow-hidden border border-gray-200">
+                <div class="table-scroll-container">
+                    <table class="table table-zebra w-full border-separate border-spacing-0 min-w-[700px]">
+                        <thead class="sticky-header">
+                            <tr class="text-white border-none text-xs uppercase tracking-wider font-semibold">
+                                <th class="px-4 sm:px-6 py-4">Timestamp</th>
+                                <th class="px-4 sm:px-6 py-4">Administrator</th>
+                                <th class="px-4 sm:px-6 py-4">Action</th>
+                                <th class="px-4 sm:px-6 py-4">Tariff</th>
+                                <th class="px-4 sm:px-6 py-4">Provider</th>
+                                <th class="px-4 sm:px-6 py-4 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="journalTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="lg:hidden text-center text-xs text-gray-500 italic">
+                Swipe left/right to view more table data
+            </div>
+        </div>
+
+        <script>
+            const journalEntries = [
+                { ts: "2024-03-15 09:12", admin: "Sarah Jenkins",    action: "APPROVE", tariff: "Standard Residential",  provider: "City Power",   status: "Success" },
+                { ts: "2024-03-15 10:34", admin: "Mark Thompson",    action: "EDIT",    tariff: "Industrial High-Volt",   provider: "Grid Corp",    status: "Success" },
+                { ts: "2024-03-14 14:05", admin: "Sarah Jenkins",    action: "CREATE",  tariff: "Hospital Priority",      provider: "Grid Corp",    status: "Success" },
+                { ts: "2024-03-14 11:22", admin: "Elena Rodriguez",  action: "DELETE",  tariff: "Legacy Peak Tariff",     provider: "City Power",   status: "Success" },
+                { ts: "2024-03-13 16:47", admin: "Mark Thompson",    action: "APPROVE", tariff: "Municipal Waste",        provider: "EcoServe",     status: "Success" },
+                { ts: "2024-03-13 09:03", admin: "Sarah Jenkins",    action: "EDIT",    tariff: "Bulk Water Supply",      provider: "Water Link",   status: "Success" },
+                { ts: "2024-03-12 15:30", admin: "Elena Rodriguez",  action: "CREATE",  tariff: "Office High Speed",      provider: "TeleNet",      status: "Success" },
+                { ts: "2024-03-12 13:11", admin: "Mark Thompson",    action: "APPROVE", tariff: "Office High Speed",      provider: "TeleNet",      status: "Pending" },
+                { ts: "2024-03-11 10:55", admin: "Sarah Jenkins",    action: "DELETE",  tariff: "Old Gas Block",          provider: "GasFlow",      status: "Success" },
+                { ts: "2024-03-11 08:40", admin: "Elena Rodriguez",  action: "EDIT",    tariff: "Standard Residential",   provider: "City Power",   status: "Failed"  },
+                { ts: "2024-03-10 17:20", admin: "Mark Thompson",    action: "CREATE",  tariff: "Eco-Industrial Blend",   provider: "Green Energy", status: "Success" },
+                { ts: "2024-03-10 14:08", admin: "Sarah Jenkins",    action: "APPROVE", tariff: "Eco-Industrial Blend",   provider: "Green Energy", status: "Success" },
+            ];
+
+            let filtered = [...journalEntries];
+
+            const actionStyle = {
+                CREATE:  { badge: "badge-info",    icon: "plus-circle"   },
+                EDIT:    { badge: "badge-warning",  icon: "pencil"        },
+                DELETE:  { badge: "badge-error",    icon: "trash-2"       },
+                APPROVE: { badge: "badge-success",  icon: "check-circle"  },
+            };
+
+            const statusStyle = {
+                Success: "badge-success",
+                Pending: "badge-warning",
+                Failed:  "badge-error",
+            };
+
+            function renderTable() {
+                const body = document.getElementById("journalTableBody");
+                body.innerHTML = filtered.map(entry => {
+                    const a = actionStyle[entry.action];
+                    const s = statusStyle[entry.status];
+                    return `
+                    <tr class="log-row border-b border-gray-100">
+                        <td class="px-4 sm:px-6 py-3 text-xs text-gray-500 font-mono whitespace-nowrap">${entry.ts}</td>
+                        <td class="px-4 sm:px-6 py-3 text-sm font-semibold text-gray-800">${entry.admin}</td>
+                        <td class="px-4 sm:px-6 py-3">
+                            <span class="badge badge-sm ${a.badge} gap-1 font-bold">
+                                <i data-lucide="${a.icon}" class="w-3 h-3"></i>
+                                ${entry.action}
+                            </span>
+                        </td>
+                        <td class="px-4 sm:px-6 py-3 text-sm text-gray-700">${entry.tariff}</td>
+                        <td class="px-4 sm:px-6 py-3 text-sm text-gray-500">${entry.provider}</td>
+                        <td class="px-4 sm:px-6 py-3 text-center">
+                            <span class="badge badge-sm ${s} font-bold">${entry.status}</span>
+                        </td>
+                    </tr>`;
+                }).join("");
+                lucide.createIcons();
+                updateStats();
+            }
+
+            function updateStats() {
+                document.getElementById("stat-total").textContent   = journalEntries.length;
+                document.getElementById("stat-approve").textContent = journalEntries.filter(e => e.action === "APPROVE").length;
+                document.getElementById("stat-create").textContent  = journalEntries.filter(e => e.action === "CREATE").length;
+                document.getElementById("stat-delete").textContent  = journalEntries.filter(e => e.action === "DELETE").length;
+            }
+
+            function applyFilter() {
+                const val = document.getElementById("actionFilter").value;
+                filtered = val === "all" ? [...journalEntries] : journalEntries.filter(e => e.action === val);
+                renderTable();
+            }
+
+            window.onload = () => { renderTable(); lucide.createIcons(); };
+        </script>
+    </body>
+</html>

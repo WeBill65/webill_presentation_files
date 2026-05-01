@@ -1,0 +1,1818 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Utility Schedule Manager</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <style>
+            :root {
+                --brand-deep: #404068;
+                --brand-accent: #faa919;
+            }
+
+            [v-cloak] {
+                display: none;
+            }
+
+            body {
+                height: 100vh;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                background-color: #f8fafc;
+            }
+
+            .app-header {
+                background-color: var(--brand-deep);
+                color: white;
+                flex-shrink: 0;
+                z-index: 50;
+                border-top-left-radius: 12px;
+                border-top-right-radius: 12px;
+                margin: 1rem 1rem 0 1rem;
+            }
+
+            .main-scroll-area {
+                flex-grow: 1;
+                overflow-y: auto;
+                padding-bottom: 3rem;
+            }
+
+            .header-title,
+            .modal-header-title {
+                color: var(--brand-accent);
+            }
+
+            .btn-brand {
+                background-color: var(--brand-accent) !important;
+                color: var(--brand-deep) !important;
+                border: none;
+                font-weight: bold;
+            }
+
+            .btn-brand:hover {
+                background-color: white !important;
+                color: var(--brand-accent) !important;
+                cursor: pointer;
+            }
+
+            .text-primary {
+                color: var(--brand-deep) !important;
+            }
+            .badge-primary {
+                background-color: var(--brand-deep) !important;
+                color: white;
+                border: none;
+            }
+            .btn-primary {
+                background-color: var(--brand-deep) !important;
+                border-color: var(--brand-deep) !important;
+            }
+
+            .input-bordered:focus,
+            .select-bordered:focus,
+            .textarea-bordered:focus {
+                border-color: var(--brand-accent) !important;
+                outline: none;
+            }
+
+            progress::-webkit-progress-value {
+                background-color: var(--brand-accent);
+            }
+
+            .required-star {
+                color: #ff0000;
+                margin-left: 2px;
+            }
+
+            .expire-badge {
+                white-space: nowrap;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            /* Modal Specific Styling */
+            .modal-box {
+                max-width: 52rem;
+                padding: 0;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                max-height: 85vh;
+            }
+
+            .modal-header {
+                background-color: var(--brand-deep);
+                color: white;
+                flex-shrink: 0;
+            }
+
+            .modal-body {
+                padding: 1.5rem;
+                overflow-y: auto;
+                flex-grow: 1;
+                padding-bottom: 2rem;
+            }
+
+            .modal-footer {
+                padding: 1rem 1.5rem;
+                background: #f8fafc;
+                border-top: 1px solid #e2e8f0;
+                display: flex;
+                justify-content: flex-end;
+                gap: 0.75rem;
+                flex-shrink: 0;
+            }
+
+            .checkbox-brand:checked {
+                background-color: var(--brand-accent) !important;
+                border-color: var(--brand-accent) !important;
+            }
+
+            .chip-style {
+                background-color: white;
+                border: 1px solid #cbd5e1;
+                padding: 2px 8px;
+                border-radius: 9999px;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                font-size: 11px;
+                font-weight: 600;
+                color: #334155;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            }
+
+            .chip-style button:hover {
+                color: #ef4444;
+            }
+
+            .selector-card,
+            .agent-card-select,
+            .site-selector-row {
+                transition: all 0.2s;
+                cursor: pointer;
+                border: 1px solid transparent;
+            }
+            .selector-card:hover,
+            .agent-card-select:hover,
+            .site-selector-row:hover {
+                background-color: #f8fafc;
+            }
+            .selector-card.selected,
+            .agent-card-select.selected {
+                border-color: var(--brand-accent);
+                background-color: #fffbeb;
+            }
+
+            .qc-badge-card,
+            .site-badge-card {
+                background-color: white;
+                color: #1e293b;
+                border: 1px solid #e2e8f0;
+                font-size: 10px;
+                font-weight: bold;
+                padding: 2px 8px;
+                border-radius: 4px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+                transition: all 0.2s;
+            }
+
+            .site-badge-card {
+                cursor: pointer;
+            }
+
+            .site-badge-card:hover {
+                border-color: var(--brand-accent);
+                background-color: #fffbeb;
+            }
+
+            .site-badge-card:active {
+                transform: scale(0.97);
+            }
+
+            .qc-badge-card {
+                color: #166534;
+                border-color: #86efac;
+            }
+            .qc-badge-card.consumer-qc {
+                color: #1e40af;
+                border-color: #93c5fd;
+            }
+
+            .qc-badge-card button:hover,
+            .site-badge-card button:hover {
+                color: #ef4444;
+            }
+
+            .reassign-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 10px;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .reassign-item:hover {
+                border-color: var(--brand-accent);
+                background-color: #f1f5f9;
+            }
+            .reassign-item.active {
+                border-color: var(--brand-accent);
+                background-color: #fffbeb;
+            }
+
+            .section-container {
+                background-color: #fdfdfd;
+                border: 1px solid #f1f5f9;
+                padding: 0.75rem;
+                border-radius: 0.75rem;
+            }
+
+            .pending-count-badge {
+                background-color: #fee2e2;
+                color: #991b1b;
+                padding: 1px 6px;
+                border-radius: 12px;
+                font-size: 10px;
+                font-weight: 800;
+                border: 1px solid #fecaca;
+            }
+
+            .device-count-pill {
+                background: var(--brand-deep);
+                color: white;
+                padding: 0px 5px;
+                border-radius: 3px;
+                font-size: 9px;
+            }
+
+            /* Site Tree UI */
+            .site-tree-node {
+                border-left: 1px dashed #cbd5e1;
+                margin-left: 0.75rem;
+                padding-left: 0.75rem;
+            }
+            .site-selector-row.selected {
+                background-color: #fffbeb;
+                border-color: var(--brand-accent);
+            }
+
+            /* Device Specific Styling */
+            .device-row {
+                border-bottom: 1px solid #f1f5f9;
+                transition: background 0.2s;
+            }
+            .device-row:hover {
+                background-color: #f8fafc;
+            }
+            .telemetry-pill {
+                font-size: 9px;
+                padding: 1px 5px;
+                border-radius: 3px;
+                background: #f1f5f9;
+                color: #475569;
+                border: 1px solid #e2e8f0;
+                font-weight: 700;
+                cursor: pointer;
+                user-select: none;
+                transition: all 0.2s;
+            }
+            .telemetry-pill.included {
+                background: #dbeafe;
+                color: #1e40af;
+                border-color: #bfdbfe;
+            }
+            .telemetry-pill:hover {
+                opacity: 0.8;
+            }
+
+            /* SITE DETAILS TABLE BRANDING */
+            .site-details-table-header {
+                background-color: #404068 !important;
+            }
+            .site-details-table-header th {
+                color: #ffffff !important;
+                text-transform: uppercase;
+                font-size: 10px;
+                letter-spacing: 0.05em;
+            }
+
+            /* Custom switch styling to match brand accent */
+            .toggle-brand:checked {
+                background-color: var(--brand-accent) !important;
+                border-color: var(--brand-accent) !important;
+                --tglbg: #ffffff;
+            }
+
+            .select-xs-brand {
+                height: 1.5rem;
+                min-height: 1.5rem;
+                font-size: 10px;
+                padding-left: 0.5rem;
+                padding-right: 2rem;
+            }
+
+            .filter-label {
+                font-size: 9px;
+                font-weight: 800;
+                color: #64748b;
+                text-transform: uppercase;
+                margin-bottom: 2px;
+                display: block;
+            }
+
+            .qc-type-toggle {
+                display: flex;
+                background: #f1f5f9;
+                padding: 2px;
+                border-radius: 6px;
+                font-size: 9px;
+                font-weight: 800;
+                width: fit-content;
+            }
+            .qc-type-btn {
+                padding: 2px 8px;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .qc-type-btn.active {
+                background: white;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            }
+            .qc-type-btn.active.agent {
+                color: #166534;
+            }
+            .qc-type-btn.active.consumer {
+                color: #1e40af;
+            }
+        </style>
+    </head>
+    <body>
+        <header class="app-header shadow-md sticky top-0">
+            <div class="max-w-7xl mx-auto px-4 py-4 md:px-8">
+                <div
+                    class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                >
+                    <div>
+                        <h1 class="text-2xl font-bold header-title">
+                            Utility Schedules
+                        </h1>
+                        <p class="text-slate-300 text-xs md:text-sm">
+                            Manage cycles, agents, sites, and device
+                            instructions.
+                        </p>
+                    </div>
+                    <button
+                        onclick="openScheduleModal()"
+                        class="btn btn-sm md:btn-md btn-brand shadow-lg border-none"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-5 w-5 mr-2"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 4v16m8-8H4"
+                            />
+                        </svg>
+                        New Schedule
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-scroll-area">
+            <div class="max-w-7xl mx-auto px-4 py-8 md:px-8">
+                <div id="schedules-grid" class="grid grid-cols-1 gap-6">
+                    <!-- Dynamic Content -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Schedule Edit/Create Modal -->
+        <dialog id="schedule_modal" class="modal">
+            <div class="modal-box">
+                <div
+                    class="modal-header px-6 py-4 flex justify-between items-center"
+                >
+                    <div>
+                        <h3
+                            id="modal-title"
+                            class="font-bold text-xl modal-header-title"
+                        >
+                            New Schedule
+                        </h3>
+                        <p class="text-xs text-slate-300">
+                            Fill in the details below to initialize a new cycle.
+                        </p>
+                    </div>
+                    <button
+                        onclick="closeModal('schedule_modal')"
+                        class="btn btn-sm btn-circle btn-ghost text-white"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <form id="schedule-form" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text font-semibold"
+                                        >Name<span class="required-star"
+                                            >*</span
+                                        ></span
+                                    >
+                                </label>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    class="input input-bordered w-full"
+                                    placeholder="Schedule Name"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text font-semibold"
+                                        >Organization<span class="required-star"
+                                            >*</span
+                                        ></span
+                                    >
+                                </label>
+                                <select
+                                    name="organization"
+                                    class="select select-bordered w-full"
+                                    required
+                                >
+                                    <option value="" disabled selected>
+                                        Select Organization
+                                    </option>
+                                    <option value="Northern Utilities Group">
+                                        Northern Utilities Group
+                                    </option>
+                                    <option value="Metro Housing Authority">
+                                        Metro Housing Authority
+                                    </option>
+                                    <option value="Global Energy Corp">
+                                        Global Energy Corp
+                                    </option>
+                                    <option value="Water Services Ltd">
+                                        Water Services Ltd
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div
+                            class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end"
+                        >
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text font-semibold"
+                                        >Days Before Start<span
+                                            class="required-star"
+                                            >*</span
+                                        ></span
+                                    >
+                                </label>
+                                <input
+                                    type="number"
+                                    name="daysBeforeStart"
+                                    class="input input-bordered w-full"
+                                    placeholder="e.g. 5"
+                                    min="0"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text font-semibold"
+                                        >Duration In Days<span
+                                            class="required-star"
+                                            >*</span
+                                        ></span
+                                    >
+                                </label>
+                                <input
+                                    type="number"
+                                    name="durationInDays"
+                                    class="input input-bordered w-full"
+                                    placeholder="e.g. 30"
+                                    min="1"
+                                    required
+                                />
+                            </div>
+
+                            <div
+                                class="form-control h-12 flex flex-row items-center gap-3 px-1"
+                            >
+                                <input
+                                    type="checkbox"
+                                    name="autoExpire"
+                                    class="checkbox checkbox-brand"
+                                    id="autoExpireCheck"
+                                />
+                                <label
+                                    for="autoExpireCheck"
+                                    class="label-text font-semibold cursor-pointer"
+                                    >Auto Expire?</label
+                                >
+                            </div>
+                        </div>
+
+                        <div class="form-control w-full">
+                            <label class="label">
+                                <span class="label-text font-semibold"
+                                    >Description</span
+                                >
+                            </label>
+                            <textarea
+                                name="description"
+                                class="textarea textarea-bordered h-24"
+                                placeholder="Brief details about this schedule..."
+                            ></textarea>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        onclick="closeModal('schedule_modal')"
+                        class="btn"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        form="schedule-form"
+                        class="btn btn-primary text-white"
+                    >
+                        Save Schedule
+                    </button>
+                </div>
+            </div>
+        </dialog>
+
+        <!-- Site Details Modal -->
+        <dialog id="site_details_modal" class="modal">
+            <div class="modal-box max-w-5xl">
+                <div
+                    class="modal-header px-6 py-4 flex justify-between items-center"
+                >
+                    <div>
+                        <h3
+                            class="font-bold text-xl modal-header-title"
+                            id="view-site-name"
+                        >
+                            Site Details
+                        </h3>
+                        <p
+                            class="text-xs text-slate-300"
+                            id="view-site-address"
+                        >
+                            General site information.
+                        </p>
+                    </div>
+                    <button
+                        onclick="closeModal('site_details_modal')"
+                        class="btn btn-sm btn-circle btn-ghost text-white"
+                    >
+                        ✕
+                    </button>
+                </div>
+                <div class="modal-body p-0">
+                    <!-- Filter Bar -->
+                    <div
+                        class="bg-slate-100 border-b p-3 flex flex-wrap items-center gap-4"
+                    >
+                        <div class="flex-grow">
+                            <h4
+                                class="text-xs font-black uppercase tracking-widest text-slate-500 mb-2"
+                            >
+                                Filters
+                            </h4>
+                            <div class="flex gap-4">
+                                <div>
+                                    <label class="filter-label"
+                                        >Scheduled Status</label
+                                    >
+                                    <select
+                                        id="filter-scheduled"
+                                        class="select select-bordered select-xs w-32"
+                                        onchange="refreshSiteView()"
+                                    >
+                                        <option value="all">
+                                            All Statuses
+                                        </option>
+                                        <option value="scheduled">
+                                            Scheduled
+                                        </option>
+                                        <option value="unscheduled">
+                                            Unscheduled
+                                        </option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="filter-label"
+                                        >Utility Type</label
+                                    >
+                                    <select
+                                        id="filter-utility"
+                                        class="select select-bordered select-xs w-32"
+                                        onchange="refreshSiteView()"
+                                    >
+                                        <option value="all">
+                                            All Utilities
+                                        </option>
+                                        <option value="WATER">Water</option>
+                                        <option value="ELEC">
+                                            Electricity (1P & 3P)
+                                        </option>
+                                        <option value="GAS">Gas</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="badge badge-outline text-[10px] font-bold"
+                            id="device-count-label"
+                        >
+                            0/0 Meters Selected
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="table table-xs w-full">
+                            <thead class="site-details-table-header">
+                                <tr>
+                                    <th class="py-3">Meter Number</th>
+                                    <th class="py-3">Scheduled?</th>
+                                    <th class="py-3 text-center">Consumer</th>
+                                    <th class="py-3">Agent</th>
+                                    <th class="py-3">3-Phase Requirements</th>
+                                </tr>
+                            </thead>
+                            <tbody id="device-list-body">
+                                <!-- Devices will be injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        onclick="closeModal('site_details_modal')"
+                        class="btn btn-sm btn-outline"
+                    >
+                        Close
+                    </button>
+                    <button
+                        onclick="saveSiteChanges()"
+                        class="btn btn-sm btn-brand px-12"
+                    >
+                        Save
+                    </button>
+                </div>
+            </div>
+        </dialog>
+
+        <dialog id="agent_selector_modal" class="modal">
+            <div class="modal-box max-w-2xl">
+                <div
+                    class="modal-header px-6 py-4 flex justify-between items-center"
+                >
+                    <div>
+                        <h3 class="font-bold text-xl modal-header-title">
+                            Select Agents
+                        </h3>
+                        <p class="text-xs text-slate-300">
+                            Choose one or more agents to assign.
+                        </p>
+                    </div>
+                    <button
+                        onclick="closeModal('agent_selector_modal')"
+                        class="btn btn-sm btn-circle btn-ghost text-white"
+                    >
+                        ✕
+                    </button>
+                </div>
+                <div class="px-6 py-3 bg-slate-100 flex items-center gap-2">
+                    <input
+                        type="text"
+                        id="agent-search"
+                        placeholder="Search by name..."
+                        class="input input-sm input-bordered w-full"
+                        oninput="filterAgentsList()"
+                    />
+                </div>
+                <div class="modal-body max-h-96" id="agent-selector-list"></div>
+                <div class="modal-footer">
+                    <button
+                        onclick="closeModal('agent_selector_modal')"
+                        class="btn btn-sm"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onclick="confirmAgentSelection()"
+                        class="btn btn-sm btn-brand"
+                    >
+                        Add Selected
+                    </button>
+                </div>
+            </div>
+        </dialog>
+
+        <dialog id="site_selector_modal" class="modal">
+            <div class="modal-box max-w-3xl">
+                <div
+                    class="modal-header px-6 py-4 flex justify-between items-center"
+                >
+                    <div>
+                        <h3 class="font-bold text-xl modal-header-title">
+                            Link Sites
+                        </h3>
+                        <p class="text-xs text-slate-300">
+                            Select sites or sub-sites to include in this
+                            schedule.
+                        </p>
+                    </div>
+                    <button
+                        onclick="closeModal('site_selector_modal')"
+                        class="btn btn-sm btn-circle btn-ghost text-white"
+                    >
+                        ✕
+                    </button>
+                </div>
+                <div class="px-6 py-3 bg-slate-100 flex items-center gap-2">
+                    <input
+                        type="text"
+                        id="site-search"
+                        placeholder="Search sites or addresses..."
+                        class="input input-sm input-bordered w-full"
+                        oninput="renderSiteTree()"
+                    />
+                </div>
+                <div
+                    class="modal-body max-h-[500px]"
+                    id="site-tree-container"
+                ></div>
+                <div class="modal-footer">
+                    <button
+                        onclick="closeModal('site_selector_modal')"
+                        class="btn btn-sm"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onclick="confirmSiteSelection()"
+                        class="btn btn-sm btn-brand"
+                    >
+                        Link Selected Sites
+                    </button>
+                </div>
+            </div>
+        </dialog>
+
+        <dialog id="qc_selector_modal" class="modal">
+            <div class="modal-box max-w-2xl">
+                <div
+                    class="modal-header px-6 py-4 flex justify-between items-center"
+                >
+                    <div>
+                        <h3 class="font-bold text-xl modal-header-title">
+                            Select QC Protocols
+                        </h3>
+                        <p class="text-xs text-slate-300">
+                            Choose quality control checks. One per role max.
+                        </p>
+                    </div>
+                    <button
+                        onclick="closeModal('qc_selector_modal')"
+                        class="btn btn-sm btn-circle btn-ghost text-white"
+                    >
+                        ✕
+                    </button>
+                </div>
+                <div class="px-6 py-3 bg-slate-100 flex items-center gap-2">
+                    <input
+                        type="text"
+                        id="qc-search"
+                        placeholder="Search protocols..."
+                        class="input input-sm input-bordered w-full"
+                        oninput="filterQCList()"
+                    />
+                </div>
+                <div class="modal-body max-h-96" id="qc-selector-list"></div>
+                <div class="modal-footer">
+                    <button
+                        onclick="closeModal('qc_selector_modal')"
+                        class="btn btn-sm"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        id="qc-confirm-btn"
+                        onclick="confirmQCSelection()"
+                        class="btn btn-sm btn-brand"
+                    >
+                        Confirm Selection
+                    </button>
+                </div>
+            </div>
+        </dialog>
+
+        <script>
+            const UTILITY_TYPES = {
+                WATER: { label: "Water", icon: "💧" },
+                ELEC_1P: { label: "Electricity 1 Ph", icon: "⚡" },
+                ELEC_3P: { label: "Electricity 3 Ph", icon: "🔋" },
+                GAS: { label: "Gas", icon: "🔥" },
+            };
+
+            const AVAILABLE_AGENTS = [
+                {
+                    id: 101,
+                    firstName: "John",
+                    lastName: "Smith",
+                    role: "Primary Auditor",
+                    email: "john.s@utility.com",
+                    pendingInstructions: 12,
+                    photo: "https://i.pravatar.cc/150?u=101",
+                },
+                {
+                    id: 102,
+                    firstName: "Sarah",
+                    lastName: "Connor",
+                    role: "Field Tech",
+                    email: "sarah.c@utility.com",
+                    pendingInstructions: 5,
+                    photo: "https://i.pravatar.cc/150?u=102",
+                },
+                {
+                    id: 103,
+                    firstName: "Mike",
+                    lastName: "Ross",
+                    role: "Specialist",
+                    email: "mike.r@utility.com",
+                    pendingInstructions: 28,
+                    photo: "https://i.pravatar.cc/150?u=103",
+                },
+                {
+                    id: 104,
+                    firstName: "Elena",
+                    lastName: "Gilbert",
+                    role: "Surveyor",
+                    email: "elena.g@utility.com",
+                    pendingInstructions: 0,
+                    photo: "https://i.pravatar.cc/150?u=104",
+                },
+                {
+                    id: 105,
+                    firstName: "David",
+                    lastName: "Miller",
+                    role: "Maintenance",
+                    email: "david.m@utility.com",
+                    pendingInstructions: 15,
+                    photo: "https://i.pravatar.cc/150?u=105",
+                },
+                {
+                    id: 106,
+                    firstName: "Lisa",
+                    lastName: "Wang",
+                    role: "Auditor",
+                    email: "lisa.w@utility.com",
+                    pendingInstructions: 8,
+                    photo: "https://i.pravatar.cc/150?u=106",
+                },
+            ];
+
+            // Helper to generate devices for library
+            function generateDevices(count, prefix) {
+                const types = ["WATER", "ELEC_1P", "ELEC_3P", "GAS"];
+                return Array.from({ length: count }, (_, i) => {
+                    const type =
+                        types[Math.floor(Math.random() * types.length)];
+                    return {
+                        id: `${prefix}-${i}`,
+                        meterNo: `${prefix}-${type.substring(0, 1)}-${1000 + i}`,
+                        type: type,
+                        isScheduled: Math.random() > 0.3,
+                        reader: Math.random() > 0.8 ? "Consumer" : "Agent",
+                        agentId: Math.random() > 0.5 ? 101 : 102,
+                        telemetry: type === "ELEC_3P" ? ["MAX_KVA"] : [],
+                    };
+                });
+            }
+
+            const SITE_LIBRARY = [
+                {
+                    id: 2001,
+                    name: "Industrial Park East",
+                    address: "100 Power St, Metro City",
+                    deviceCount: 85,
+                    devices: generateDevices(85, "IPE"),
+                    children: [],
+                },
+                {
+                    id: 2002,
+                    name: "Main Substation",
+                    address: "Block A, Industrial Park East",
+                    deviceCount: 32,
+                    devices: generateDevices(32, "SUB"),
+                    children: [],
+                },
+                {
+                    id: 3001,
+                    name: "Residential Complex West",
+                    address: "55 Sunset Blvd, Suburbia",
+                    deviceCount: 92,
+                    devices: generateDevices(92, "RCW"),
+                    children: [],
+                },
+                {
+                    id: 3002,
+                    name: "Downtown Office Tower",
+                    address: "12 Business Row, Center",
+                    deviceCount: 45,
+                    devices: generateDevices(45, "DOT"),
+                    children: [],
+                },
+                {
+                    id: 4001,
+                    name: "Harbor Freight Terminal",
+                    address: "Pier 9, Docks District",
+                    deviceCount: 68,
+                    devices: generateDevices(68, "HFT"),
+                    children: [],
+                },
+                {
+                    id: 4002,
+                    name: "Green Valley Apartments",
+                    address: "202 Nature Way, East",
+                    deviceCount: 75,
+                    devices: generateDevices(75, "GVA"),
+                    children: [],
+                },
+            ];
+
+            const QC_PROTOCOL_LIBRARY = [
+                {
+                    id: 401,
+                    name: "Seal Verification",
+                    description:
+                        "Verify all physical seals are intact and un-tampered.",
+                },
+                {
+                    id: 402,
+                    name: "Photo Audit",
+                    description:
+                        "Mandatory high-res photo of the meter reading.",
+                },
+                {
+                    id: 403,
+                    name: "Safety Check",
+                    description:
+                        "Standard risk assessment of the surrounding environment.",
+                },
+                {
+                    id: 404,
+                    name: "GPS Validation",
+                    description:
+                        "Verify coordinate proximity before allowing submission.",
+                },
+            ];
+
+            let schedules = [
+                {
+                    id: 1,
+                    name: "North Sector Maintenance",
+                    organization: "Northern Utilities Group",
+                    description:
+                        "Standard monthly device audit for commercial sites in the northern industrial zone.",
+                    cycleNumber: 12,
+                    instructionsCompleted: 145,
+                    instructionsTotal: 177,
+                    currentStart: "2024-11-01",
+                    currentEnd: "2024-11-30",
+                    nextStart: "2024-12-01",
+                    autoExpire: true,
+                    daysBeforeStart: 5,
+                    durationInDays: 30,
+                    agents: [
+                        { ...AVAILABLE_AGENTS[0], currentInstructions: 85 },
+                        { ...AVAILABLE_AGENTS[1], currentInstructions: 92 },
+                    ],
+                    sites: [
+                        {
+                            id: 2001,
+                            name: "Industrial Park East",
+                            address: "100 Power St, Metro City",
+                            deviceCount: 85,
+                        },
+                        {
+                            id: 3001,
+                            name: "Residential Complex West",
+                            address: "55 Sunset Blvd, Suburbia",
+                            deviceCount: 92,
+                        },
+                    ],
+                    qualityControls: [
+                        { ...QC_PROTOCOL_LIBRARY[0], role: "Agent" },
+                        { ...QC_PROTOCOL_LIBRARY[1], role: "Consumer" },
+                    ],
+                },
+                {
+                    id: 2,
+                    name: "Emergency Substation Audit",
+                    organization: "Metro Housing Authority",
+                    description:
+                        "Urgent safety verification of primary distribution nodes.",
+                    cycleNumber: 1,
+                    instructionsCompleted: 12,
+                    instructionsTotal: 32,
+                    currentStart: "2024-11-15",
+                    currentEnd: "2024-11-20",
+                    nextStart: "2024-12-15",
+                    autoExpire: false,
+                    daysBeforeStart: 2,
+                    durationInDays: 5,
+                    agents: [
+                        { ...AVAILABLE_AGENTS[2], currentInstructions: 32 },
+                    ],
+                    sites: [
+                        {
+                            id: 2002,
+                            name: "Main Substation",
+                            address: "Block A, Industrial Park East",
+                            deviceCount: 32,
+                        },
+                    ],
+                    qualityControls: [
+                        { ...QC_PROTOCOL_LIBRARY[2], role: "Agent" },
+                    ],
+                },
+                {
+                    id: 3,
+                    name: "Q4 Business Billing Cycle",
+                    organization: "Global Energy Corp",
+                    description:
+                        "End of year reconciliation for high-capacity corporate clients.",
+                    cycleNumber: 4,
+                    instructionsCompleted: 10,
+                    instructionsTotal: 45,
+                    currentStart: "2024-11-01",
+                    currentEnd: "2024-12-31",
+                    nextStart: "2025-01-01",
+                    autoExpire: true,
+                    daysBeforeStart: 10,
+                    durationInDays: 60,
+                    agents: [
+                        { ...AVAILABLE_AGENTS[4], currentInstructions: 45 },
+                    ],
+                    sites: [
+                        {
+                            id: 3002,
+                            name: "Downtown Office Tower",
+                            address: "12 Business Row, Center",
+                            deviceCount: 45,
+                        },
+                    ],
+                    qualityControls: [
+                        { ...QC_PROTOCOL_LIBRARY[1], role: "Agent" },
+                    ],
+                },
+                {
+                    id: 4,
+                    name: "Port Infrastructure Check",
+                    organization: "Water Services Ltd",
+                    description:
+                        "Bi-annual inspection of harbor-side water metering points.",
+                    cycleNumber: 2,
+                    instructionsCompleted: 34,
+                    instructionsTotal: 68,
+                    currentStart: "2024-11-10",
+                    currentEnd: "2024-11-25",
+                    nextStart: "2025-05-10",
+                    autoExpire: true,
+                    daysBeforeStart: 5,
+                    durationInDays: 15,
+                    agents: [
+                        { ...AVAILABLE_AGENTS[5], currentInstructions: 68 },
+                    ],
+                    sites: [
+                        {
+                            id: 4001,
+                            name: "Harbor Freight Terminal",
+                            address: "Pier 9, Docks District",
+                            deviceCount: 68,
+                        },
+                    ],
+                    qualityControls: [
+                        { ...QC_PROTOCOL_LIBRARY[0], role: "Agent" },
+                        { ...QC_PROTOCOL_LIBRARY[2], role: "Consumer" },
+                    ],
+                },
+                {
+                    id: 5,
+                    name: "Residential Efficiency Project",
+                    organization: "Metro Housing Authority",
+                    description:
+                        "Optimization audit for high-density residential blocks.",
+                    cycleNumber: 8,
+                    instructionsCompleted: 60,
+                    instructionsTotal: 75,
+                    currentStart: "2024-10-25",
+                    currentEnd: "2024-11-15",
+                    nextStart: "2024-11-25",
+                    autoExpire: false,
+                    daysBeforeStart: 3,
+                    durationInDays: 20,
+                    agents: [
+                        { ...AVAILABLE_AGENTS[3], currentInstructions: 75 },
+                    ],
+                    sites: [
+                        {
+                            id: 4002,
+                            name: "Green Valley Apartments",
+                            address: "202 Nature Way, East",
+                            deviceCount: 75,
+                        },
+                    ],
+                    qualityControls: [
+                        { ...QC_PROTOCOL_LIBRARY[1], role: "Agent" },
+                        { ...QC_PROTOCOL_LIBRARY[3], role: "Consumer" },
+                    ],
+                },
+            ];
+
+            let currentEditId = null;
+            let selectedAgentIds = new Set();
+            let selectedQCs = []; // Now stores { id, role }
+            let selectedSiteIds = new Set();
+            let currentViewingScheduleId = null;
+
+            function formatDate(dateStr) {
+                if (!dateStr) return "N/A";
+                const date = new Date(dateStr);
+                return `${date.getDate().toString().padStart(2, "0")} ${date.toLocaleString("default", { month: "short" })} ${date.getFullYear()}`;
+            }
+
+            function calculateDaysActive(startDate) {
+                const start = new Date(startDate);
+                const diffTime = new Date() - start;
+                return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+            }
+
+            function calculateDaysRemaining(endDate) {
+                const end = new Date(endDate);
+                const diffTime = end - new Date();
+                return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+            }
+
+            window.onload = () => {
+                renderSchedules();
+                setupFormListeners();
+            };
+
+            function handleToggleScheduled(deviceId, isChecked) {
+                function updateInTree(nodes) {
+                    nodes.forEach((node) => {
+                        const dev = node.devices?.find(
+                            (d) => d.id === deviceId,
+                        );
+                        if (dev) {
+                            dev.isScheduled = isChecked;
+                            if (isChecked && !dev.reader) dev.reader = "Agent";
+                        }
+                        if (node.children) updateInTree(node.children);
+                    });
+                }
+                updateInTree(SITE_LIBRARY);
+                refreshSiteView();
+            }
+
+            function handleToggleTelemetry(deviceId, field) {
+                function updateInTree(nodes) {
+                    nodes.forEach((node) => {
+                        const dev = node.devices?.find(
+                            (d) => d.id === deviceId,
+                        );
+                        if (dev) {
+                            if (!dev.telemetry) dev.telemetry = [];
+                            const index = dev.telemetry.indexOf(field);
+                            if (index > -1) {
+                                dev.telemetry.splice(index, 1);
+                            } else {
+                                dev.telemetry.push(field);
+                            }
+                        }
+                        if (node.children) updateInTree(node.children);
+                    });
+                }
+                updateInTree(SITE_LIBRARY);
+                refreshSiteView();
+            }
+
+            function handleToggleConsumer(deviceId, isConsumer) {
+                function updateInTree(nodes) {
+                    nodes.forEach((node) => {
+                        const dev = node.devices?.find(
+                            (d) => d.id === deviceId,
+                        );
+                        if (dev) {
+                            dev.reader = isConsumer ? "Consumer" : "Agent";
+                            if (isConsumer) dev.agentId = null;
+                        }
+                        if (node.children) updateInTree(node.children);
+                    });
+                }
+                updateInTree(SITE_LIBRARY);
+                refreshSiteView();
+            }
+
+            function handleAgentAssignment(deviceId, agentId) {
+                function updateInTree(nodes) {
+                    nodes.forEach((node) => {
+                        const dev = node.devices?.find(
+                            (d) => d.id === deviceId,
+                        );
+                        if (dev) {
+                            dev.agentId = agentId ? parseInt(agentId) : null;
+                        }
+                        if (node.children) updateInTree(node.children);
+                    });
+                }
+                updateInTree(SITE_LIBRARY);
+                refreshSiteView();
+            }
+
+            function refreshSiteView() {
+                const siteName =
+                    document.getElementById("view-site-name").innerText;
+                const site = findSiteByName(SITE_LIBRARY, siteName);
+                if (site) renderDeviceTable(site);
+            }
+
+            function findSiteByName(list, name) {
+                for (let item of list) {
+                    if (item.name === name) return item;
+                    if (item.children) {
+                        const found = findSiteByName(item.children, name);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            }
+
+            function openSiteDetails(scheduleId, siteId) {
+                currentViewingScheduleId = scheduleId;
+                function findSite(list, id) {
+                    for (let item of list) {
+                        if (item.id === id) return item;
+                        if (item.children) {
+                            const found = findSite(item.children, id);
+                            if (found) return found;
+                        }
+                    }
+                    return null;
+                }
+
+                const site = findSite(SITE_LIBRARY, siteId);
+                if (!site) return;
+
+                document.getElementById("view-site-name").innerText = site.name;
+                document.getElementById("view-site-address").innerText =
+                    site.address;
+
+                // Reset filters on open
+                document.getElementById("filter-scheduled").value = "all";
+                document.getElementById("filter-utility").value = "all";
+
+                renderDeviceTable(site);
+                document.getElementById("site_details_modal").showModal();
+            }
+
+            function renderDeviceTable(site) {
+                const listBody = document.getElementById("device-list-body");
+                listBody.innerHTML = "";
+
+                const devices = site.devices || [];
+
+                // Apply Filters
+                const filterScheduled =
+                    document.getElementById("filter-scheduled").value;
+                const filterUtility =
+                    document.getElementById("filter-utility").value;
+
+                const filteredDevices = devices.filter((dev) => {
+                    // Scheduled Filter
+                    if (filterScheduled === "scheduled" && !dev.isScheduled)
+                        return false;
+                    if (filterScheduled === "unscheduled" && dev.isScheduled)
+                        return false;
+
+                    // Utility Filter
+                    if (filterUtility !== "all") {
+                        if (filterUtility === "ELEC") {
+                            if (!dev.type.startsWith("ELEC")) return false;
+                        } else if (dev.type !== filterUtility) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                });
+
+                const selectedCount = devices.filter(
+                    (d) => d.isScheduled,
+                ).length;
+                const totalCount = devices.length;
+
+                document.getElementById("device-count-label").innerText =
+                    `${selectedCount}/${totalCount} Meters Selected`;
+
+                // Get agents assigned to this schedule for the dropdown
+                const schedule = schedules.find(
+                    (s) => s.id === currentViewingScheduleId,
+                );
+                const assignedAgents = schedule?.agents || [];
+
+                if (filteredDevices.length > 0) {
+                    filteredDevices.forEach((dev) => {
+                        const typeData = UTILITY_TYPES[dev.type];
+                        const tr = document.createElement("tr");
+                        tr.className = "device-row";
+
+                        const isConsumer = dev.reader === "Consumer";
+
+                        let agentSelectHtml = "-";
+                        if (dev.isScheduled) {
+                            agentSelectHtml = `
+                            <select class="select select-bordered select-xs select-xs-brand w-full max-w-[160px]"
+                                ${isConsumer ? "disabled" : ""}
+                                onchange="handleAgentAssignment('${dev.id}', this.value)">
+                                <option value="">Select Agent</option>
+                                ${assignedAgents.map((a) => `<option value="${a.id}" ${dev.agentId == a.id ? "selected" : ""}>${a.firstName} ${a.lastName}</option>`).join("")}
+                            </select>
+                        `;
+                        }
+
+                        let telemetryHtml = "-";
+                        if (dev.type === "ELEC_3P") {
+                            const options = ["MAX_KVA", "KVARH", "TOU"];
+                            telemetryHtml = `<div class="flex flex-wrap gap-1">`;
+                            options.forEach((opt) => {
+                                const isIncluded = (
+                                    dev.telemetry || []
+                                ).includes(opt);
+                                telemetryHtml += `<span class="telemetry-pill ${isIncluded ? "included" : ""}" onclick="handleToggleTelemetry('${dev.id}', '${opt}')">${opt}</span>`;
+                            });
+                            telemetryHtml += `</div>`;
+                        }
+
+                        tr.innerHTML = `
+                        <td class="font-mono font-bold text-slate-700">
+                            <div class="tooltip tooltip-right" data-tip="Utility: ${typeData.label}">
+                                <div class="flex items-center gap-2 cursor-help">
+                                    <span class="text-xs" aria-hidden="true">${typeData.icon}</span>
+                                    <span>${dev.meterNo}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-2">
+                            <input type="checkbox" class="toggle toggle-sm toggle-brand"
+                                ${dev.isScheduled ? "checked" : ""}
+                                onchange="handleToggleScheduled('${dev.id}', this.checked)" />
+                        </td>
+                        <td class="py-2 text-center">
+                            ${dev.isScheduled ? `<input type="checkbox" class="toggle toggle-sm toggle-brand" ${isConsumer ? "checked" : ""} onchange="handleToggleConsumer('${dev.id}', this.checked)" />` : "-"}
+                        </td>
+                        <td class="py-2">${agentSelectHtml}</td>
+                        <td class="py-2">${telemetryHtml}</td>
+                    `;
+                        listBody.appendChild(tr);
+                    });
+                } else {
+                    listBody.innerHTML =
+                        '<tr><td colspan="5" class="text-center py-8 text-slate-400 italic">No devices match your current filters.</td></tr>';
+                }
+            }
+
+            function saveSiteChanges() {
+                renderSchedules();
+                closeModal("site_details_modal");
+            }
+
+            function launchSiteSelector(scheduleId = null) {
+                if (scheduleId) currentEditId = scheduleId;
+                selectedSiteIds.clear();
+                document.getElementById("site-search").value = "";
+                renderSiteTree();
+                document.getElementById("site_selector_modal").showModal();
+            }
+
+            function toggleSiteSelection(siteId) {
+                if (selectedSiteIds.has(siteId)) selectedSiteIds.delete(siteId);
+                else selectedSiteIds.add(siteId);
+                renderSiteTree();
+            }
+
+            function renderSiteTree() {
+                const container = document.getElementById(
+                    "site-tree-container",
+                );
+                const search = document
+                    .getElementById("site-search")
+                    .value.toLowerCase();
+                container.innerHTML = "";
+                const currentSchedule = schedules.find(
+                    (s) => s.id === currentEditId,
+                );
+                const existingIds = new Set(
+                    currentSchedule?.sites?.map((site) => site.id) || [],
+                );
+
+                function buildNode(node) {
+                    if (
+                        search &&
+                        !node.name.toLowerCase().includes(search) &&
+                        !node.address.toLowerCase().includes(search)
+                    )
+                        return null;
+                    const isSelected = selectedSiteIds.has(node.id);
+                    const isExisting = existingIds.has(node.id);
+                    const nodeEl = document.createElement("div");
+                    nodeEl.className = "mb-1";
+                    const row = document.createElement("div");
+                    row.className = `site-selector-row flex items-center gap-3 p-2 rounded-lg border ${isSelected ? "selected" : "border-slate-100"} ${isExisting ? "opacity-60 bg-slate-50 grayscale" : ""}`;
+                    if (!isExisting)
+                        row.onclick = () => toggleSiteSelection(node.id);
+                    row.innerHTML = `<div class="flex-shrink-0"><input type="checkbox" class="checkbox checkbox-xs checkbox-brand pointer-events-none" ${isSelected || isExisting ? "checked" : ""} ${isExisting ? "disabled" : ""} /></div><div class="flex-grow"><div class="flex justify-between items-center"><span class="font-bold text-slate-800 text-xs">${node.name}</span><span class="device-count-pill">ID: ${node.id}</span></div><div class="text-[10px] text-slate-500">${node.address}</div></div><div class="flex-shrink-0 text-center min-w-[60px]"><div class="text-[10px] font-bold text-slate-400 uppercase">Devices</div><div class="text-xs font-black text-slate-700">${node.deviceCount}</div></div>`;
+                    nodeEl.appendChild(row);
+                    return nodeEl;
+                }
+                SITE_LIBRARY.forEach((root) => {
+                    const el = buildNode(root);
+                    if (el) container.appendChild(el);
+                });
+            }
+
+            function confirmSiteSelection() {
+                const s = schedules.find((x) => x.id === currentEditId);
+                if (!s.sites) s.sites = [];
+                SITE_LIBRARY.forEach((node) => {
+                    if (selectedSiteIds.has(node.id)) {
+                        s.sites.push({
+                            id: node.id,
+                            name: node.name,
+                            address: node.address,
+                            deviceCount: node.deviceCount,
+                        });
+                        s.instructionsTotal += node.deviceCount;
+                    }
+                });
+                renderSchedules();
+                closeModal("site_selector_modal");
+            }
+
+            function removeSite(scheduleId, siteId, event) {
+                if (event) event.stopPropagation();
+                const s = schedules.find((x) => x.id === scheduleId);
+                const removedSite = s.sites.find((site) => site.id === siteId);
+                if (removedSite) s.instructionsTotal -= removedSite.deviceCount;
+                s.sites = s.sites.filter((site) => site.id !== siteId);
+                renderSchedules();
+            }
+
+            function launchAgentSelector(scheduleId = null) {
+                if (scheduleId) currentEditId = scheduleId;
+                selectedAgentIds.clear();
+                document.getElementById("agent-search").value = "";
+                filterAgentsList();
+                document.getElementById("agent_selector_modal").showModal();
+            }
+
+            function filterAgentsList() {
+                const query = document
+                    .getElementById("agent-search")
+                    .value.toLowerCase();
+                const container = document.getElementById(
+                    "agent-selector-list",
+                );
+                container.innerHTML = "";
+                const currentSchedule = schedules.find(
+                    (s) => s.id === currentEditId,
+                );
+                const existingAgentIds = new Set(
+                    currentSchedule?.agents?.map((a) => a.id) || [],
+                );
+                AVAILABLE_AGENTS.forEach((agent) => {
+                    if (
+                        !`${agent.firstName} ${agent.lastName}`
+                            .toLowerCase()
+                            .includes(query)
+                    )
+                        return;
+                    const isAlreadyAdded = existingAgentIds.has(agent.id);
+                    const isSelected = selectedAgentIds.has(agent.id);
+                    const div = document.createElement("div");
+                    div.className = `agent-card-select flex items-center gap-4 p-3 rounded-lg mb-2 border ${isSelected ? "selected" : "border-slate-100"} ${isAlreadyAdded ? "opacity-70 bg-slate-50" : ""}`;
+                    if (!isAlreadyAdded)
+                        div.onclick = () => {
+                            if (selectedAgentIds.has(agent.id))
+                                selectedAgentIds.delete(agent.id);
+                            else selectedAgentIds.add(agent.id);
+                            filterAgentsList();
+                        };
+                    div.innerHTML = `<div class="avatar"><div class="w-10 h-10 rounded-full border border-slate-200"><img src="${agent.photo}" /></div></div><div class="flex-grow"><div class="flex justify-between items-start"><div class="font-bold text-slate-800">${agent.firstName} ${agent.lastName}</div><div class="pending-count-badge">${agent.pendingInstructions} Pending</div></div><div class="text-[10px] text-slate-500 uppercase font-bold">${agent.role}</div></div><div class="ml-2"><input type="checkbox" class="checkbox checkbox-sm checkbox-brand pointer-events-none" ${isSelected || isAlreadyAdded ? "checked" : ""} ${isAlreadyAdded ? "disabled" : ""} /></div>`;
+                    container.appendChild(div);
+                });
+            }
+
+            function confirmAgentSelection() {
+                const s = schedules.find((x) => x.id === currentEditId);
+                if (!s.agents) s.agents = [];
+                selectedAgentIds.forEach((id) => {
+                    const agent = AVAILABLE_AGENTS.find((a) => a.id === id);
+                    if (agent)
+                        s.agents.push({ ...agent, currentInstructions: 0 });
+                });
+                renderSchedules();
+                closeModal("agent_selector_modal");
+            }
+
+            function initiateAgentRemoval(scheduleId, agentId) {
+                const s = schedules.find((x) => x.id === scheduleId);
+                s.agents = s.agents.filter((a) => a.id !== agentId);
+                renderSchedules();
+            }
+
+            function launchQCSelector(scheduleId = null) {
+                if (scheduleId) currentEditId = scheduleId;
+                selectedQCs = [];
+                document.getElementById("qc-search").value = "";
+                filterQCList();
+                document.getElementById("qc_selector_modal").showModal();
+            }
+
+            function toggleQCRole(qcId, role, event) {
+                if (event) event.stopPropagation();
+                const existing = selectedQCs.find((q) => q.id === qcId);
+                if (existing) {
+                    existing.role = role;
+                } else {
+                    selectedQCs.push({ id: qcId, role: role });
+                }
+                filterQCList();
+            }
+
+            function toggleQCSelection(qcId) {
+                const idx = selectedQCs.findIndex((q) => q.id === qcId);
+                if (idx > -1) {
+                    selectedQCs.splice(idx, 1);
+                } else {
+                    selectedQCs.push({ id: qcId, role: "Agent" });
+                }
+                filterQCList();
+            }
+
+            function filterQCList() {
+                const query = document
+                    .getElementById("qc-search")
+                    .value.toLowerCase();
+                const container = document.getElementById("qc-selector-list");
+                container.innerHTML = "";
+                const currentSchedule = schedules.find(
+                    (s) => s.id === currentEditId,
+                );
+                const existingQCs = currentSchedule?.qualityControls || [];
+
+                QC_PROTOCOL_LIBRARY.forEach((qc) => {
+                    if (!qc.name.toLowerCase().includes(query)) return;
+
+                    const isAlreadyInSchedule = existingQCs.some(
+                        (q) => q.id === qc.id,
+                    );
+                    const selectedData = selectedQCs.find(
+                        (q) => q.id === qc.id,
+                    );
+                    const isSelected = !!selectedData;
+                    const activeRole = selectedData
+                        ? selectedData.role
+                        : isAlreadyInSchedule
+                          ? existingQCs.find((q) => q.id === qc.id).role
+                          : "Agent";
+
+                    const div = document.createElement("div");
+                    div.className = `selector-card flex items-center gap-4 p-3 rounded-lg mb-2 border ${isSelected ? "selected" : "border-slate-100"} ${isAlreadyInSchedule ? "opacity-70 bg-slate-50 pointer-events-none" : ""}`;
+
+                    if (!isAlreadyInSchedule)
+                        div.onclick = () => toggleQCSelection(qc.id);
+
+                    div.innerHTML = `
+                    <div class="flex-grow">
+                        <div class="font-bold text-slate-800">${qc.name}</div>
+                        <div class="text-[10px] text-slate-500">${qc.description}</div>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                        <div class="qc-type-toggle">
+                            <div class="qc-type-btn agent ${activeRole === "Agent" ? "active" : ""}" onclick="toggleQCRole(${qc.id}, 'Agent', event)">AGENT</div>
+                            <div class="qc-type-btn consumer ${activeRole === "Consumer" ? "active" : ""}" onclick="toggleQCRole(${qc.id}, 'Consumer', event)">CONSUMER</div>
+                        </div>
+                        <div class="ml-2">
+                            <input type="checkbox" class="checkbox checkbox-sm checkbox-brand pointer-events-none" ${isSelected || isAlreadyInSchedule ? "checked" : ""} ${isAlreadyInSchedule ? "disabled" : ""} />
+                        </div>
+                    </div>
+                `;
+                    container.appendChild(div);
+                });
+
+                // Validation logic for confirm button
+                const confirmBtn = document.getElementById("qc-confirm-btn");
+                const totalAgentQCs =
+                    (currentSchedule?.qualityControls?.filter(
+                        (q) => q.role === "Agent",
+                    ).length || 0) +
+                    selectedQCs.filter((q) => q.role === "Agent").length;
+                const totalConsumerQCs =
+                    (currentSchedule?.qualityControls?.filter(
+                        (q) => q.role === "Consumer",
+                    ).length || 0) +
+                    selectedQCs.filter((q) => q.role === "Consumer").length;
+
+                if (totalAgentQCs > 1 || totalConsumerQCs > 1) {
+                    confirmBtn.disabled = true;
+                    confirmBtn.innerText = "Max 1 per role";
+                    confirmBtn.classList.add("btn-error");
+                } else {
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerText = "Confirm Selection";
+                    confirmBtn.classList.remove("btn-error");
+                }
+            }
+
+            function confirmQCSelection() {
+                const s = schedules.find((x) => x.id === currentEditId);
+                if (!s.qualityControls) s.qualityControls = [];
+
+                selectedQCs.forEach((sel) => {
+                    const proto = QC_PROTOCOL_LIBRARY.find(
+                        (p) => p.id === sel.id,
+                    );
+                    if (proto)
+                        s.qualityControls.push({ ...proto, role: sel.role });
+                });
+
+                renderSchedules();
+                closeModal("qc_selector_modal");
+            }
+
+            function removeQualityControl(scheduleId, qcId) {
+                const s = schedules.find((x) => x.id === scheduleId);
+                s.qualityControls = s.qualityControls.filter(
+                    (q) => q.id !== qcId,
+                );
+                renderSchedules();
+            }
+
+            function renderSchedules() {
+                const grid = document.getElementById("schedules-grid");
+                grid.innerHTML = "";
+                schedules.forEach((s) => {
+                    const daysActive = calculateDaysActive(s.currentStart);
+                    const daysRemaining = calculateDaysRemaining(s.currentEnd);
+                    const card = document.createElement("div");
+                    card.className =
+                        "card bg-white shadow-md border border-slate-200 hover:shadow-lg transition-all w-full";
+                    const agentChips = (s.agents || [])
+                        .map(
+                            (a) =>
+                                `<div class="chip-style"><span>${a.firstName} (${a.currentInstructions || 0})</span><button onclick="initiateAgentRemoval(${s.id}, ${a.id})">✕</button></div>`,
+                        )
+                        .join("");
+                    const qcBadges = (s.qualityControls || [])
+                        .map(
+                            (qc) => `
+                    <div class="qc-badge-card ${qc.role === "Consumer" ? "consumer-qc" : ""}" title="${qc.description}">
+                        <span class="opacity-50 text-[8px] mr-1">${qc.role.toUpperCase()}</span>
+                        <span>${qc.name}</span>
+                        <button onclick="removeQualityControl(${s.id}, ${qc.id})">✕</button>
+                    </div>`,
+                        )
+                        .join("");
+                    const siteBadges = (s.sites || [])
+                        .map(
+                            (site) =>
+                                `<div class="site-badge-card" onclick="openSiteDetails(${s.id}, ${site.id})"><span class="device-count-pill">${site.deviceCount}</span><span>${site.name}</span><button onclick="removeSite(${s.id}, ${site.id}, event)" class="ml-1 text-slate-300 hover:text-error transition-colors">✕</button></div>`,
+                        )
+                        .join("");
+                    const progressVal =
+                        s.instructionsTotal > 0
+                            ? Math.round(
+                                  (s.instructionsCompleted /
+                                      s.instructionsTotal) *
+                                      100,
+                              )
+                            : 0;
+                    card.innerHTML = `<div class="card-body"><div class="flex flex-col md:flex-row justify-between items-start gap-6"><div class="flex-grow max-w-2xl"><div class="flex items-center gap-3 mb-1"><h2 class="text-2xl text-[#404068] font-bold leading-tight">${s.name}</h2>${s.autoExpire ? `<div class="badge badge-error badge-outline text-[10px] expire-badge py-3 px-2 font-bold">AUTO EXPIRE</div>` : ""}</div><p class="text-xs font-semibold text-[#faa919] uppercase tracking-wider mb-2">${s.organization}</p><p class="text-sm text-slate-500 mb-4">${s.description || "No description provided."}</p><div class="max-w-md"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-[#404068]">Cycle Progress</span><span class="text-slate-500 font-semibold">${s.instructionsCompleted || 0} / ${s.instructionsTotal || 0} (${progressVal}%)</span></div><progress class="progress w-full h-2.5" value="${s.instructionsCompleted || 0}" max="${s.instructionsTotal || 100}"></progress></div></div><div class="flex flex-wrap md:flex-nowrap gap-2 text-[11px] uppercase font-bold tracking-tight md:min-w-[400px]"><div class="bg-blue-50 p-3 rounded-lg border border-blue-100 text-blue-700 flex-1"><span class="block opacity-70 mb-1">Cycle Started</span><span class="text-sm">${formatDate(s.currentStart)}</span><span class="block text-[9px] mt-1 text-blue-500 font-normal">Elapsed: ${daysActive} Days</span></div><div class="bg-orange-50 p-3 rounded-lg border border-orange-100 text-orange-700 flex-1"><span class="block opacity-70 mb-1">Cycle Ends</span><span class="text-sm">${formatDate(s.currentEnd)}</span><span class="block text-[9px] mt-1 text-orange-500 font-normal">Remaining: ${daysRemaining} Days</span></div><div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-slate-600 flex-1"><span class="block opacity-70 mb-1">Next Cycle Start</span><span class="text-sm">${formatDate(s.nextStart)}</span><span class="block text-[9px] mt-1 text-slate-400 font-normal">Auto-Renewing</span></div></div></div><div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 border-t pt-6"><div class="lg:col-span-4 section-container"><div class="flex justify-between items-center mb-3"><span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>Quality Controls</span><button onclick="launchQCSelector(${s.id})" class="text-[10px] text-[#faa919] hover:text-orange-600 font-bold uppercase">+ Add QC</button></div><div class="flex flex-wrap gap-1.5 min-h-[32px]">${qcBadges || '<span class="text-[10px] text-slate-400 italic mt-1">No protocols linked</span>'}</div></div><div class="lg:col-span-4 section-container"><div class="flex justify-between items-center mb-3"><span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a7 7 0 00-7 7v1h11v-1a7 7 0 00-7-7z" /></svg>Agents Assigned</span><button onclick="launchAgentSelector(${s.id})" class="text-[10px] text-[#faa919] hover:text-orange-600 font-bold uppercase">+ Add Agent</button></div><div class="flex flex-wrap gap-2 min-h-[32px]">${agentChips || '<span class="text-[10px] text-slate-400 italic mt-1">No agents assigned</span>'}</div></div><div class="lg:col-span-4 section-container"><div class="flex justify-between items-center mb-3"><span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>Sites Linked</span><button onclick="launchSiteSelector(${s.id})" class="text-[10px] text-[#faa919] hover:text-orange-600 font-bold uppercase">+ Add Site</button></div><div class="flex flex-wrap gap-2 min-h-[32px]">${siteBadges || '<span class="text-[10px] text-slate-400 italic mt-1">No sites linked</span>'}</div></div></div><div class="flex flex-col md:flex-row justify-between items-center mt-4 border-t pt-4"><span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">System ID: SCH-00${s.id} | Current Cycle: #${s.cycleNumber || 1}</span><button onclick="openScheduleModal(${s.id})" class="btn btn-sm btn-brand px-10 shadow-sm mt-2 md:mt-0">Edit Schedule</button></div></div>`;
+                    grid.appendChild(card);
+                });
+            }
+
+            function openScheduleModal(id = null) {
+                currentEditId = id;
+                const form = document.getElementById("schedule-form");
+                const title = document.getElementById("modal-title");
+                if (id) {
+                    const s = schedules.find((x) => x.id === id);
+                    title.innerText = "Edit Schedule";
+                    form.name.value = s.name;
+                    form.organization.value = s.organization;
+                    form.description.value = s.description;
+                    form.daysBeforeStart.value = s.daysBeforeStart;
+                    form.durationInDays.value = s.durationInDays;
+                    form.autoExpire.checked = s.autoExpire;
+                } else {
+                    title.innerText = "New Schedule";
+                    form.reset();
+                }
+                document.getElementById("schedule_modal").showModal();
+            }
+
+            function setupFormListeners() {
+                document.getElementById("schedule-form").onsubmit = (e) => {
+                    e.preventDefault();
+                    const form = e.target;
+                    if (currentEditId) {
+                        const s = schedules.find((x) => x.id === currentEditId);
+                        s.name = form.name.value;
+                        s.organization = form.organization.value;
+                        s.description = form.description.value;
+                        s.daysBeforeStart = parseInt(
+                            form.daysBeforeStart.value,
+                        );
+                        s.durationInDays = parseInt(form.durationInDays.value);
+                        s.autoExpire = form.autoExpire.checked;
+                    } else {
+                        schedules.push({
+                            id: Date.now(),
+                            name: form.name.value,
+                            organization: form.organization.value,
+                            description: form.description.value,
+                            cycleNumber: 1,
+                            instructionsCompleted: 0,
+                            instructionsTotal: 0,
+                            currentStart: new Date()
+                                .toISOString()
+                                .split("T")[0],
+                            currentEnd: new Date(Date.now() + 30 * 86400000)
+                                .toISOString()
+                                .split("T")[0],
+                            nextStart: new Date(Date.now() + 31 * 86400000)
+                                .toISOString()
+                                .split("T")[0],
+                            agents: [],
+                            sites: [],
+                            qualityControls: [],
+                            daysBeforeStart:
+                                parseInt(form.daysBeforeStart.value) || 0,
+                            durationInDays:
+                                parseInt(form.durationInDays.value) || 30,
+                            autoExpire: form.autoExpire.checked,
+                        });
+                    }
+                    renderSchedules();
+                    closeModal("schedule_modal");
+                };
+            }
+
+            function closeModal(id) {
+                document.getElementById(id).close();
+            }
+        </script>
+    </body>
+</html>

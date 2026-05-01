@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>WeBill Golf Estate | Billing Portal</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <!-- Lucide Icons -->
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            brand: {
+                                bg: "#404068",
+                                text: "#faa919",
+                            },
+                        },
+                    },
+                },
+            };
+        </script>
+        <style>
+            .custom-brand-bg {
+                background-color: #404068 !important;
+                color: #faa919 !important;
+            }
+            .custom-brand-text {
+                color: #faa919 !important;
+            }
+            .btn-brand {
+                background-color: #404068 !important;
+                color: #faa919 !important;
+                border: none;
+            }
+            .btn-brand:hover {
+                background-color: #323254 !important;
+            }
+            .tabs-brand {
+                background-color: #f3f4f6;
+                border: 1px solid #40406820;
+            }
+            .tab-brand-item {
+                color: #404068;
+                font-weight: 600;
+                transition: all 0.2s ease;
+            }
+            .tab-brand-item.tab-active {
+                background-color: #404068 !important;
+                color: #faa919 !important;
+                border-radius: var(--rounded-btn, 0.5rem) !important;
+            }
+        </style>
+    </head>
+    <body class="bg-base-200 min-h-screen">
+        <!-- Navbar with top rounded corners only -->
+        <div class="px-4 lg:px-8 mt-4">
+            <div
+                class="navbar custom-brand-bg rounded-t-2xl rounded-b-none shadow-md px-6 lg:px-12 sticky top-0 z-50"
+            >
+                <div class="flex-1">
+                    <a
+                        class="flex items-center gap-3 font-bold text-xl cursor-pointer"
+                    >
+                        <div class="p-1.5 bg-white/10 rounded-lg">
+                            <i
+                                data-lucide="receipt-text"
+                                class="w-5 h-5 custom-brand-text"
+                            ></i>
+                        </div>
+                        <div class="flex flex-col leading-none">
+                            <span
+                                class="custom-brand-text uppercase tracking-tighter text-lg"
+                                >Billing: WeBill Golf Estate</span
+                            >
+                            <span class="text-[10px] opacity-70 font-normal"
+                                >123 Fairway Drive, Greenview Estate, ZA</span
+                            >
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <main class="max-w-5xl mx-auto p-4 lg:p-8">
+            <!-- Header & Tabs -->
+            <div
+                class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8"
+            >
+                <div>
+                    <h1 class="text-3xl font-black" id="header-title">
+                        Municipal Accounts
+                    </h1>
+                    <p class="text-base-content/60" id="header-subtitle">
+                        View and manage your organization-linked utility
+                        invoices.
+                    </p>
+                </div>
+
+                <div role="tablist" class="tabs tabs-boxed tabs-brand p-1">
+                    <a
+                        role="tab"
+                        class="tab tab-brand-item tab-active"
+                        onclick="switchTab('munix')"
+                        id="tab-munix"
+                        >Munix</a
+                    >
+                    <a
+                        role="tab"
+                        class="tab tab-brand-item"
+                        onclick="switchTab('postpaid')"
+                        id="tab-postpaid"
+                        >Postpaid</a
+                    >
+                </div>
+            </div>
+
+            <!-- Postpaid search bar — shown only on postpaid tab -->
+            <div id="postpaid-search" class="hidden mb-6 flex items-center gap-2">
+                <input
+                    type="text"
+                    id="postpaid-search-input"
+                    placeholder="Search by site name or address or consumer name or email..."
+                    class="input input-bordered flex-1"
+                    onkeydown="if(event.key==='Enter') runPostpaidSearch()"
+                />
+                <button
+                    class="btn btn-brand gap-2"
+                    onclick="runPostpaidSearch()"
+                >
+                    <i data-lucide="search" class="w-4 h-4"></i> Search
+                </button>
+            </div>
+
+            <div id="main-container" class="space-y-12">
+                <!-- Dynamic Content Injected Here -->
+            </div>
+        </main>
+
+        <!-- Modal for Adding New Municipal Invoice -->
+        <dialog
+            id="add_invoice_modal"
+            class="modal modal-bottom sm:modal-middle"
+        >
+            <div
+                class="modal-box p-0 overflow-hidden border border-base-300 shadow-2xl"
+            >
+                <!-- Modal Header with Brand Styling -->
+                <div class="custom-brand-bg p-6">
+                    <div class="flex justify-between items-start">
+                        <div class="space-y-1">
+                            <h3
+                                class="font-black text-xl flex items-center gap-2"
+                            >
+                                <i
+                                    data-lucide="file-plus-2"
+                                    class="w-5 h-5"
+                                ></i>
+                                New Municipal Invoice
+                            </h3>
+                            <div
+                                class="flex flex-col text-xs font-bold opacity-80 uppercase tracking-wider"
+                            >
+                                <span id="modal-org-name"
+                                    >Organization Name</span
+                                >
+                                <div class="flex items-center gap-4 mt-1">
+                                    <span class="flex items-center gap-1">
+                                        <i
+                                            data-lucide="hash"
+                                            class="w-3 h-3"
+                                        ></i>
+                                        Acc: <span id="modal-acc-num">--</span>
+                                    </span>
+                                    <span class="flex items-center gap-1">
+                                        <i
+                                            data-lucide="landmark"
+                                            class="w-3 h-3"
+                                        ></i>
+                                        Provider:
+                                        <span id="modal-provider">--</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <form method="dialog">
+                            <button
+                                class="btn btn-sm btn-circle btn-ghost text-brand-text"
+                            >
+                                ✕
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Modal Form Body -->
+                <div class="p-6">
+                    <form
+                        id="add-invoice-form"
+                        onsubmit="handleInvoiceSubmit(event)"
+                        class="space-y-5"
+                    >
+                        <!-- Hidden field to store current org -->
+                        <input type="hidden" id="modal-org-hidden" />
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Invoice Date -->
+                            <div class="form-control w-full">
+                                <label class="label">
+                                    <span class="label-text font-bold"
+                                        >Invoice Date</span
+                                    >
+                                </label>
+                                <input
+                                    type="date"
+                                    id="invoice_date"
+                                    class="input input-bordered w-full"
+                                    required
+                                />
+                            </div>
+
+                            <!-- Invoice Number -->
+                            <div class="form-control w-full">
+                                <label class="label">
+                                    <span class="label-text font-bold"
+                                        >Invoice Number</span
+                                    >
+                                </label>
+                                <input
+                                    type="text"
+                                    id="invoice_number"
+                                    placeholder="e.g. INV-2024-001"
+                                    class="input input-bordered w-full"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <!-- File Upload -->
+                        <div class="form-control w-full">
+                            <label class="label">
+                                <span class="label-text font-bold"
+                                    >Upload PDF Invoice</span
+                                >
+                            </label>
+                            <div
+                                class="flex items-center justify-center w-full"
+                            >
+                                <label
+                                    for="dropzone-file"
+                                    class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-base-300 rounded-lg cursor-pointer bg-base-50 hover:bg-base-100 transition-colors"
+                                >
+                                    <div
+                                        class="flex flex-col items-center justify-center pt-5 pb-6"
+                                    >
+                                        <i
+                                            data-lucide="upload-cloud"
+                                            class="w-8 h-8 mb-3 text-base-content/40"
+                                        ></i>
+                                        <p
+                                            class="mb-2 text-sm text-base-content/60"
+                                        >
+                                            <span class="font-bold"
+                                                >Click to upload</span
+                                            >
+                                            or drag and drop
+                                        </p>
+                                        <p class="text-xs text-base-content/40">
+                                            PDF (MAX. 5MB)
+                                        </p>
+                                    </div>
+                                    <input
+                                        id="dropzone-file"
+                                        type="file"
+                                        accept="application/pdf"
+                                        class="hidden"
+                                    />
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="modal-action mt-8">
+                            <button
+                                type="button"
+                                class="btn btn-ghost"
+                                onclick="add_invoice_modal.close()"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                class="btn btn-brand min-w-[120px]"
+                            >
+                                <i data-lucide="save" class="w-4 h-4"></i>
+                                Save Invoice
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <form method="dialog" class="modal-backdrop">
+                <button>close</button>
+            </form>
+        </dialog>
+
+        <footer
+            class="footer footer-center p-10 bg-base-100 text-base-content border-t mt-12"
+        >
+            <aside>
+                <div class="p-1.5 custom-brand-bg rounded-lg mb-2">
+                    <i
+                        data-lucide="receipt-text"
+                        class="w-5 h-5 custom-brand-text"
+                    ></i>
+                </div>
+                <p class="font-bold">
+                    WeBill Golf Estate Management <br />Official Resident
+                    Billing Portal
+                </p>
+                <p>Copyright © 2024 - All rights reserved</p>
+            </aside>
+        </footer>
+
+        <script>
+            // Sample Munix Data
+            const munixInvoices = [
+                {
+                    invoice_date: "2024-03-01",
+                    status: "Paid",
+                    site_name: "Unit 402 - Fairway",
+                    organization_name: "Greenview Residential Holdings",
+                    total_billed: 4500.5,
+                },
+                {
+                    invoice_date: "2024-03-15",
+                    status: "Pending",
+                    site_name: "Clubhouse Maintenance",
+                    organization_name: "Golf Course Management",
+                    total_billed: 12400.0,
+                },
+                {
+                    invoice_date: "2024-02-01",
+                    status: "Paid",
+                    site_name: "Unit 402 - Fairway",
+                    organization_name: "Greenview Residential Holdings",
+                    total_billed: 4200.0,
+                },
+                {
+                    invoice_date: "2024-03-10",
+                    status: "Overdue",
+                    site_name: "Estate Gym",
+                    organization_name: "Golf Course Management",
+                    total_billed: 3100.25,
+                },
+                {
+                    invoice_date: "2024-01-15",
+                    status: "Paid",
+                    site_name: "Security Guardhouse",
+                    organization_name: "Estate Security Co",
+                    total_billed: 1500.0,
+                },
+            ];
+
+            // Mock Account Mapping
+            const orgAccountInfo = {
+                "Greenview Residential Holdings": {
+                    accNum: "MUN-77821-GR",
+                    provider: "City of Cape Town",
+                    site: "Unit 402 - Fairway",
+                },
+                "Golf Course Management": {
+                    accNum: "MUN-99032-GCM",
+                    provider: "Eskom",
+                    site: "Estate Operations",
+                },
+                "Estate Security Co": {
+                    accNum: "MUN-11200-ESC",
+                    provider: "City of Johannesburg",
+                    site: "Security Guardhouse",
+                },
+            };
+
+            // Sample Postpaid Data
+            const postpaidBills = [
+                {
+                    month_year: "March 2024",
+                    bill_count: 5,
+                    total_billed: 2500.0,
+                    organization_name: "Greenview Residential Holdings",
+                },
+                {
+                    month_year: "February 2024",
+                    bill_count: 5,
+                    total_billed: 2450.0,
+                    organization_name: "Greenview Residential Holdings",
+                },
+                {
+                    month_year: "March 2024",
+                    bill_count: 12,
+                    total_billed: 8900.5,
+                    organization_name: "Golf Course Management",
+                },
+                {
+                    month_year: "February 2024",
+                    bill_count: 10,
+                    total_billed: 7200.0,
+                    organization_name: "Golf Course Management",
+                },
+            ];
+
+            function renderMunix() {
+                const container = document.getElementById("main-container");
+                const grouped = munixInvoices.reduce((acc, invoice) => {
+                    if (!acc[invoice.organization_name])
+                        acc[invoice.organization_name] = [];
+                    acc[invoice.organization_name].push(invoice);
+                    return acc;
+                }, {});
+
+                let html = "";
+                for (const org in grouped) {
+                    const info = orgAccountInfo[org] || {
+                        accNum: "N/A",
+                        provider: "Generic",
+                    };
+                    html += `
+                    <div class="space-y-4">
+                        <div class="flex flex-col md:flex-row md:items-end justify-between px-1 gap-4">
+                            <div class="flex flex-col">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <i data-lucide="building-2" class="w-5 h-5 text-brand-bg opacity-70"></i>
+                                    <h2 class="text-xl font-bold text-brand-bg uppercase tracking-wide">${org}</h2>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-3 text-sm">
+                                    <span class="badge badge-outline border-brand-bg/20 text-brand-bg/60 font-medium">
+                                        <i data-lucide="hash" class="w-3 h-3 mr-1"></i> ${info.accNum}
+                                    </span>
+                                    <span class="badge badge-outline border-brand-bg/20 text-brand-bg/60 font-medium">
+                                        <i data-lucide="landmark" class="w-3 h-3 mr-1"></i> ${info.provider}
+                                    </span>
+                                    <span class="text-xs opacity-40 font-bold ml-1">${grouped[org].length} Invoices</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-brand shadow-sm gap-2" onclick="addNewInvoice('${org}')">
+                                <i data-lucide="plus" class="w-4 h-4"></i> Add New
+                            </button>
+                        </div>
+                        <div class="card bg-base-100 shadow-sm border border-base-300 overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="table table-zebra w-full">
+                                    <thead>
+                                        <tr class="bg-base-200/50 text-xs uppercase">
+                                            <th>Date</th>
+                                            <th>Site Name</th>
+                                            <th>Status</th>
+                                            <th class="text-right">Total Billed</th>
+                                            <th class="w-20"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${grouped[org]
+                                            .map(
+                                                (inv) => `
+                                            <tr class="hover">
+                                                <td class="font-medium">${inv.invoice_date}</td>
+                                                <td>${inv.site_name}</td>
+                                                <td><span class="badge badge-sm font-bold ${getStatusClass(inv.status)}">${inv.status}</span></td>
+                                                <td class="text-right font-mono font-bold">R ${inv.total_billed ? inv.total_billed.toLocaleString("en-ZA", { minimumFractionDigits: 2 }) : "0.00"}</td>
+                                                <td class="text-right">
+                                                    <div class="tooltip tooltip-left" data-tip="Manage">
+                                                        <button class="btn btn-ghost btn-xs btn-square" onclick="window.location.href='manage_munix.html'">
+                                                            <i data-lucide="settings" class="w-4 h-4"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        `,
+                                            )
+                                            .join("")}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                }
+                container.innerHTML =
+                    html ||
+                    `<div class="p-20 text-center opacity-30">No invoice data available.</div>`;
+                lucide.createIcons();
+            }
+
+            function runPostpaidSearch() {
+                const q = document.getElementById("postpaid-search-input").value;
+                renderPostpaid(q);
+            }
+
+            function renderPostpaid(query = "") {
+                const container = document.getElementById("main-container");
+                const q = query.trim().toLowerCase();
+                const filtered = q
+                    ? postpaidBills.filter(
+                          (b) =>
+                              (b.organization_name || "").toLowerCase().includes(q) ||
+                              (b.site_name || "").toLowerCase().includes(q) ||
+                              (b.consumer_name || "").toLowerCase().includes(q) ||
+                              (b.email || "").toLowerCase().includes(q)
+                      )
+                    : postpaidBills;
+
+                const grouped = filtered.reduce((acc, bill) => {
+                    if (!acc[bill.organization_name])
+                        acc[bill.organization_name] = [];
+                    acc[bill.organization_name].push(bill);
+                    return acc;
+                }, {});
+
+                let html = "";
+                for (const org in grouped) {
+                    html += `
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between px-1">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="smartphone" class="w-5 h-5 text-brand-bg opacity-70"></i>
+                                <h2 class="text-xl font-bold text-brand-bg uppercase tracking-wide">${org}</h2>
+                                <div class="badge badge-outline border-brand-bg/20 text-brand-bg/60 ml-2">Postpaid Accounts</div>
+                            </div>
+                        </div>
+                        <div class="card bg-base-100 shadow-sm border border-base-300 overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="table table-zebra w-full">
+                                    <thead>
+                                        <tr class="bg-base-200/50 text-xs uppercase">
+                                            <th>Month & Year</th>
+                                            <th class="text-center">Number Bills</th>
+                                            <th class="text-right">Total Bills</th>
+                                            <th class="w-20"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${grouped[org]
+                                            .map(
+                                                (bill) => `
+                                            <tr class="hover">
+                                                <td class="font-medium">${bill.month_year}</td>
+                                                <td class="text-center">
+                                                    <div class="badge badge-ghost font-bold">${bill.bill_count}</div>
+                                                </td>
+                                                <td class="text-right font-mono font-bold">R ${bill.total_billed.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</td>
+                                                <td class="text-right">
+                                                    <div class="tooltip tooltip-left" data-tip="Manage">
+                                                        <button class="btn btn-ghost btn-xs btn-square" onclick="window.location.href='manage_bill_job.html'">
+                                                            <i data-lucide="settings" class="w-4 h-4"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        `,
+                                            )
+                                            .join("")}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                }
+                container.innerHTML =
+                    html ||
+                    `<div class="p-20 text-center opacity-30">No postpaid data available.</div>`;
+                lucide.createIcons();
+            }
+
+            function addNewInvoice(orgName) {
+                const info = orgAccountInfo[orgName] || {
+                    accNum: "N/A",
+                    provider: "Generic Provider",
+                };
+                document.getElementById("modal-org-name").innerText = orgName;
+                document.getElementById("modal-org-hidden").value = orgName;
+                document.getElementById("modal-acc-num").innerText =
+                    info.accNum;
+                document.getElementById("modal-provider").innerText =
+                    info.provider;
+
+                const today = new Date();
+                const lastMonth = new Date(
+                    today.getFullYear(),
+                    today.getMonth() - 1,
+                    today.getDate(),
+                );
+                const dateStr = lastMonth.toISOString().split("T")[0];
+                document.getElementById("invoice_date").value = dateStr;
+
+                document.getElementById("add_invoice_modal").showModal();
+                lucide.createIcons();
+            }
+
+            function handleInvoiceSubmit(event) {
+                event.preventDefault();
+
+                const orgName =
+                    document.getElementById("modal-org-hidden").value;
+                const date = document.getElementById("invoice_date").value;
+                const siteInfo = orgAccountInfo[orgName] || {
+                    site: "General Estate",
+                };
+
+                const modal = document.getElementById("add_invoice_modal");
+                const saveBtn = event.target.querySelector(
+                    'button[type="submit"]',
+                );
+
+                saveBtn.innerHTML =
+                    '<span class="loading loading-spinner loading-xs"></span> Saving...';
+                saveBtn.disabled = true;
+
+                setTimeout(() => {
+                    munixInvoices.unshift({
+                        invoice_date: date,
+                        status: "Created",
+                        site_name: siteInfo.site,
+                        organization_name: orgName,
+                        total_billed: 0,
+                    });
+
+                    renderMunix();
+                    modal.close();
+                    saveBtn.innerHTML =
+                        '<i data-lucide="save" class="w-4 h-4"></i> Save Invoice';
+                    saveBtn.disabled = false;
+                    event.target.reset();
+                    lucide.createIcons();
+                }, 800);
+            }
+
+            function getStatusClass(status) {
+                switch (status.toLowerCase()) {
+                    case "created":
+                        return "bg-blue-100 text-blue-700 border border-blue-200";
+                    case "paid":
+                        return "badge-success text-success-content";
+                    case "pending":
+                        return "badge-warning text-warning-content";
+                    case "overdue":
+                        return "badge-error text-error-content";
+                    default:
+                        return "badge-ghost";
+                }
+            }
+
+            function switchTab(tab) {
+                const munixTab = document.getElementById("tab-munix");
+                const postpaidTab = document.getElementById("tab-postpaid");
+
+                const searchBar = document.getElementById("postpaid-search");
+                if (tab === "munix") {
+                    munixTab.classList.add("tab-active");
+                    postpaidTab.classList.remove("tab-active");
+                    searchBar.classList.add("hidden");
+                    document.getElementById("header-title").innerText =
+                        "Municipal Accounts";
+                    document.getElementById("header-subtitle").innerText =
+                        "View and manage your organization-linked utility invoices.";
+                    renderMunix();
+                } else {
+                    postpaidTab.classList.add("tab-active");
+                    munixTab.classList.remove("tab-active");
+                    searchBar.classList.remove("hidden");
+                    document.getElementById("header-title").innerText =
+                        "Postpaid Services";
+                    document.getElementById("header-subtitle").innerText =
+                        "Summary of monthly cellular and data contract billing.";
+                    renderPostpaid();
+                }
+            }
+
+            window.onload = () => {
+                const savedTab = sessionStorage.getItem('billingTab') || 'munix';
+                sessionStorage.removeItem('billingTab');
+                switchTab(savedTab);
+                lucide.createIcons();
+            };
+        </script>
+    </body>
+</html>

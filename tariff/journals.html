@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Tariff Management System</title>
+        <!-- Tailwind and daisyUI -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <!-- Lucide Icons -->
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <style>
+            /* Custom colors */
+            .bg-brand-primary {
+                background-color: #404068;
+            }
+            .text-brand-accent {
+                color: #faa919;
+            }
+            .bg-brand-accent {
+                background-color: #faa919;
+            }
+
+            /* Sticky header fix with rounded corners */
+            .sticky-header th {
+                position: sticky;
+                top: 0;
+                z-index: 20; /* Keep headers above body but below tooltips */
+                background-color: #404068;
+            }
+
+            /* Rounding the header corners */
+            .sticky-header th:first-child {
+                border-top-left-radius: 0.75rem;
+            }
+            .sticky-header th:last-child {
+                border-top-right-radius: 0.75rem;
+            }
+
+            /* Tooltip Z-Index Fix */
+            .tooltip {
+                z-index: 50 !important; /* Force tooltip above sticky header */
+            }
+
+            /* Row Highlight and Pointer */
+            .tariff-row {
+                cursor: pointer;
+                transition: background-color 0.15s ease-in-out;
+            }
+            .tariff-row:hover {
+                background-color: #f1f5f9 !important; /* Light slate blue highlight */
+            }
+
+            /* Custom Scrollbar */
+            .table-scroll-container::-webkit-scrollbar {
+                width: 6px;
+            }
+            .table-scroll-container::-webkit-scrollbar-track {
+                background: #f8fafc;
+            }
+            .table-scroll-container::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 10px;
+            }
+            .table-scroll-container::-webkit-scrollbar-thumb:hover {
+                background: #404068;
+            }
+
+            .table-scroll-container {
+                max-height: 520px;
+                overflow-y: auto;
+                overflow-x: auto;
+            }
+
+            /* Plain Icon Hover Style */
+            .access-btn {
+                background: transparent;
+                border: none;
+                color: #64748b;
+                transition: all 0.2s ease-in-out;
+                cursor: pointer;
+            }
+            .access-btn:hover {
+                color: #faa919 !important;
+                transform: scale(1.2);
+            }
+
+            @media (max-width: 640px) {
+                .table :where(th, td) {
+                    padding-left: 1rem;
+                    padding-right: 1rem;
+                }
+            }
+        </style>
+    </head>
+    <body class="bg-gray-100 min-h-screen font-sans">
+        <div class="max-w-7xl mx-auto p-2 sm:p-4 md:p-8 space-y-4 sm:space-y-6">
+            <!-- Header Section -->
+            <header
+                class="bg-brand-primary p-6 sm:p-8 shadow-lg rounded-t-xl sm:rounded-t-2xl"
+            >
+                <div
+                    class="flex flex-col lg:flex-row lg:items-end justify-between gap-6"
+                >
+                    <div class="space-y-1">
+                        <h1
+                            class="text-2xl sm:text-3xl font-bold text-brand-accent"
+                        >
+                            Tariff Management
+                        </h1>
+                        <p class="text-white text-sm sm:text-base opacity-90">
+                            Manage utility providers and access permissions
+                        </p>
+                    </div>
+
+                    <!-- Filter Utility Type -->
+                    <div
+                        class="flex flex-col sm:flex-row sm:items-center gap-3"
+                    >
+                        <label
+                            for="utilityFilter"
+                            class="text-white text-sm font-medium"
+                            >Filter Utility:</label
+                        >
+                        <select
+                            id="utilityFilter"
+                            onchange="filterData()"
+                            class="select select-bordered select-sm w-full sm:w-auto bg-white/10 text-white border-white/20 focus:outline-none focus:ring-2 focus:ring-brand-accent cursor-pointer"
+                        >
+                            <option value="all" class="text-gray-800">
+                                All Types
+                            </option>
+                            <option value="Electricity" class="text-gray-800">
+                                Electricity
+                            </option>
+                            <option value="Water" class="text-gray-800">
+                                Water
+                            </option>
+                            <option value="Data" class="text-gray-800">
+                                Data
+                            </option>
+                            <option value="Waste" class="text-gray-800">
+                                Waste
+                            </option>
+                            <option value="Gas" class="text-gray-800">
+                                Gas
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Table Container -->
+            <div
+                class="bg-white rounded-b-xl sm:rounded-b-2xl shadow-md overflow-hidden border border-gray-200"
+            >
+                <div class="table-scroll-container">
+                    <table
+                        class="table table-zebra w-full border-separate border-spacing-0 min-w-[600px]"
+                    >
+                        <thead class="sticky-header">
+                            <tr class="text-white border-none">
+                                <th
+                                    onclick="sortData('name')"
+                                    class="px-4 sm:px-6 py-4 text-xs sm:text-sm font-semibold uppercase tracking-wider cursor-pointer hover:text-brand-accent transition-colors"
+                                >
+                                    <div class="flex items-center gap-2">
+                                        Tariff Name
+                                        <i
+                                            data-lucide="chevrons-up-down"
+                                            class="w-3 h-3 sm:w-4 sm:h-4 opacity-50"
+                                        ></i>
+                                    </div>
+                                </th>
+                                <th
+                                    onclick="sortData('provider')"
+                                    class="px-4 sm:px-6 py-4 text-xs sm:text-sm font-semibold uppercase tracking-wider cursor-pointer hover:text-brand-accent transition-colors"
+                                >
+                                    <div class="flex items-center gap-2">
+                                        Provider
+                                        <i
+                                            data-lucide="chevrons-up-down"
+                                            class="w-3 h-3 sm:w-4 sm:h-4 opacity-50"
+                                        ></i>
+                                    </div>
+                                </th>
+                                <th
+                                    onclick="sortData('type')"
+                                    class="px-4 sm:px-6 py-4 text-xs sm:text-sm font-semibold uppercase tracking-wider cursor-pointer hover:text-brand-accent transition-colors"
+                                >
+                                    <div class="flex items-center gap-2">
+                                        Utility Type
+                                        <i
+                                            data-lucide="chevrons-up-down"
+                                            class="w-3 h-3 sm:w-4 sm:h-4 opacity-50"
+                                        ></i>
+                                    </div>
+                                </th>
+                                <th
+                                    class="px-4 sm:px-6 py-4 text-xs sm:text-sm font-semibold uppercase tracking-wider text-center"
+                                >
+                                    Access
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="tariffTableBody">
+                            <!-- Data populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Mobile Hint -->
+            <div class="lg:hidden text-center text-xs text-gray-500 italic">
+                Swipe left/right to view more table data
+            </div>
+        </div>
+
+        <!-- daisyUI Modal -->
+        <dialog id="access_modal" class="modal modal-bottom sm:modal-middle">
+            <div
+                class="modal-box border-t-4 border-brand-primary w-11/12 max-w-md"
+            >
+                <h3 id="modalTitle" class="font-bold text-lg">
+                    Access Details
+                </h3>
+                <div id="modalBody" class="py-4">
+                    <!-- Dynamic Content -->
+                </div>
+                <div class="modal-action">
+                    <form method="dialog">
+                        <button
+                            class="btn bg-brand-primary text-white hover:bg-opacity-90 border-none"
+                        >
+                            Close
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <form method="dialog" class="modal-backdrop">
+                <button>close</button>
+            </form>
+        </dialog>
+
+        <script>
+            let tariffData = [
+                {
+                    id: 1,
+                    name: "Standard Residential",
+                    provider: "City Power",
+                    type: "Electricity",
+                    role: "Administrator",
+                },
+                {
+                    id: 2,
+                    name: "Eco-Save Water",
+                    provider: "Water Link",
+                    type: "Water",
+                    role: "DV",
+                },
+                {
+                    id: 3,
+                    name: "Industrial High-Volt",
+                    provider: "Grid Corp",
+                    type: "Electricity",
+                    role: "Administrator",
+                },
+                {
+                    id: 4,
+                    name: "Business Fiber Basic",
+                    provider: "TeleNet",
+                    type: "Data",
+                    role: "DV",
+                },
+                {
+                    id: 5,
+                    name: "Municipal Waste",
+                    provider: "EcoServe",
+                    type: "Waste",
+                    role: "Administrator",
+                },
+                {
+                    id: 6,
+                    name: "Smart Meter Gas",
+                    provider: "GasFlow",
+                    type: "Gas",
+                    role: "DV",
+                },
+                {
+                    id: 7,
+                    name: "Solar Feed-in",
+                    provider: "Green Energy",
+                    type: "Electricity",
+                    role: "DV",
+                },
+                {
+                    id: 8,
+                    name: "Bulk Water Supply",
+                    provider: "Water Link",
+                    type: "Water",
+                    role: "Administrator",
+                },
+                {
+                    id: 9,
+                    name: "Office High Speed",
+                    provider: "TeleNet",
+                    type: "Data",
+                    role: "Administrator",
+                },
+                {
+                    id: 10,
+                    name: "Rural Gas Grid",
+                    provider: "GasFlow",
+                    type: "Gas",
+                    role: "DV",
+                },
+                {
+                    id: 11,
+                    name: "Hospital Priority",
+                    provider: "Grid Corp",
+                    type: "Electricity",
+                    role: "Administrator",
+                },
+                {
+                    id: 12,
+                    name: "Recycling Program",
+                    provider: "EcoServe",
+                    type: "Waste",
+                    role: "DV",
+                },
+            ];
+
+            let currentSort = { key: null, direction: "asc" };
+            let filteredData = [...tariffData];
+
+            const roleInfo = {
+                Administrator: {
+                    title: "Administrator Access",
+                    label: "Administrator",
+                    icon: "shield-check",
+                    desc: "Full permissions to edit, delete, and approve tariff structures. High-level security clearance.",
+                },
+                DV: {
+                    title: "Data Capturer (DV) Access",
+                    label: "Data Capturer",
+                    icon: "file-text",
+                    desc: "Permission to capture and verify raw data readings. Standard entry-level clearance.",
+                },
+            };
+
+            function renderTable() {
+                const body = document.getElementById("tariffTableBody");
+                body.innerHTML = filteredData
+                    .map((item) => {
+                        const info = roleInfo[item.role];
+
+                        return `
+                    <tr class="tariff-row transition-colors border-b border-gray-100" onclick="${item.role === 'Administrator' ? "window.location.href='admin_journal.html'" : "window.location.href='dc_journal.html'"}">
+                        <td class="px-4 sm:px-6 py-4 text-xs sm:text-sm font-medium text-gray-900">${item.name}</td>
+                        <td class="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-600">${item.provider}</td>
+                        <td class="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-600">
+                            <span class="badge badge-ghost badge-sm py-2 px-3 font-medium whitespace-nowrap">${item.type}</span>
+                        </td>
+                        <td class="px-4 sm:px-6 py-4 text-center">
+                            <div class="tooltip tooltip-primary" data-tip="${info.label}">
+                                <div class="access-btn">
+                                    <i data-lucide="${info.icon}" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                    })
+                    .join("");
+
+                lucide.createIcons();
+            }
+
+            function sortData(key) {
+                if (currentSort.key === key) {
+                    currentSort.direction =
+                        currentSort.direction === "asc" ? "desc" : "asc";
+                } else {
+                    currentSort.key = key;
+                    currentSort.direction = "asc";
+                }
+
+                filteredData.sort((a, b) => {
+                    const valA = a[key].toLowerCase();
+                    const valB = b[key].toLowerCase();
+                    if (valA < valB)
+                        return currentSort.direction === "asc" ? -1 : 1;
+                    if (valA > valB)
+                        return currentSort.direction === "asc" ? 1 : -1;
+                    return 0;
+                });
+                renderTable();
+            }
+
+            function filterData() {
+                const val = document.getElementById("utilityFilter").value;
+                if (val === "all") {
+                    filteredData = [...tariffData];
+                } else {
+                    filteredData = tariffData.filter(
+                        (item) => item.type === val,
+                    );
+                }
+                renderTable();
+            }
+
+            function openModal(role) {
+                const info = roleInfo[role];
+                const modal = document.getElementById("access_modal");
+                document.getElementById("modalTitle").textContent = info.title;
+                document.getElementById("modalBody").innerHTML = `
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="p-3 rounded-full bg-slate-100 text-brand-primary">
+                        <i data-lucide="${info.icon}" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Permissions</p>
+                        <p class="text-gray-700 font-medium text-sm sm:text-base">${role === "Administrator" ? "Full Read/Write" : "Data Entry Only"}</p>
+                    </div>
+                </div>
+                <p class="text-gray-600 text-sm leading-relaxed">${info.desc}</p>
+            `;
+                modal.showModal();
+                lucide.createIcons();
+            }
+
+            window.onload = () => {
+                renderTable();
+            };
+        </script>
+    </body>
+</html>

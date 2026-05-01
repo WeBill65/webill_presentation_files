@@ -1,0 +1,1024 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Postpaid Utility Bill Management</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <style>
+            .brand-bg {
+                background-color: #404068;
+            }
+            .brand-text {
+                color: #faa919;
+            }
+            .column-header {
+                background-color: #404068;
+                color: #ffffff;
+            }
+
+            /* Custom scrollbar */
+            ::-webkit-scrollbar {
+                width: 8px;
+            }
+            ::-webkit-scrollbar-track {
+                background: #f1f1f1;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #404068;
+                border-radius: 4px;
+            }
+
+            .pdf-modal-box {
+                max-width: 900px;
+                width: 95%;
+                height: 90vh;
+            }
+
+            .sticky-table-container {
+                max-height: 55vh;
+                overflow-y: auto;
+            }
+
+            .sticky-header th {
+                position: sticky;
+                top: 0;
+                z-index: 10;
+                background-color: #404068;
+                color: #ffffff !important;
+                box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
+            }
+
+            .checkbox:disabled {
+                cursor: not-allowed;
+                opacity: 0.2;
+            }
+
+            .filter-btn-active {
+                background-color: #faa919 !important;
+                color: #404068 !important;
+                border-color: #faa919 !important;
+            }
+
+            .btn-brand-action {
+                background-color: #404068;
+                color: white;
+                border: 2px solid #404068;
+                transition: all 0.25s ease-in-out;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+
+            .btn-brand-action:hover:not(:disabled) {
+                background-color: #faa919;
+                color: #404068;
+                border-color: #faa919;
+                transform: translateY(-1px);
+            }
+
+            .btn:disabled {
+                opacity: 0.3;
+                transform: none !important;
+                box-shadow: none !important;
+                cursor: not-allowed;
+            }
+
+            #action-log {
+                font-family: monospace;
+                font-size: 0.75rem;
+            }
+
+            .hidden-action {
+                display: none !important;
+            }
+
+            .strict-single-row {
+                display: flex;
+                flex-direction: row;
+                flex-wrap: nowrap;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.75rem;
+                overflow-x: auto;
+            }
+
+            /* Error Tooltip Styling */
+            .error-badge {
+                cursor: help;
+                animation: pulse-red 2s infinite;
+            }
+            @keyframes pulse-red {
+                0% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.7;
+                }
+                100% {
+                    opacity: 1;
+                }
+            }
+
+            .header-select-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-50 min-h-screen">
+        <header class="brand-bg shadow-md p-5 mb-6">
+            <div
+                class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4"
+            >
+                <div class="flex items-center gap-4">
+                <a href="billing.html#postpaid" onclick="sessionStorage.setItem('billingTab','postpaid')"
+                   class="btn btn-sm bg-white/10 hover:bg-white/20 text-white border-white/20 gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    Back
+                </a>
+                <div class="text-center md:text-left">
+                    <h1
+                        class="text-xl font-semibold brand-text tracking-normal"
+                        id="header-site-name"
+                    >
+                        Loading Site...
+                    </h1>
+                    <p
+                        class="text-xs text-gray-300 opacity-90 mt-0.5"
+                        id="header-address"
+                    >
+                        Loading Address...
+                    </p>
+                </div>
+                </div>
+                <div
+                    class="bg-white/5 px-5 py-2 rounded border border-white/10 text-center"
+                >
+                    <span
+                        class="text-white block text-[10px] uppercase tracking-widest mb-0.5 font-medium opacity-80"
+                        >Job Run Period</span
+                    >
+                    <span
+                        class="text-lg font-medium brand-text"
+                        id="header-period"
+                        >Loading Period...</span
+                    >
+                </div>
+            </div>
+        </header>
+
+        <main class="container mx-auto px-4 pb-12">
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div
+                    class="stat bg-white shadow rounded-box border-l-4 border-slate-400"
+                >
+                    <div class="stat-title text-gray-500 text-xs">
+                        Total Bills
+                    </div>
+                    <div
+                        class="stat-value text-slate-800 text-xl"
+                        id="stat-total-count"
+                    >
+                        0
+                    </div>
+                </div>
+                <div
+                    class="stat bg-white shadow rounded-box border-l-4 border-slate-400"
+                >
+                    <div class="stat-title text-gray-500 text-xs">
+                        Total Value
+                    </div>
+                    <div
+                        class="stat-value text-slate-800 text-xl"
+                        id="stat-total-value"
+                    >
+                        R 0.00
+                    </div>
+                </div>
+                <div
+                    class="stat bg-white shadow rounded-box border-l-4 border-success"
+                >
+                    <div class="stat-title text-gray-500 text-xs">Reviewed</div>
+                    <div
+                        class="stat-value text-slate-800 text-xl"
+                        id="stat-reviewed-pct"
+                    >
+                        0%
+                    </div>
+                </div>
+                <div
+                    class="stat bg-white shadow rounded-box border-l-4 border-error"
+                >
+                    <div class="stat-title text-gray-500 text-xs">Errors</div>
+                    <div
+                        class="stat-value text-slate-800 text-xl"
+                        id="stat-error-count"
+                    >
+                        0
+                    </div>
+                </div>
+            </div>
+
+            <!-- Single Line Action Bar -->
+            <div
+                class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 mb-6"
+            >
+                <div class="strict-single-row">
+                    <div class="flex items-center gap-2">
+                        <button
+                            id="btn-send-reviews"
+                            class="btn btn-brand-action btn-sm h-9 px-4 rounded-lg hidden-action"
+                            onclick="handleAction('Review')"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-4 w-4 mr-1"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                            </svg>
+                            Send Reviews(<span id="count-to-review">0</span>)
+                        </button>
+                        <button
+                            id="btn-send-dispatches"
+                            class="btn btn-brand-action btn-sm h-9 px-4 rounded-lg hidden-action"
+                            onclick="handleAction('Dispatch')"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-4 w-4 mr-1"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                                />
+                            </svg>
+                            Send Dispatches(<span id="count-to-dispatch">0</span
+                            >)
+                        </button>
+
+                        <div class="join shadow-sm border border-gray-200">
+                            <button
+                                class="btn btn-xs h-9 join-item filter-btn filter-btn-active"
+                                data-filter="all"
+                                onclick="setStatusFilter('all')"
+                            >
+                                All
+                            </button>
+                            <button
+                                class="btn btn-xs h-9 join-item filter-btn"
+                                data-filter="pending-review"
+                                onclick="setStatusFilter('pending-review')"
+                            >
+                                Unreviewed
+                            </button>
+                            <button
+                                class="btn btn-xs h-9 join-item filter-btn"
+                                data-filter="pending-dispatch"
+                                onclick="setStatusFilter('pending-dispatch')"
+                            >
+                                Undispatched
+                            </button>
+                            <button
+                                class="btn btn-xs h-9 join-item filter-btn border-l border-gray-200"
+                                data-filter="has-errors"
+                                onclick="setStatusFilter('has-errors')"
+                            >
+                                Errors
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex-grow max-w-xs relative">
+                        <input
+                            class="input input-bordered input-sm w-full pr-12"
+                            placeholder="Search (min 4 chars)..."
+                            id="search-input"
+                            onkeyup="filterData()"
+                        />
+                        <div
+                            id="search-indicator"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-medium"
+                        ></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gap-6">
+                <div
+                    class="xl:col-span-3 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden"
+                >
+                    <div class="sticky-table-container">
+                        <table
+                            class="table table-zebra w-full"
+                            id="bills-table"
+                        >
+                            <thead>
+                                <tr
+                                    class="sticky-header uppercase text-[10px] tracking-wider"
+                                >
+                                    <th class="p-4 text-white">Unit</th>
+                                    <th class="text-right text-white">Cons.</th>
+                                    <th class="text-right text-white">
+                                        Non-Cons
+                                    </th>
+                                    <th class="text-right text-white">
+                                        Common
+                                    </th>
+                                    <th class="text-right text-white">Est.</th>
+                                    <th class="text-right font-bold text-white">
+                                        Total
+                                    </th>
+                                    <th class="text-center text-white">
+                                        <div class="header-select-container">
+                                            <span>Reviewed</span>
+                                            <input
+                                                type="checkbox"
+                                                id="header-check-reviewed"
+                                                class="checkbox checkbox-xs border-white/40"
+                                                onclick="
+                                                    toggleAll(
+                                                        'reviewed',
+                                                        this.checked,
+                                                    )
+                                                "
+                                            />
+                                        </div>
+                                    </th>
+                                    <th class="text-center text-white">
+                                        <div class="header-select-container">
+                                            <span>Dispatched</span>
+                                            <input
+                                                type="checkbox"
+                                                id="header-check-dispatched"
+                                                class="checkbox checkbox-xs border-white/40"
+                                                onclick="
+                                                    toggleAll(
+                                                        'dispatched',
+                                                        this.checked,
+                                                    )
+                                                "
+                                            />
+                                        </div>
+                                    </th>
+                                    <th class="text-center text-white">
+                                        Action
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!--<div
+                    class="bg-slate-800 rounded-xl shadow-xl p-4 text-slate-300 flex flex-col h-[65vh]"
+                >
+                    <div class="flex justify-between items-center mb-2">
+                        <h3
+                            class="text-xs font-bold uppercase tracking-widest text-slate-400"
+                        >
+                            Activity Log
+                        </h3>
+                        <button
+                            class="btn btn-ghost btn-xs text-[10px]"
+                            onclick="clearLog()"
+                        >
+                            Clear
+                        </button>
+                    </div>
+                    <div
+                        id="action-log"
+                        class="flex-grow overflow-y-auto space-y-1 pr-2"
+                    >
+                        <div class="text-slate-500 italic">
+                            System initialized...
+                        </div>
+                    </div>
+                </div>-->
+            </div>
+        </main>
+
+        <!-- PDF Preview Modal -->
+        <dialog id="pdf_modal" class="modal">
+            <div
+                class="modal-box p-0 overflow-hidden flex flex-col pdf-modal-box"
+            >
+                <div
+                    class="flex justify-between items-center p-4 bg-gray-100 border-b"
+                >
+                    <div>
+                        <h3 class="font-bold text-lg" id="modal-title">
+                            Utility Bill
+                        </h3>
+                        <p class="text-xs text-gray-500" id="modal-subtitle">
+                            PDF Preview
+                        </p>
+                    </div>
+                    <form method="dialog">
+                        <button class="btn btn-sm btn-circle btn-ghost">
+                            ✕
+                        </button>
+                    </form>
+                </div>
+                <div class="flex-grow bg-gray-800">
+                    <iframe
+                        id="pdf-viewer"
+                        class="w-full h-full"
+                        frameborder="0"
+                    ></iframe>
+                </div>
+            </div>
+            <form method="dialog" class="modal-backdrop">
+                <button>close</button>
+            </form>
+        </dialog>
+
+        <!-- Error Fix Module -->
+        <dialog id="fix_modal" class="modal">
+            <div class="modal-box max-w-lg border-t-4 border-error">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="p-2 bg-error/10 rounded-lg text-error">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-6 w-6"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                            />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg">
+                            Fix Bill Discrepancies
+                        </h3>
+                        <p class="text-xs text-slate-500" id="fix-site-label">
+                            Unit ID
+                        </p>
+                    </div>
+                </div>
+
+                <div
+                    class="bg-error/5 border border-error/20 rounded-lg p-3 mb-6"
+                >
+                    <h4
+                        class="text-[10px] font-bold text-error uppercase tracking-wider mb-2"
+                    >
+                        Detected Issues
+                    </h4>
+                    <ul
+                        id="fix-error-list"
+                        class="text-xs space-y-1 text-slate-700 list-disc ml-4"
+                    >
+                        <!-- Errors injected here -->
+                    </ul>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-control">
+                            <label class="label"
+                                ><span
+                                    class="label-text font-semibold text-xs text-slate-500"
+                                    >Consumption (R)</span
+                                ></label
+                            >
+                            <input
+                                type="number"
+                                id="fix-input-cons"
+                                class="input input-bordered input-sm w-full"
+                                step="0.01"
+                                oninput="validateFixForm()"
+                            />
+                        </div>
+                        <div class="form-control">
+                            <label class="label"
+                                ><span
+                                    class="label-text font-semibold text-xs text-slate-500"
+                                    >Estimation (R)</span
+                                ></label
+                            >
+                            <input
+                                type="number"
+                                id="fix-input-est"
+                                class="input input-bordered input-sm w-full"
+                                step="0.01"
+                                oninput="validateFixForm()"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    class="modal-action mt-8 flex justify-between items-center"
+                >
+                    <form method="dialog">
+                        <button class="btn btn-ghost btn-sm">Cancel</button>
+                    </form>
+                    <button
+                        id="btn-save-fix"
+                        class="btn btn-brand-action btn-sm px-6"
+                        onclick="saveFix()"
+                    >
+                        Clear Errors & Save
+                    </button>
+                </div>
+            </div>
+        </dialog>
+
+        <script>
+            const jobData = {
+                site: {
+                    name: "Summer Gardens Residential Estate",
+                    address: "124 Sunset Boulevard, Fourways, Johannesburg",
+                    month: "October",
+                    year: "2024",
+                },
+                bills: [
+                    {
+                        id: 1,
+                        site: "Unit 101",
+                        consumer: "John Smith",
+                        isOnApp: true,
+                        consumption: 1250.5,
+                        nonConsumption: 450.0,
+                        commonArea: 120.0,
+                        estimation: 0.0,
+                        reviewed: true,
+                        dispatched: true,
+                    },
+                    {
+                        id: 2,
+                        site: "Unit 204",
+                        consumer: "Sarah Williams",
+                        isOnApp: true,
+                        consumption: 890.2,
+                        nonConsumption: 450.0,
+                        commonArea: 120.0,
+                        estimation: 200.0,
+                        reviewed: true,
+                        dispatched: false,
+                    },
+                    {
+                        id: 3,
+                        site: "Unit 055",
+                        consumer: "Peter Parker",
+                        isOnApp: false,
+                        consumption: -50.0,
+                        nonConsumption: 550.0,
+                        commonArea: 120.0,
+                        estimation: 0.0,
+                        reviewed: false,
+                        dispatched: false,
+                        errors: [
+                            "Negative consumption detected: -50kWh",
+                            "Check meter serial #4421",
+                        ],
+                    },
+                    {
+                        id: 4,
+                        site: "Unit 302",
+                        consumer: "Diana Prince",
+                        isOnApp: true,
+                        consumption: 560.0,
+                        nonConsumption: 450.0,
+                        commonArea: 120.0,
+                        estimation: 0.0,
+                        reviewed: true,
+                        dispatched: true,
+                    },
+                    {
+                        id: 5,
+                        site: "Unit 112",
+                        consumer: "Bruce Wayne",
+                        isOnApp: false,
+                        consumption: 4500.75,
+                        nonConsumption: 980.0,
+                        commonArea: 120.0,
+                        estimation: 1500.0,
+                        reviewed: true,
+                        dispatched: false,
+                    },
+                    {
+                        id: 6,
+                        site: "Unit 009",
+                        consumer: "Barry Allen",
+                        isOnApp: true,
+                        consumption: 0.0,
+                        nonConsumption: 450.0,
+                        commonArea: 120.0,
+                        estimation: 0.0,
+                        reviewed: false,
+                        dispatched: false,
+                        errors: ["No meter reading uploaded for period"],
+                    },
+                    {
+                        id: 7,
+                        site: "Unit 401",
+                        consumer: "Clark Kent",
+                        isOnApp: false,
+                        consumption: 340.0,
+                        nonConsumption: 450.0,
+                        commonArea: 120.0,
+                        estimation: 0.0,
+                        reviewed: false,
+                        dispatched: false,
+                    },
+                    {
+                        id: 12,
+                        site: "Unit 108",
+                        consumer: "Wanda Maximoff",
+                        isOnApp: true,
+                        consumption: 1340.5,
+                        nonConsumption: 450.0,
+                        commonArea: 120.0,
+                        estimation: 0.0,
+                        reviewed: true,
+                        dispatched: true,
+                    },
+                ],
+            };
+
+            const loadedState = jobData.bills.map((b) => ({
+                id: b.id,
+                reviewed: b.reviewed,
+                dispatched: b.dispatched,
+            }));
+            let currentData = [...jobData.bills];
+            let currentStatusFilter = "all";
+            let activeFixId = null;
+
+            const formatRand = (num) => {
+                return new Intl.NumberFormat("en-ZA", {
+                    style: "currency",
+                    currency: "ZAR",
+                    minimumFractionDigits: 2,
+                })
+                    .format(num)
+                    .replace("ZAR", "R");
+            };
+
+            // function logActivity(message, color = "text-slate-300") {
+            //     const log = document.getElementById("action-log");
+            //     const entry = document.createElement("div");
+            //     const time = new Date().toLocaleTimeString([], {
+            //         hour: "2-digit",
+            //         minute: "2-digit",
+            //         second: "2-digit",
+            //     });
+            //     entry.className = color;
+            //     entry.innerHTML = `<span class="text-slate-500">[${time}]</span> ${message}`;
+            //     log.prepend(entry);
+            // }
+
+            // function clearLog() {
+            //     document.getElementById("action-log").innerHTML = "";
+            // }
+
+            function initHeader() {
+                document.getElementById("header-site-name").textContent =
+                    jobData.site.name;
+                document.getElementById("header-address").textContent =
+                    jobData.site.address;
+                document.getElementById("header-period").textContent =
+                    `${jobData.site.month} ${jobData.site.year}`;
+            }
+
+            function renderTable(data) {
+                const tbody = document.getElementById("table-body");
+                tbody.innerHTML = "";
+
+                data.forEach((bill) => {
+                    const initial = loadedState.find((ls) => ls.id === bill.id);
+                    const total =
+                        bill.consumption +
+                        bill.nonConsumption +
+                        bill.commonArea +
+                        bill.estimation;
+                    const row = document.createElement("tr");
+                    row.className = "hover transition-colors duration-150";
+
+                    const hasError = bill.errors && bill.errors.length > 0;
+                    const errorText = hasError ? bill.errors.join(" | ") : "";
+
+                    const totalDisplay = hasError
+                        ? `<div class="tooltip tooltip-left tooltip-error" data-tip="${errorText}">
+                         <span class="badge badge-error badge-sm text-white font-bold error-badge">ERROR</span>
+                       </div>`
+                        : `<span class="text-[11px] font-bold text-primary">${formatRand(total)}</span>`;
+
+                    const actionButton = hasError
+                        ? `<div class="tooltip tooltip-left tooltip-error" data-tip="Click to Fix Error: ${errorText}">
+                        <button class="btn btn-ghost btn-xs text-error hover:bg-error/10" onclick="fixError(${bill.id})">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        </button>
+                       </div>`
+                        : `<button class="btn btn-ghost btn-xs text-slate-400" onclick="viewBill(${bill.id})">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                        </button>`;
+
+                    row.innerHTML = `
+                    <td class="p-3">
+                        <div class="flex flex-col">
+                            <span class="font-bold text-gray-800 text-xs">${bill.site}</span>
+                            <span class="text-[9px] text-gray-500 uppercase">${bill.consumer}</span>
+                        </div>
+                    </td>
+                    <td class="text-right text-[11px]">${formatRand(bill.consumption)}</td>
+                    <td class="text-right text-[11px]">${formatRand(bill.nonConsumption)}</td>
+                    <td class="text-right text-[11px]">${formatRand(bill.commonArea)}</td>
+                    <td class="text-right text-[11px] ${bill.estimation > 0 ? "text-warning font-semibold" : ""}">${formatRand(bill.estimation)}</td>
+                    <td class="text-right">${totalDisplay}</td>
+                    <td class="text-center">
+                        <input type="checkbox" class="checkbox checkbox-xs" ${bill.reviewed ? "checked" : ""}
+                            ${initial.reviewed || hasError ? "disabled" : ""}
+                            onclick="toggleStatus(${bill.id}, 'reviewed', this.checked)" />
+                    </td>
+                    <td class="text-center">
+                        <input type="checkbox" class="checkbox checkbox-xs" ${bill.dispatched ? "checked" : ""}
+                            ${initial.dispatched || !bill.reviewed || hasError ? "disabled" : ""}
+                            onclick="toggleStatus(${bill.id}, 'dispatched', this.checked)" />
+                    </td>
+                    <td class="text-center">
+                        ${actionButton}
+                    </td>
+                `;
+                    tbody.appendChild(row);
+                });
+
+                updateStats();
+                updateHeaderCheckboxes();
+            }
+
+            function updateHeaderCheckboxes() {
+                const hReview = document.getElementById(
+                    "header-check-reviewed",
+                );
+                const hDispatch = document.getElementById(
+                    "header-check-dispatched",
+                );
+
+                const eligible = currentData.filter(
+                    (b) => !(b.errors && b.errors.length > 0),
+                );
+
+                if (eligible.length === 0) {
+                    hReview.checked = false;
+                    hDispatch.checked = false;
+                    return;
+                }
+
+                hReview.checked = eligible.every((b) => b.reviewed);
+                hDispatch.checked = eligible.every((b) => b.dispatched);
+            }
+
+            window.toggleAll = (field, isChecked) => {
+                const eligible = currentData.filter((b) => {
+                    const initial = loadedState.find((ls) => ls.id === b.id);
+                    const hasError = b.errors && b.errors.length > 0;
+                    return !initial[field] && !hasError;
+                });
+
+                eligible.forEach((b) => {
+                    b[field] = isChecked;
+                    if (field === "reviewed" && !isChecked)
+                        b.dispatched = false;
+                    if (field === "dispatched" && isChecked) b.reviewed = true;
+                });
+
+                // logActivity(
+                //     `BULK: ${field.toUpperCase()} ${isChecked ? "enabled" : "disabled"} for ${eligible.length} eligible units`,
+                // );
+                renderTable(currentData);
+            };
+
+            function updateStats() {
+                const totalCount = jobData.bills.length;
+                const totalValue = jobData.bills.reduce(
+                    (acc, b) =>
+                        acc +
+                        (b.consumption +
+                            b.nonConsumption +
+                            b.commonArea +
+                            b.estimation),
+                    0,
+                );
+                const reviewedCount = jobData.bills.filter(
+                    (b) => b.reviewed,
+                ).length;
+                const errorCount = jobData.bills.filter(
+                    (b) => b.errors && b.errors.length > 0,
+                ).length;
+
+                const newReviewCount = jobData.bills.filter(
+                    (b) =>
+                        b.reviewed &&
+                        !loadedState.find((ls) => ls.id === b.id).reviewed,
+                ).length;
+                const newDispatchCount = jobData.bills.filter(
+                    (b) =>
+                        b.dispatched &&
+                        !loadedState.find((ls) => ls.id === b.id).dispatched,
+                ).length;
+
+                document.getElementById("stat-total-count").textContent =
+                    totalCount;
+                document.getElementById("stat-total-value").textContent =
+                    formatRand(totalValue);
+                document.getElementById("stat-reviewed-pct").textContent =
+                    totalCount > 0
+                        ? Math.round((reviewedCount / totalCount) * 100) + "%"
+                        : "0%";
+                document.getElementById("stat-error-count").textContent =
+                    errorCount;
+
+                document.getElementById("count-to-review").textContent =
+                    newReviewCount;
+                document.getElementById("count-to-dispatch").textContent =
+                    newDispatchCount;
+
+                document
+                    .getElementById("btn-send-reviews")
+                    .classList.toggle("hidden-action", newReviewCount === 0);
+                document
+                    .getElementById("btn-send-dispatches")
+                    .classList.toggle("hidden-action", newDispatchCount === 0);
+            }
+
+            function filterData() {
+                const term = document
+                    .getElementById("search-input")
+                    .value.toLowerCase();
+                const indicator = document.getElementById("search-indicator");
+
+                if (term.length > 0 && term.length < 4) {
+                    indicator.textContent = `${term.length}/4`;
+                    return;
+                }
+                indicator.textContent = term.length >= 4 ? "✓" : "";
+
+                currentData = jobData.bills.filter((b) => {
+                    const matchesSearch =
+                        term.length >= 4
+                            ? b.consumer.toLowerCase().includes(term) ||
+                              b.site.toLowerCase().includes(term)
+                            : true;
+                    let matchesStatus = true;
+                    if (currentStatusFilter === "pending-review")
+                        matchesStatus = !b.reviewed;
+                    else if (currentStatusFilter === "pending-dispatch")
+                        matchesStatus = !b.dispatched;
+                    else if (currentStatusFilter === "has-errors")
+                        matchesStatus = b.errors && b.errors.length > 0;
+                    return matchesSearch && matchesStatus;
+                });
+                renderTable(currentData);
+            }
+
+            window.setStatusFilter = (filterType) => {
+                currentStatusFilter = filterType;
+                document
+                    .querySelectorAll(".filter-btn")
+                    .forEach((btn) =>
+                        btn.classList.toggle(
+                            "filter-btn-active",
+                            btn.getAttribute("data-filter") === filterType,
+                        ),
+                    );
+                filterData();
+            };
+
+            window.toggleStatus = (id, field, isChecked) => {
+                const bill = jobData.bills.find((b) => b.id === id);
+                const hasError = bill.errors && bill.errors.length > 0;
+
+                if (hasError) return;
+
+                if (bill && !loadedState.find((ls) => ls.id === id)[field]) {
+                    bill[field] = isChecked;
+                    if (field === "reviewed" && !isChecked)
+                        bill.dispatched = false;
+                    // logActivity(
+                    //     `<span class="text-white">${bill.site}</span>: ${field.toUpperCase()} ${isChecked ? "selected" : "deselected"}`,
+                    // );
+                    renderTable(currentData);
+                }
+            };
+
+            // Fix Error Module Functions
+            window.fixError = (id) => {
+                const bill = jobData.bills.find((b) => b.id === id);
+                activeFixId = id;
+
+                document.getElementById("fix-site-label").textContent =
+                    `${bill.site} - ${bill.consumer}`;
+
+                const list = document.getElementById("fix-error-list");
+                list.innerHTML = bill.errors
+                    .map((err) => `<li>${err}</li>`)
+                    .join("");
+
+                document.getElementById("fix-input-cons").value =
+                    bill.consumption;
+                document.getElementById("fix-input-est").value =
+                    bill.estimation;
+
+                validateFixForm();
+                document.getElementById("fix_modal").showModal();
+            };
+
+            window.validateFixForm = () => {
+                const cons =
+                    parseFloat(
+                        document.getElementById("fix-input-cons").value,
+                    ) || 0;
+                const btn = document.getElementById("btn-save-fix");
+
+                // Simple validation: if consumption was negative or zero, it must be >= 0 to "fix" most issues
+                // For the demo: just require consumption to be >= 0 to enable save
+                btn.disabled = cons < 0;
+            };
+
+            window.saveFix = () => {
+                const bill = jobData.bills.find((b) => b.id === activeFixId);
+                const newCons =
+                    parseFloat(
+                        document.getElementById("fix-input-cons").value,
+                    ) || 0;
+                const newEst =
+                    parseFloat(
+                        document.getElementById("fix-input-est").value,
+                    ) || 0;
+
+                bill.consumption = newCons;
+                bill.estimation = newEst;
+                bill.errors = []; // Clear errors on save
+
+                // logActivity(
+                //     `FIX: <span class="text-success font-bold">${bill.site}</span> manually corrected and errors cleared.`,
+                //     "text-success",
+                // );
+
+                document.getElementById("fix_modal").close();
+                renderTable(currentData);
+            };
+
+            window.handleAction = (type) => {
+                // logActivity(
+                //     `SYSTEM: Finalizing ${type} sequence...`,
+                //     "text-warning",
+                // );
+                // setTimeout(
+                //     () =>
+                //         logActivity(
+                //             `SUCCESS: Transmission complete.`,
+                //             "text-info",
+                //         ),
+                //     800,
+                // );
+            };
+
+            window.viewBill = (id) => {
+                const bill = jobData.bills.find((b) => b.id === id);
+                document.getElementById("modal-title").textContent =
+                    `Invoice: ${bill.site}`;
+                document.getElementById("pdf-viewer").src =
+                    "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf";
+                document.getElementById("pdf_modal").showModal();
+            };
+
+            window.onload = () => {
+                initHeader();
+                renderTable(jobData.bills);
+            };
+        </script>
+    </body>
+</html>

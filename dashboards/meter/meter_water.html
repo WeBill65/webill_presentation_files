@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Water Meter ABCD - Gary Player Views</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+        <style>
+            .chart-container {
+                height: 350px;
+                width: 100%;
+            }
+            @media (min-width: 768px) {
+                .chart-container {
+                    height: 450px;
+                }
+            }
+            .glass-card {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(229, 231, 235, 1);
+            }
+
+            /* Branded Header Styles */
+            .brand-header {
+                background-color: #404068;
+                color: #faa919;
+                border-top-left-radius: 1rem;
+                border-top-right-radius: 1rem;
+                border-bottom-left-radius: 0px;
+                border-bottom-right-radius: 0px;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }
+            @media (min-width: 768px) {
+                .brand-header {
+                    border-top-left-radius: 1.5rem;
+                    border-top-right-radius: 1.5rem;
+                }
+            }
+
+            .brand-text {
+                color: #faa919;
+            }
+            .brand-subtext {
+                color: rgba(250, 169, 25, 0.8);
+            }
+
+            .header-badge {
+                background: rgba(250, 169, 25, 0.15);
+                border: 1px solid rgba(250, 169, 25, 0.3);
+                color: #faa919;
+                padding: 2px 8px;
+                border-radius: 6px;
+                font-size: 0.7rem;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+
+            /* Navigation Button Styles */
+            .nav-container {
+                background: #f1f5f9;
+            }
+            .nav-btn-active {
+                background: #faa919 !important;
+                color: #404068 !important;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+            .nav-btn-inactive {
+                color: #64748b;
+            }
+            .nav-btn-inactive:hover {
+                background: #e2e8f0;
+                color: #404068;
+            }
+
+            .sticky-header {
+                position: sticky;
+                top: 0;
+                z-index: 50;
+                padding: 0 0.5rem;
+                background: transparent;
+            }
+            @media (min-width: 640px) {
+                .sticky-header {
+                    padding: 0 1rem;
+                }
+            }
+        </style>
+    </head>
+    <body class="bg-slate-50 text-slate-900 font-sans min-h-screen">
+        <div class="sticky-header">
+            <header class="brand-header mt-2 sm:mt-0">
+                <div
+                    class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                >
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="bg-[#faa919] p-2 rounded-lg text-[#404068] shrink-0"
+                        >
+                            <svg
+                                class="w-5 h-5 sm:w-6 sm:h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                                ></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h1
+                                class="text-lg sm:text-xl font-bold brand-text leading-tight"
+                            >
+                                Water Meter ABCD
+                            </h1>
+                            <p class="text-xs sm:text-sm brand-subtext">
+                                Gary Player Views • Consumption Monitor
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 sm:gap-3">
+                        <div class="flex flex-col">
+                            <span
+                                class="text-[9px] sm:text-[10px] uppercase tracking-wider opacity-70 mb-0.5 ml-1"
+                                >Meter Number</span
+                            >
+                            <div class="header-badge">WM-7742901-GP</div>
+                        </div>
+                        <div class="flex flex-col">
+                            <span
+                                class="text-[9px] sm:text-[10px] uppercase tracking-wider opacity-70 mb-0.5 ml-1"
+                                >Tariff</span
+                            >
+                            <div class="header-badge">Residential B1</div>
+                        </div>
+                        <div class="flex flex-col">
+                            <span
+                                class="text-[9px] sm:text-[10px] uppercase tracking-wider opacity-70 mb-0.5 ml-1"
+                                >Billing Mode</span
+                            >
+                            <div class="header-badge">Prepaid</div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+        </div>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+            <!-- Metrics Overview -->
+            <div
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8"
+            >
+                <div class="glass-card p-5 sm:p-6 rounded-2xl shadow-sm">
+                    <p
+                        class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1"
+                    >
+                        Water Charges
+                    </p>
+                    <h2
+                        class="text-xl sm:text-2xl font-bold text-slate-900"
+                        id="total-water-charge"
+                    >
+                        R 0.00
+                    </h2>
+                    <p
+                        class="text-xs sm:text-sm text-blue-600 flex items-center mt-2 font-medium"
+                    >
+                        Incl. fixed fees
+                    </p>
+                </div>
+                <div class="glass-card p-5 sm:p-6 rounded-2xl shadow-sm">
+                    <p
+                        class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1"
+                    >
+                        Sewage Charges
+                    </p>
+                    <h2
+                        class="text-xl sm:text-2xl font-bold text-slate-900"
+                        id="total-sewage-charge"
+                    >
+                        R 0.00
+                    </h2>
+                    <p
+                        class="text-xs sm:text-sm text-indigo-600 flex items-center mt-2 font-medium"
+                    >
+                        Based on consumption
+                    </p>
+                </div>
+                <div class="glass-card p-5 sm:p-6 rounded-2xl shadow-sm">
+                    <p
+                        class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1"
+                    >
+                        Total Consumption
+                    </p>
+                    <h2
+                        class="text-xl sm:text-2xl font-bold text-blue-600"
+                        id="total-consumption-metric"
+                    >
+                        0.0 kL
+                    </h2>
+                    <p
+                        class="text-xs sm:text-sm text-slate-500 mt-2"
+                        id="consumption-avg-text"
+                    >
+                        Avg per unit
+                    </p>
+                </div>
+                <div class="glass-card p-5 sm:p-6 rounded-2xl shadow-sm">
+                    <p
+                        class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1"
+                    >
+                        Peak Demand
+                    </p>
+                    <h2
+                        class="text-xl sm:text-2xl font-bold text-slate-900"
+                        id="peak-usage-metric"
+                    >
+                        0.0 kL
+                    </h2>
+                    <p
+                        class="text-xs sm:text-sm text-slate-500 mt-2"
+                        id="peak-period-text"
+                    >
+                        Highest period
+                    </p>
+                </div>
+            </div>
+
+            <!-- Tabs Navigation Row -->
+            <div class="flex justify-center mb-8">
+                <div
+                    class="flex items-center gap-1 sm:gap-2 nav-container p-1 rounded-xl shadow-sm border border-slate-200"
+                >
+                    <button
+                        id="view-monthly"
+                        onclick="setView('monthly')"
+                        class="px-4 sm:px-8 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all nav-btn-active"
+                    >
+                        Monthly
+                    </button>
+                    <button
+                        id="view-daily"
+                        onclick="setView('daily')"
+                        class="px-4 sm:px-8 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all nav-btn-inactive"
+                    >
+                        Daily
+                    </button>
+                    <button
+                        id="view-hourly"
+                        onclick="setView('hourly')"
+                        class="px-4 sm:px-8 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all nav-btn-inactive"
+                    >
+                        Hourly
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Charts Section -->
+            <div class="space-y-6 sm:space-y-8">
+                <div class="glass-card p-4 sm:p-6 rounded-2xl shadow-sm">
+                    <div
+                        class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6"
+                    >
+                        <div>
+                            <h3
+                                class="text-md sm:text-lg font-bold text-slate-800"
+                            >
+                                Water Usage Analysis
+                            </h3>
+                            <p
+                                class="text-xs sm:text-sm text-slate-500"
+                                id="usage-subtitle"
+                            >
+                                Monthly Consumption in Kiloliters (kL)
+                            </p>
+                        </div>
+                        <div class="shrink-0">
+                            <span
+                                id="drilldown-notice-usage"
+                                class="text-[10px] sm:text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full border border-blue-100 font-medium"
+                                >Click bars to drill down</span
+                            >
+                        </div>
+                    </div>
+                    <div id="usage-chart" class="chart-container"></div>
+                </div>
+
+                <div class="glass-card p-4 sm:p-6 rounded-2xl shadow-sm">
+                    <div
+                        class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6"
+                    >
+                        <div>
+                            <h3
+                                class="text-md sm:text-lg font-bold text-slate-800"
+                            >
+                                Billing Breakdown (ZAR)
+                            </h3>
+                            <p
+                                class="text-xs sm:text-sm text-slate-500"
+                                id="billing-subtitle"
+                            >
+                                Estimated Charges
+                            </p>
+                        </div>
+                        <div class="shrink-0">
+                            <span
+                                id="drilldown-notice-billing"
+                                class="text-[10px] sm:text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full border border-indigo-100 font-medium"
+                                >Click bars to drill down</span
+                            >
+                        </div>
+                    </div>
+                    <div id="billing-chart" class="chart-container"></div>
+                </div>
+            </div>
+        </main>
+
+        <script>
+            const RATES = {
+                WATER_PER_KL: 28.5,
+                SEWAGE_PER_KL: 18.2,
+                FIXED_AVAILABILITY: 150.0,
+            };
+
+            let currentView = "monthly";
+            let usageChart;
+            let billingChart;
+
+            const generateData = () => {
+                const months = [
+                    "Jan 24",
+                    "Feb 24",
+                    "Mar 24",
+                    "Apr 24",
+                    "May 24",
+                    "Jun 24",
+                    "Jul 24",
+                    "Aug 24",
+                    "Sep 24",
+                    "Oct 24",
+                    "Nov 24",
+                    "Dec 24",
+                    "Jan 25",
+                    "Feb 25",
+                    "Mar 25",
+                ];
+
+                return {
+                    monthly: months.map((m) => ({
+                        label: m,
+                        kl: 60 + Math.random() * 40,
+                    })),
+                    daily: Array.from({ length: 31 }, (_, i) => ({
+                        label: `Mar ${i + 1}`,
+                        kl: 1.5 + Math.random() * 2.5,
+                    })),
+                    hourly: Array.from({ length: 24 }, (_, i) => {
+                        let base = 0.05;
+                        if ((i >= 6 && i <= 9) || (i >= 17 && i <= 20))
+                            base = 0.35;
+                        return {
+                            label: `${String(i).padStart(2, "0")}:00`,
+                            kl: base + Math.random() * 0.15,
+                        };
+                    }),
+                };
+            };
+
+            const meterData = generateData();
+
+            function downloadCSV(chart) {
+                const option = chart.getOption();
+                const labels = option.xAxis[0].data;
+                const series = option.series;
+
+                let csv =
+                    "Period," + series.map((s) => s.name).join(",") + "\n";
+
+                for (let i = 0; i < labels.length; i++) {
+                    let row = [labels[i]];
+                    series.forEach((s) => {
+                        row.push(s.data[i]);
+                    });
+                    csv += row.join(",") + "\n";
+                }
+
+                const blob = new Blob([csv], {
+                    type: "text/csv;charset=utf-8;",
+                });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute(
+                    "download",
+                    `meter_data_${currentView}_${new Date().getTime()}.csv`,
+                );
+                link.style.visibility = "hidden";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            function calculateBilling(kl, view) {
+                const water = kl * RATES.WATER_PER_KL;
+                const sewage = kl * RATES.SEWAGE_PER_KL;
+                let fixed = 0;
+                if (view === "monthly") fixed = RATES.FIXED_AVAILABILITY;
+                else if (view === "daily")
+                    fixed = RATES.FIXED_AVAILABILITY / 30;
+                else fixed = RATES.FIXED_AVAILABILITY / (30 * 24);
+
+                return { water, sewage, fixed, total: water + sewage + fixed };
+            }
+
+            function initCharts() {
+                usageChart = echarts.init(
+                    document.getElementById("usage-chart"),
+                );
+                billingChart = echarts.init(
+                    document.getElementById("billing-chart"),
+                );
+
+                window.addEventListener("resize", () => {
+                    usageChart.resize();
+                    billingChart.resize();
+                });
+
+                const handleDrilldown = () => {
+                    if (currentView === "monthly") setView("daily");
+                    else if (currentView === "daily") setView("hourly");
+                };
+
+                usageChart.on("click", handleDrilldown);
+                billingChart.on("click", handleDrilldown);
+            }
+
+            function updateCharts(view) {
+                const data = meterData[view];
+                const labels = data.map((d) => d.label);
+                const klValues = data.map((d) => d.kl);
+                const avgKL =
+                    klValues.reduce((a, b) => a + b, 0) / klValues.length;
+
+                const isMobile = window.innerWidth < 768;
+
+                const zoom =
+                    view !== "hourly"
+                        ? [
+                              {
+                                  type: "slider",
+                                  show: true,
+                                  startValue: data.length - (isMobile ? 8 : 12),
+                                  endValue: data.length - 1,
+                                  bottom: 0,
+                                  height: 20,
+                              },
+                              { type: "inside" },
+                          ]
+                        : [];
+
+                const getToolbox = (chartRef) => ({
+                    show: true,
+                    orient: isMobile ? "vertical" : "horizontal",
+                    right: isMobile ? "1%" : "5%",
+                    top: isMobile ? "10%" : "top",
+                    itemSize: isMobile ? 12 : 15,
+                    feature: {
+                        myDownloadCSV: {
+                            show: true,
+                            title: "CSV",
+                            icon: "path://M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z",
+                            onclick: function () {
+                                downloadCSV(chartRef);
+                            },
+                        },
+                        dataView: {
+                            show: true,
+                            readOnly: true,
+                            title: "View",
+                            lang: ["Data View Table", "Close"],
+                            optionToContent: function (opt) {
+                                let axisData = opt.xAxis[0].data;
+                                let series = opt.series;
+                                let table = `<div style="padding:10px;height:100%;overflow:auto;background:white;"><table style="width:100%;text-align:center;border-collapse:collapse;font-family:sans-serif;font-size:${isMobile ? "10px" : "13px"};border:1px solid #e2e8f0;"><thead><tr style="background:#404068;color:white;"><th style="padding:5px;border:1px solid #64748b;">Period</th>`;
+
+                                series.forEach((s) => {
+                                    table += `<th style="padding:5px;border:1px solid #64748b;">${s.name}</th>`;
+                                });
+                                table += "</tr></thead><tbody>";
+
+                                for (
+                                    let i = 0, l = axisData.length;
+                                    i < l;
+                                    i++
+                                ) {
+                                    const bgColor =
+                                        i % 2 === 0 ? "#ffffff" : "#f8fafc";
+                                    table += `<tr style="background:${bgColor};"><td style="padding:4px;border:1px solid #e2e8f0;font-weight:600;">${axisData[i]}</td>`;
+                                    series.forEach((s) => {
+                                        table += `<td style="padding:4px;border:1px solid #e2e8f0;">${s.data[i]}</td>`;
+                                    });
+                                    table += "</tr>";
+                                }
+                                table += "</tbody></table></div>";
+                                return table;
+                            },
+                        },
+                        restore: { show: true, title: "Reset" },
+                        saveAsImage: { show: true, title: "Save" },
+                    },
+                });
+
+                usageChart.setOption(
+                    {
+                        toolbox: getToolbox(usageChart),
+                        tooltip: {
+                            trigger: "axis",
+                            confine: true,
+                            formatter: "{b}: <b>{c} kL</b>",
+                        },
+                        grid: {
+                            top: "15%",
+                            left: "3%",
+                            right: "8%",
+                            bottom: view === "hourly" ? "10%" : "15%",
+                            containLabel: true,
+                        },
+                        xAxis: {
+                            type: "category",
+                            data: labels,
+                            axisLabel: {
+                                rotate: isMobile ? 45 : 0,
+                                fontSize: isMobile ? 10 : 12,
+                            },
+                        },
+                        yAxis: {
+                            type: "value",
+                            name: "kL",
+                            nameTextStyle: { fontSize: isMobile ? 10 : 12 },
+                        },
+                        dataZoom: zoom,
+                        series: [
+                            {
+                                name: "Consumption (kL)",
+                                type: "bar",
+                                data: klValues.map((v) => v.toFixed(3)),
+                                itemStyle: {
+                                    color: new echarts.graphic.LinearGradient(
+                                        0,
+                                        0,
+                                        0,
+                                        1,
+                                        [
+                                            { offset: 0, color: "#60a5fa" },
+                                            { offset: 1, color: "#2563eb" },
+                                        ],
+                                    ),
+                                    borderRadius: [4, 4, 0, 0],
+                                },
+                                markLine: {
+                                    silent: true,
+                                    symbol: "none",
+                                    label: {
+                                        formatter: "Avg: {c}",
+                                        position: "end",
+                                        color: "#ef4444",
+                                        fontSize: isMobile ? 9 : 11,
+                                    },
+                                    lineStyle: {
+                                        color: "#ef4444",
+                                        type: "dashed",
+                                        width: 2,
+                                    },
+                                    data: [{ yAxis: avgKL.toFixed(3) }],
+                                },
+                            },
+                        ],
+                    },
+                    true,
+                );
+
+                const billingSeries = data.map((d) =>
+                    calculateBilling(d.kl, view),
+                );
+                const waterValues = billingSeries.map((s) => s.water);
+                const sewageValues = billingSeries.map((s) => s.sewage);
+                const fixedValues = billingSeries.map((s) => s.fixed);
+                const totalValues = billingSeries.map((s) => s.total);
+
+                const avgTotal =
+                    totalValues.reduce((a, b) => a + b, 0) / totalValues.length;
+
+                billingChart.setOption(
+                    {
+                        toolbox: getToolbox(billingChart),
+                        tooltip: { trigger: "axis", confine: true },
+                        legend: {
+                            data: ["Water", "Sewage", "Fixed"],
+                            top: 0,
+                            left: isMobile ? "left" : "center",
+                            itemGap: 10,
+                            itemWidth: 15,
+                            itemHeight: 10,
+                            textStyle: { fontSize: isMobile ? 10 : 12 },
+                        },
+                        grid: {
+                            top: "15%",
+                            left: "3%",
+                            right: "8%",
+                            bottom: view === "hourly" ? "10%" : "15%",
+                            containLabel: true,
+                        },
+                        xAxis: {
+                            type: "category",
+                            data: labels,
+                            axisLabel: {
+                                rotate: isMobile ? 45 : 0,
+                                fontSize: isMobile ? 10 : 12,
+                            },
+                        },
+                        yAxis: {
+                            type: "value",
+                            name: "ZAR",
+                            nameTextStyle: { fontSize: isMobile ? 10 : 12 },
+                        },
+                        dataZoom: zoom,
+                        series: [
+                            {
+                                name: "Fixed",
+                                type: "bar",
+                                stack: "total",
+                                color: "#94a3b8",
+                                data: fixedValues.map((v) => v.toFixed(2)),
+                            },
+                            {
+                                name: "Sewage",
+                                type: "bar",
+                                stack: "total",
+                                color: "#818cf8",
+                                data: sewageValues.map((v) => v.toFixed(2)),
+                            },
+                            {
+                                name: "Water",
+                                type: "bar",
+                                stack: "total",
+                                color: "#3b82f6",
+                                data: waterValues.map((v) => v.toFixed(2)),
+                                markLine: {
+                                    silent: true,
+                                    symbol: "none",
+                                    lineStyle: { type: "dashed", width: 1.5 },
+                                    data: [
+                                        {
+                                            yAxis: avgTotal.toFixed(2),
+                                            label: {
+                                                formatter: "Avg: R{c}",
+                                                color: "#ef4444",
+                                                position: "end",
+                                                fontSize: isMobile ? 9 : 11,
+                                            },
+                                            lineStyle: {
+                                                color: "#ef4444",
+                                                width: 2,
+                                            },
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                    true,
+                );
+
+                updateMetrics(view);
+            }
+
+            function updateMetrics(view) {
+                const data = meterData[view];
+                let totalWater = 0,
+                    totalSewage = 0,
+                    totalKL = 0,
+                    maxKL = 0,
+                    peakLabel = "";
+
+                data.forEach((d) => {
+                    const b = calculateBilling(d.kl, view);
+                    totalWater += b.water + b.fixed;
+                    totalSewage += b.sewage;
+                    totalKL += d.kl;
+                    if (d.kl > maxKL) {
+                        maxKL = d.kl;
+                        peakLabel = d.label;
+                    }
+                });
+
+                document.getElementById("total-water-charge").innerText =
+                    `R ${totalWater.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+                document.getElementById("total-sewage-charge").innerText =
+                    `R ${totalSewage.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+                document.getElementById("total-consumption-metric").innerText =
+                    `${totalKL.toFixed(view === "hourly" ? 2 : 1)} kL`;
+                document.getElementById("consumption-avg-text").innerText =
+                    `Avg ${(totalKL / data.length).toFixed(view === "hourly" ? 3 : 2)} kL/${view.replace("ly", "")}`;
+                document.getElementById("peak-usage-metric").innerText =
+                    `${maxKL.toFixed(view === "hourly" ? 3 : 2)} kL`;
+                document.getElementById("peak-period-text").innerText =
+                    `Peak ${view === "monthly" ? "in" : "on"} ${peakLabel}`;
+            }
+
+            function setView(view) {
+                currentView = view;
+                ["monthly", "daily", "hourly"].forEach((v) => {
+                    const btn = document.getElementById(`view-${v}`);
+                    btn.className =
+                        v === view
+                            ? "px-4 sm:px-8 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all nav-btn-active"
+                            : "px-4 sm:px-8 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all nav-btn-inactive";
+                });
+
+                const usageSub = document.getElementById("usage-subtitle");
+                const billingSub = document.getElementById("billing-subtitle");
+                const noticeU = document.getElementById(
+                    "drilldown-notice-usage",
+                );
+                const noticeB = document.getElementById(
+                    "drilldown-notice-billing",
+                );
+
+                if (view === "monthly") {
+                    usageSub.innerText = "Monthly Consumption Trends (kL)";
+                    billingSub.innerText = "Monthly Charge Breakdown (ZAR)";
+                    noticeU.classList.remove("hidden");
+                    noticeB.classList.remove("hidden");
+                } else if (view === "daily") {
+                    usageSub.innerText = "Daily Water Usage for Selected Month";
+                    billingSub.innerText = "Daily Estimated Costs (ZAR)";
+                    noticeU.classList.remove("hidden");
+                    noticeB.classList.remove("hidden");
+                } else {
+                    usageSub.innerText = "Hourly Usage Profile (Last 24 Hours)";
+                    billingSub.innerText = "Hourly Estimated Costs (ZAR)";
+                    noticeU.classList.add("hidden");
+                    noticeB.classList.add("hidden");
+                }
+
+                updateCharts(view);
+            }
+
+            window.onload = () => {
+                initCharts();
+                setView("monthly");
+            };
+        </script>
+    </body>
+</html>

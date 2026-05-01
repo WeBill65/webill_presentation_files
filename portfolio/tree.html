@@ -1,0 +1,790 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Site Explorer - DaisyUI</title>
+        <!-- Tailwind and DaisyUI -->
+        <link
+            href="https://cdn.tailwindcss.com/2.2.19/tailwind.min.css"
+            rel="stylesheet"
+        />
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+            rel="stylesheet"
+        />
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+            body {
+                font-family: "Inter", sans-serif;
+            }
+
+            .custom-scrollbar::-webkit-scrollbar {
+                width: 5px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+                background: #e5e7eb;
+                border-radius: 10px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: #404068;
+            }
+
+            .tree-item-selected {
+                background-color: #404068 !important;
+                color: white !important;
+            }
+
+            .action-icon-focused {
+                background-color: rgba(255, 255, 255, 0.3) !important;
+                outline: 1px solid white;
+            }
+
+            .rotate-90 {
+                transform: rotate(90deg);
+            }
+            .transition-transform {
+                transition: transform 0.15s ease-in-out;
+            }
+
+            .tooltip {
+                z-index: 50;
+            }
+
+            .tree-row:focus {
+                outline: none;
+                background-color: rgba(64, 64, 104, 0.1);
+            }
+            .tree-item-selected:focus {
+                box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+                background-color: #404068 !important;
+            }
+        </style>
+    </head>
+    <body
+        class="bg-base-200 text-base-content h-screen flex flex-col overflow-hidden"
+    >
+        <!-- Top Navigation Bar -->
+        <header
+            class="navbar bg-base-100 border-b border-base-300 px-6 shrink-0 z-50"
+        >
+            <div class="flex-1 gap-3">
+                <div
+                    class="w-10 h-10 rounded-lg flex items-center justify-center text-primary-content shadow-sm bg-[#404068]"
+                >
+                    <i class="fa-solid fa-layer-group text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold leading-tight">
+                        Site Explorer
+                    </h1>
+                    <p
+                        class="text-[10px] text-base-content/50 uppercase tracking-widest font-bold"
+                    >
+                        Workspace Engine
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex-none gap-2">
+                <div class="divider divider-horizontal mx-2"></div>
+                <div class="avatar placeholder">
+                    <div
+                        class="bg-neutral text-neutral-content rounded-full w-10"
+                    >
+                        <i class="fa-solid fa-user text-sm"></i>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar -->
+            <aside
+                id="sidebar"
+                class="flex-shrink-0 bg-base-100 border-r border-base-300 flex flex-col relative z-20 shadow-sm"
+                style="width: 320px"
+            >
+                <div
+                    class="px-4 py-4 bg-base-200/50 border-b border-base-300 shrink-0"
+                >
+                    <a
+                        href="create_search_list.html"
+                        class="flex items-center gap-2 text-base-content/60 hover:text-[#404068] transition-colors group"
+                    >
+                        <i
+                            class="fa-solid fa-circle-chevron-left text-lg group-hover:-translate-x-0.5 transition-transform"
+                        ></i>
+                        <span
+                            class="text-[10px] font-bold uppercase tracking-widest"
+                            >Back to Portfolio</span
+                        >
+                    </a>
+                </div>
+
+                <!-- Tree Container -->
+                <div
+                    id="tree-container"
+                    class="flex-1 overflow-y-auto p-3 custom-scrollbar outline-none"
+                    tabindex="0"
+                >
+                    <!-- Tree items will be injected here -->
+                </div>
+
+                <div
+                    class="p-3 border-t border-base-300 bg-base-200/50 shrink-0"
+                >
+                    <div
+                        class="flex items-center gap-2 text-[10px] text-base-content/40 font-medium italic"
+                    >
+                        <i class="fa-solid fa-keyboard text-[12px]"></i>
+                        <span>ARROW KEYS TO NAVIGATE ICONS</span>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Resize Handle -->
+            <div
+                id="resize-handle"
+                class="w-1 cursor-col-resize bg-transparent hover:bg-primary/30 active:bg-primary/50 transition-colors flex-shrink-0 relative z-40 group"
+            >
+                <div
+                    class="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[1px] bg-base-300 group-hover:bg-primary"
+                ></div>
+            </div>
+
+            <!-- Main Content -->
+            <main
+                class="flex-1 bg-base-100 flex flex-col overflow-hidden relative z-10"
+            >
+                <header
+                    class="h-14 border-b border-base-300 flex items-center px-6 bg-base-100 shrink-0"
+                >
+                    <div class="text-sm breadcrumbs py-0">
+                        <ul>
+                            <li>
+                                <span
+                                    class="text-base-content/40 font-bold uppercase tracking-widest text-[10px]"
+                                    >Navigation</span
+                                >
+                            </li>
+                            <li>
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        id="header-label"
+                                        class="font-semibold text-base-content"
+                                        >Main Site</span
+                                    >
+                                    <span
+                                        id="header-id"
+                                        class="badge badge-ghost badge-sm font-mono opacity-60"
+                                        >main-site</span
+                                    >
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </header>
+
+                <div class="flex-1 overflow-y-auto p-8 bg-base-200/30">
+                    <div class="max-w-4xl mx-auto">
+                        <div
+                            class="card bg-base-100 shadow-xl border border-base-300 overflow-hidden"
+                        >
+                            <div class="card-body p-8">
+                                <div class="flex items-center gap-6 mb-8">
+                                    <div
+                                        id="content-icon"
+                                        class="w-16 h-16 rounded-2xl flex items-center justify-center text-primary-content shadow-lg bg-[#404068]"
+                                    >
+                                        <i
+                                            class="fa-solid fa-building text-3xl"
+                                        ></i>
+                                    </div>
+                                    <div>
+                                        <h2
+                                            id="content-title"
+                                            class="card-title text-3xl font-extrabold text-base-content tracking-tight"
+                                        >
+                                            Main Site
+                                        </h2>
+                                        <p
+                                            id="content-subtitle"
+                                            class="text-base-content/60 text-sm"
+                                        >
+                                            Node configuration for Main Site.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4"
+                                >
+                                    <div
+                                        class="stats shadow-sm border border-base-200"
+                                    >
+                                        <div class="stat p-4">
+                                            <div
+                                                class="stat-title text-[10px] uppercase font-bold tracking-wider"
+                                            >
+                                                Status
+                                            </div>
+                                            <div
+                                                class="stat-value text-success text-sm flex items-center gap-2"
+                                            >
+                                                <span
+                                                    class="relative flex h-2 w-2"
+                                                >
+                                                    <span
+                                                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"
+                                                    ></span>
+                                                    <span
+                                                        class="relative inline-flex rounded-full h-2 w-2 bg-success"
+                                                    ></span>
+                                                </span>
+                                                Synchronized
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="stats shadow-sm border border-base-200"
+                                    >
+                                        <div class="stat p-4">
+                                            <div
+                                                class="stat-title text-[10px] uppercase font-bold tracking-wider"
+                                            >
+                                                Type
+                                            </div>
+                                            <div
+                                                class="stat-value text-base-content text-sm"
+                                            >
+                                                Property Node
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="stats shadow-sm border border-base-200"
+                                    >
+                                        <div class="stat p-4">
+                                            <div
+                                                class="stat-title text-[10px] uppercase font-bold tracking-wider"
+                                            >
+                                                Reference
+                                            </div>
+                                            <div
+                                                id="reference-id"
+                                                class="stat-value text-primary text-xs font-mono font-bold"
+                                            >
+                                                main-site
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script>
+            // --- DATA ---
+            const createInfra = (prefix, includeEmptyUnits = false) => {
+                const base = [
+                    {
+                        id: `${prefix}-tariffs`,
+                        label: "Tariffs (3)",
+                        icon: "fa-receipt",
+                        actions: ["plus"],
+                        children: [
+                            {
+                                id: `${prefix}-tariffs-water`,
+                                label: "Water Tariffs",
+                                icon: "fa-droplet",
+                                actions: ["eye"],
+                            },
+                            {
+                                id: `${prefix}-tariffs-elec`,
+                                label: "Electricity Tariffs",
+                                icon: "fa-bolt",
+                                actions: ["eye"],
+                            },
+                            {
+                                id: `${prefix}-tariffs-gas`,
+                                label: "Gas Tariffs",
+                                icon: "fa-fire",
+                                actions: ["eye"],
+                            },
+                        ],
+                    },
+                    {
+                        id: `${prefix}-municipal`,
+                        label: "Municipal Accounts (1)",
+                        icon: "fa-building-columns",
+                        actions: ["plus"],
+                        children: [
+                            {
+                                id: `${prefix}-jhb-account`,
+                                label: "City of Johannesburg",
+                                icon: "fa-building",
+                                actions: ["plus", "invoices", "edit", "chart"],
+                                children: [
+                                    {
+                                        id: `${prefix}-jhb-water`,
+                                        label: "WM-9921",
+                                        icon: "fa-droplet",
+                                        actions: ["edit", "chart"],
+                                    },
+                                    {
+                                        id: `${prefix}-jhb-elec`,
+                                        label: "EM-5542",
+                                        icon: "fa-bolt",
+                                        acreage: "EM-5542",
+                                        actions: ["edit", "chart"],
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    {
+                        id: `${prefix}-devices`,
+                        label: "Devices (5)",
+                        icon: "fa-microchip",
+                        actions: ["plus"],
+                        children: [
+                            {
+                                id: `${prefix}-dev-water`,
+                                label: "WM-8812",
+                                icon: "fa-droplet",
+                                actions: ["edit", "chart", "file"],
+                            },
+                            {
+                                id: `${prefix}-dev-gas`,
+                                label: "GM-4421",
+                                icon: "fa-fire",
+                                actions: ["edit", "chart", "file"],
+                            },
+                            {
+                                id: `${prefix}-dev-hot`,
+                                label: "HW-7732",
+                                icon: "fa-temperature-high",
+                                actions: ["edit", "chart", "file"],
+                            },
+                            {
+                                id: `${prefix}-dev-elec`,
+                                label: "EM-2210",
+                                icon: "fa-bolt",
+                                acreage: "EM-2210",
+                                actions: ["edit", "chart", "file"],
+                            },
+                            {
+                                id: `${prefix}-dev-solar`,
+                                label: "SL-5501",
+                                icon: "fa-sun",
+                                actions: ["edit", "chart", "file"],
+                            },
+                        ],
+                    },
+                    {
+                        id: `${prefix}-check`,
+                        label: "Check Devices (2)",
+                        icon: "fa-shield-halved",
+                        actions: ["plus"],
+                        children: [
+                            {
+                                id: `${prefix}-check-water`,
+                                label: "WM-CHECK-01",
+                                icon: "fa-droplet",
+                                actions: ["link", "edit", "chart", "file"],
+                            },
+                            {
+                                id: `${prefix}-check-elec`,
+                                label: "EM-CHECK-02",
+                                icon: "fa-bolt",
+                                actions: ["link", "edit", "chart", "file"],
+                            },
+                        ],
+                    },
+                    {
+                        id: `${prefix}-gen`,
+                        label: "Generators (1)",
+                        icon: "fa-bolt",
+                        actions: ["plus"],
+                        children: [
+                            {
+                                id: `${prefix}-gen-01`,
+                                label: "GEN-7700",
+                                icon: "fa-industry",
+                                actions: ["link", "edit", "chart", "file"],
+                            },
+                        ],
+                    },
+                    {
+                        id: `${prefix}-cons`,
+                        label: "Consumers (1)",
+                        icon: "fa-user",
+                        actions: ["plus"],
+                        children: [
+                            {
+                                id: `${prefix}-cons-01`,
+                                label: "John Doe",
+                                icon: "fa-circle-user",
+                                actions: ["edit", "bills", "chart", "file"],
+                            },
+                        ],
+                    },
+                    {
+                        id: `${prefix}-common`,
+                        label: "Common Areas (1)",
+                        icon: "fa-border-all",
+                        actions: ["plus"],
+                        children: [
+                            {
+                                id: `${prefix}-ca-01`,
+                                label: "Site Common Area",
+                                icon: "fa-location-dot",
+                                actions: ["link", "edit", "chart", "file"],
+                            },
+                        ],
+                    },
+                ];
+                if (includeEmptyUnits) {
+                    base.push({
+                        id: `${prefix}-units-empty`,
+                        label: "Units (0)",
+                        icon: "fa-box",
+                        actions: ["plus"],
+                    });
+                }
+                return base;
+            };
+
+            const treeData = [
+                {
+                    id: "main-site",
+                    label: "Main Site",
+                    icon: "fa-building-columns",
+                    isOpen: true,
+                    actions: ["edit", "file", "chart"],
+                    children: [
+                        ...createInfra("main"),
+                        {
+                            id: "units-container",
+                            label: "Units (2)",
+                            icon: "fa-box",
+                            isOpen: true,
+                            actions: ["plus"],
+                            children: [
+                                {
+                                    id: "unit-gary",
+                                    label: "Gary Player",
+                                    icon: "fa-building",
+                                    actions: ["eye", "edit", "chart", "file"],
+                                    children: createInfra("gary", true),
+                                },
+                                {
+                                    id: "unit-ernie",
+                                    label: "Ernie Els",
+                                    icon: "fa-building",
+                                    acreage: "Ernie Els",
+                                    actions: ["eye", "edit", "chart", "file"],
+                                    children: createInfra("ernie", true),
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ];
+
+            let selectedId = "main-site";
+            let actionFocusIndex = -1; // -1 means row/label is focused, 0+ means specific icon is focused
+            let flatVisibleItems = [];
+
+            const treeContainer = document.getElementById("tree-container");
+
+            function renderTree(items, container, depth = 0) {
+                items.forEach((item) => {
+                    const itemEl = document.createElement("div");
+                    itemEl.className = "select-none";
+
+                    const isSelected = selectedId === item.id;
+                    const hasChildren =
+                        item.children && item.children.length > 0;
+
+                    const row = document.createElement("div");
+                    row.className = `tree-row flex items-center justify-between py-1 px-3 rounded-lg cursor-pointer transition-all duration-150 group mb-0.5 ${isSelected ? "tree-item-selected" : "hover:bg-base-200 text-base-content"}`;
+                    row.setAttribute("data-id", item.id);
+
+                    flatVisibleItems.push(item);
+
+                    const content = document.createElement("div");
+                    content.className = "flex items-center flex-1 min-w-0";
+
+                    const chevron = document.createElement("div");
+                    chevron.className =
+                        "mr-1 w-5 h-5 flex items-center justify-center rounded hover:bg-black/5 transition-colors";
+                    if (hasChildren) {
+                        chevron.innerHTML = `<i class="fa-solid fa-chevron-right text-[10px] transition-transform ${item.isOpen ? "rotate-90" : ""}"></i>`;
+                        chevron.onclick = (e) => {
+                            e.stopPropagation();
+                            item.isOpen = !item.isOpen;
+                            refreshTree();
+                            treeContainer.focus();
+                        };
+                    }
+
+                    const icon = document.createElement("div");
+                    icon.className = `mr-2.5 flex-shrink-0 w-4 flex justify-center ${isSelected ? "text-primary-content" : "text-base-content/40 group-hover:text-primary"}`;
+                    icon.innerHTML = `<i class="fa-solid ${item.icon || "fa-folder"} text-sm"></i>`;
+
+                    const label = document.createElement("span");
+                    label.className = `font-medium text-sm truncate ${isSelected ? "text-primary-content" : ""}`;
+                    label.textContent = item.label;
+
+                    content.appendChild(chevron);
+                    content.appendChild(icon);
+                    content.appendChild(label);
+
+                    const actions = document.createElement("div");
+                    actions.className = `flex items-center gap-0.5 ml-2 ${isSelected ? "flex" : "hidden"}`;
+
+                    if (item.actions) {
+                        item.actions.forEach((act, idx) => {
+                            const btn = document.createElement("div");
+                            const tooltipMap = {
+                                edit: "Edit",
+                                file: "Reports",
+                                chart: "Dashboard",
+                                plus: "Add",
+                                eye: "View",
+                                link: "Link Asset",
+                                invoices: "Invoices",
+                                bills: "Bills",
+                            };
+                            const isTopNode =
+                                depth === 0 && item.id === "main-site";
+                            const tooltipPosClass = isTopNode
+                                ? "tooltip-bottom"
+                                : "tooltip-top";
+
+                            // Check if this specific icon has "keyboard focus"
+                            const isIconFocused =
+                                isSelected && actionFocusIndex === idx;
+
+                            btn.className = `tooltip ${tooltipPosClass} p-1 rounded transition-colors text-white/90 hover:text-white ${isIconFocused ? "action-icon-focused" : "hover:bg-white/20"}`;
+                            btn.setAttribute("data-tip", tooltipMap[act]);
+
+                            const iconMap = {
+                                edit: "fa-pencil",
+                                file: "fa-file-lines",
+                                chart: "fa-chart-simple",
+                                plus: "fa-plus",
+                                eye: "fa-eye",
+                                link: "fa-link",
+                                invoices: "fa-file-invoice-dollar",
+                                bills: "fa-money-bill-1",
+                            };
+                            btn.innerHTML = `<i class="fa-solid ${iconMap[act]} text-[10px]"></i>`;
+                            btn.onclick = (e) => e.stopPropagation();
+                            actions.appendChild(btn);
+                        });
+                    }
+
+                    row.appendChild(content);
+                    row.appendChild(actions);
+
+                    row.onclick = () => {
+                        actionFocusIndex = -1;
+                        selectNode(item);
+                    };
+
+                    itemEl.appendChild(row);
+
+                    if (hasChildren && item.isOpen) {
+                        const childContainer = document.createElement("div");
+                        childContainer.className =
+                            "ml-4 border-l border-base-300 pl-2 mt-0.5 space-y-0.5";
+                        renderTree(item.children, childContainer, depth + 1);
+                        itemEl.appendChild(childContainer);
+                    }
+
+                    container.appendChild(itemEl);
+                });
+            }
+
+            function selectNode(item) {
+                selectedId = item.id;
+                updateMainContent(item);
+                refreshTree();
+                treeContainer.focus();
+
+                const el = document.querySelector(`[data-id="${item.id}"]`);
+                if (el) {
+                    el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                }
+            }
+
+            function refreshTree() {
+                flatVisibleItems = [];
+                treeContainer.innerHTML = "";
+                renderTree(treeData, treeContainer);
+            }
+
+            function updateMainContent(item) {
+                document.getElementById("header-label").textContent =
+                    item.label;
+                document.getElementById("header-id").textContent = item.id;
+                document.getElementById("content-title").textContent =
+                    item.label;
+                document.getElementById("content-subtitle").textContent =
+                    `Node configuration for ${item.label}.`;
+                document.getElementById("reference-id").textContent = item.id;
+                document.getElementById("content-icon").innerHTML =
+                    `<i class="fa-solid ${item.icon || "fa-folder"} text-3xl"></i>`;
+            }
+
+            // --- KEYBOARD NAVIGATION ---
+            treeContainer.addEventListener("keydown", (e) => {
+                const currentIndex = flatVisibleItems.findIndex(
+                    (item) => item.id === selectedId,
+                );
+                if (currentIndex === -1) return;
+
+                const currentItem = flatVisibleItems[currentIndex];
+                const numActions = (currentItem.actions || []).length;
+
+                switch (e.key) {
+                    case "ArrowDown":
+                        e.preventDefault();
+                        actionFocusIndex = -1; // Reset action focus when moving vertical
+                        if (currentIndex < flatVisibleItems.length - 1) {
+                            selectNode(flatVisibleItems[currentIndex + 1]);
+                        }
+                        break;
+                    case "ArrowUp":
+                        e.preventDefault();
+                        actionFocusIndex = -1; // Reset action focus when moving vertical
+                        if (currentIndex > 0) {
+                            selectNode(flatVisibleItems[currentIndex - 1]);
+                        }
+                        break;
+                    case "ArrowRight":
+                        e.preventDefault();
+                        if (actionFocusIndex < numActions - 1) {
+                            // Move to next icon or enter icon list
+                            actionFocusIndex++;
+                            refreshTree();
+                        } else if (
+                            currentItem.children &&
+                            currentItem.children.length > 0
+                        ) {
+                            // If no more icons or no icons, check folder expansion
+                            if (!currentItem.isOpen) {
+                                currentItem.isOpen = true;
+                                actionFocusIndex = -1;
+                                refreshTree();
+                            } else {
+                                // Move into first child
+                                actionFocusIndex = -1;
+                                selectNode(flatVisibleItems[currentIndex + 1]);
+                            }
+                        }
+                        break;
+                    case "ArrowLeft":
+                        e.preventDefault();
+                        if (actionFocusIndex >= 0) {
+                            // Move back toward the label
+                            actionFocusIndex--;
+                            refreshTree();
+                        } else if (currentItem.isOpen) {
+                            // Collapse folder
+                            currentItem.isOpen = false;
+                            refreshTree();
+                        } else {
+                            // Move to parent
+                            const findParent = (list) => {
+                                for (let node of list) {
+                                    if (
+                                        node.children &&
+                                        node.children.some(
+                                            (c) => c.id === currentItem.id,
+                                        )
+                                    )
+                                        return node;
+                                    if (node.children) {
+                                        const res = findParent(node.children);
+                                        if (res) return res;
+                                    }
+                                }
+                                return null;
+                            };
+                            const parent = findParent(treeData);
+                            if (parent) {
+                                actionFocusIndex = -1;
+                                selectNode(parent);
+                            }
+                        }
+                        break;
+                    case "Enter":
+                    case " ":
+                        e.preventDefault();
+                        if (actionFocusIndex >= 0) {
+                            // "Click" the action icon
+                            const action =
+                                currentItem.actions[actionFocusIndex];
+                            console.log(
+                                `Action triggered: ${action} for ${currentItem.id}`,
+                            );
+                            // You could trigger actual logic here
+                        } else if (
+                            currentItem.children &&
+                            currentItem.children.length > 0
+                        ) {
+                            currentItem.isOpen = !currentItem.isOpen;
+                            refreshTree();
+                        }
+                        break;
+                }
+            });
+
+            const sidebar = document.getElementById("sidebar");
+            const handle = document.getElementById("resize-handle");
+            let isResizing = false;
+
+            handle.onmousedown = () => {
+                isResizing = true;
+                document.body.style.cursor = "col-resize";
+                document.body.style.userSelect = "none";
+            };
+
+            window.onmousemove = (e) => {
+                if (!isResizing) return;
+                const newWidth = e.clientX;
+                if (newWidth > 200 && newWidth < 600) {
+                    sidebar.style.width = newWidth + "px";
+                }
+            };
+
+            window.onmouseup = () => {
+                isResizing = false;
+                document.body.style.cursor = "default";
+                document.body.style.userSelect = "auto";
+            };
+
+            window.onload = () => {
+                refreshTree();
+                treeContainer.focus();
+            };
+        </script>
+    </body>
+</html>

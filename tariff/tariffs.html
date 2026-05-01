@@ -1,0 +1,1138 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Utility Tariff Search</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <style>
+            :root {
+                --brand-primary: #404068;
+                --brand-accent: #faa919;
+                --brand-hover: #35355a;
+                --brand-primary-light: #7c7ca8;
+            }
+
+            body {
+                background-color: #f9fafb;
+                font-family:
+                    ui-sans-serif,
+                    system-ui,
+                    -apple-system,
+                    sans-serif;
+                overflow-x: hidden;
+            }
+
+            .table-container {
+                background: white;
+                border-radius: 0.75rem;
+                overflow: hidden;
+                border: 1px solid #e5e7eb;
+            }
+
+            .header-bg {
+                background-color: var(--brand-primary);
+            }
+
+            .accent-text {
+                color: var(--brand-accent);
+            }
+
+            .btn-accent-brand {
+                background-color: var(--brand-accent);
+                color: var(--brand-primary);
+                border: none;
+                font-weight: 800;
+            }
+
+            .bg-brand-accent {
+                background-color: var(--brand-accent);
+            }
+
+            .scrollable-table-wrapper {
+                max-height: 60vh;
+                overflow: auto;
+                position: relative;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .table thead tr th {
+                position: sticky;
+                top: 0;
+                z-index: 10;
+                color: white !important;
+                background-color: var(--brand-primary) !important;
+                border-bottom: 2px solid var(--brand-accent);
+                white-space: nowrap;
+            }
+
+            .sort-header {
+                cursor: pointer;
+                transition: background-color 0.2s;
+            }
+            .sort-header:hover {
+                background-color: var(--brand-hover) !important;
+            }
+
+            .stat-pill {
+                display: flex;
+                align-items: center;
+                gap: 0.4rem;
+                padding: 0.25rem 0.75rem;
+                background: white;
+                border: 1px solid #e2e8f0;
+                border-radius: 9999px;
+                font-size: 0.7rem;
+                font-weight: 600;
+                color: #64748b;
+                white-space: nowrap;
+            }
+
+            .stat-pill span {
+                color: #1e293b;
+                font-weight: 800;
+            }
+
+            .search-controls {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding-right: 0.25rem;
+            }
+
+            .search-btn {
+                padding: 0.45rem;
+                border-radius: 0.5rem;
+                color: #64748b;
+                transition: all 0.2s ease;
+                cursor: pointer;
+                border: 1px solid #e2e8f0;
+                background: #f8fafc;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .charges-badge {
+                cursor: pointer;
+                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 2.5rem;
+                user-select: none;
+            }
+            .charges-badge:hover {
+                transform: translateY(-1px) scale(1.1);
+                background-color: var(--brand-primary);
+                color: white;
+                box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+                border-color: var(--brand-primary);
+            }
+
+            .expanded-row {
+                background-color: #f8fafc !important;
+            }
+
+            .inner-table-scroll {
+                max-height: 300px;
+                overflow-y: auto;
+                border-radius: 0.5rem;
+                border: 1px solid #e2e8f0;
+                position: relative;
+            }
+
+            .inner-table-scroll .table thead tr th.inner-th {
+                position: sticky;
+                top: 0;
+                z-index: 20;
+                background-color: var(--brand-primary-light) !important;
+                color: white !important;
+                font-size: 9px;
+                height: 2rem;
+            }
+
+            .filter-trigger:hover {
+                background-color: var(--brand-accent) !important;
+                color: white !important;
+                border-color: var(--brand-accent) !important;
+            }
+
+            .filter-btn-active {
+                background-color: var(--brand-accent) !important;
+                color: var(--brand-primary) !important;
+                font-weight: 800;
+            }
+
+            .modal-box {
+                max-width: 55rem;
+            }
+
+            .user-list-container {
+                height: 350px;
+                overflow-y: auto;
+            }
+
+            .role-badge {
+                font-size: 0.65rem;
+                padding: 0.1rem 0.4rem;
+                border-radius: 9999px;
+                font-weight: bold;
+            }
+
+            .tariff-link {
+                color: #4f46e5;
+                text-decoration: none;
+                cursor: pointer;
+            }
+            .tariff-link:hover {
+                text-decoration: underline;
+                color: var(--brand-primary);
+            }
+
+            .sort-icon {
+                width: 12px;
+                height: 12px;
+                display: inline-block;
+                vertical-align: middle;
+                margin-left: 4px;
+                opacity: 0.6;
+            }
+            .sort-active {
+                opacity: 1;
+                color: var(--brand-accent);
+            }
+
+            .tooltip:before {
+                font-size: 10px;
+                font-weight: bold;
+                text-transform: uppercase;
+            }
+
+            @media (max-width: 640px) {
+                .modal-box {
+                    padding: 0 !important;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="min-h-screen py-2 md:py-8 px-2 md:px-6">
+            <div class="max-w-7xl mx-auto">
+                <div class="table-container shadow-2xl">
+                    <div class="header-bg p-4 md:p-6 lg:p-8">
+                        <div
+                            class="flex flex-col lg:flex-row lg:items-center justify-between gap-6"
+                        >
+                            <div class="text-center lg:text-left">
+                                <h1
+                                    class="text-2xl md:text-3xl font-black accent-text tracking-tight uppercase"
+                                >
+                                    Tariff Repository
+                                </h1>
+                                <p
+                                    class="mt-1 opacity-80 text-white text-xs md:text-sm font-medium"
+                                >
+                                    Search and manage user access for utility
+                                    tariffs.
+                                </p>
+                            </div>
+
+                            <div
+                                class="flex flex-col md:flex-row items-center gap-3 w-full lg:w-auto"
+                            >
+                                <div
+                                    class="relative w-full md:min-w-[450px] flex items-center bg-white rounded-lg shadow-inner overflow-hidden border border-gray-200"
+                                >
+                                    <input
+                                        type="text"
+                                        id="searchInput"
+                                        placeholder="Search by name or provider..."
+                                        class="input border-none w-full bg-transparent text-gray-800 h-11 md:h-12 focus:ring-0 px-4"
+                                        oninput="applyFilters()"
+                                    />
+                                    <div class="search-controls pr-2">
+                                        <label
+                                            class="flex items-center gap-2 cursor-pointer px-3 border-r border-gray-100 h-6"
+                                        >
+                                            <span
+                                                class="text-[9px] font-black text-gray-400 uppercase tracking-widest hidden sm:inline"
+                                                >Public</span
+                                            >
+                                            <input
+                                                type="checkbox"
+                                                id="publicOnlyCheckbox"
+                                                class="toggle toggle-warning toggle-xs"
+                                                onchange="applyFilters()"
+                                            />
+                                        </label>
+                                        <button
+                                            class="search-btn border-none bg-transparent"
+                                            onclick="applyFilters()"
+                                        >
+                                            <i
+                                                data-lucide="search"
+                                                class="w-5 h-5"
+                                            ></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <button
+                                    onclick="openTariffModal()"
+                                    class="btn btn-accent-brand h-11 md:h-12 w-full md:w-auto min-w-[140px]"
+                                >
+                                    <i data-lucide="plus" class="w-5 h-5"></i>
+                                    Add
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        class="bg-gray-50 border-b border-gray-100 py-3 px-4 md:px-6 flex flex-col sm:flex-row justify-between items-center gap-4"
+                    >
+                        <div
+                            class="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0"
+                        >
+                            <div
+                                class="stat-pill border-l-4 border-l-[#404068]"
+                            >
+                                Total: <span id="stat-total">0</span>
+                            </div>
+                            <div
+                                class="stat-pill border-l-4 border-l-amber-400"
+                            >
+                                Electricity:
+                                <span id="stat-electricity">0</span>
+                            </div>
+                            <div class="stat-pill border-l-4 border-l-blue-400">
+                                Water: <span id="stat-water">0</span>
+                            </div>
+                            <div
+                                class="stat-pill border-l-4 border-l-orange-400"
+                            >
+                                Gas: <span id="stat-gas">0</span>
+                            </div>
+                            <div
+                                class="stat-pill border-l-4 border-l-emerald-400"
+                            >
+                                Sewage: <span id="stat-sewage">0</span>
+                            </div>
+                        </div>
+
+                        <div
+                            class="flex items-center gap-2 self-end sm:self-auto"
+                        >
+                            <div class="dropdown dropdown-end">
+                                <label
+                                    tabindex="0"
+                                    class="btn btn-sm md:btn-md btn-ghost border border-gray-200 bg-white filter-trigger gap-2 normal-case"
+                                >
+                                    <i
+                                        data-lucide="filter"
+                                        class="w-4 h-4 text-gray-600"
+                                    ></i>
+                                    <span id="activeFilterLabel" class="text-xs"
+                                        >All</span
+                                    >
+                                </label>
+                                <div
+                                    tabindex="0"
+                                    class="dropdown-content z-[30] card card-compact w-64 p-2 shadow-2xl bg-white border border-gray-100 mt-2"
+                                >
+                                    <div
+                                        class="card-body p-2 gap-1"
+                                        id="utilityFilterOptions"
+                                    >
+                                        <button
+                                            onclick="setUtilityFilter('ALL')"
+                                            class="btn btn-sm justify-start gap-3 filter-btn-active"
+                                            data-util="ALL"
+                                        >
+                                            <i
+                                                data-lucide="layers"
+                                                class="w-4 h-4"
+                                            ></i>
+                                            All Utilities
+                                        </button>
+                                        <button
+                                            onclick="
+                                                setUtilityFilter('ELECTRICITY')
+                                            "
+                                            class="btn btn-sm btn-ghost justify-start gap-3"
+                                            data-util="ELECTRICITY"
+                                        >
+                                            <i
+                                                data-lucide="zap"
+                                                class="w-4 h-4 text-amber-500"
+                                            ></i>
+                                            Electricity
+                                        </button>
+                                        <button
+                                            onclick="setUtilityFilter('WATER')"
+                                            class="btn btn-sm btn-ghost justify-start gap-3"
+                                            data-util="WATER"
+                                        >
+                                            <i
+                                                data-lucide="droplet"
+                                                class="w-4 h-4 text-blue-500"
+                                            ></i>
+                                            Water
+                                        </button>
+                                        <button
+                                            onclick="setUtilityFilter('GAS')"
+                                            class="btn btn-sm btn-ghost justify-start gap-3"
+                                            data-util="GAS"
+                                        >
+                                            <i
+                                                data-lucide="flame"
+                                                class="w-4 h-4 text-orange-500"
+                                            ></i>
+                                            Gas
+                                        </button>
+                                        <button
+                                            onclick="setUtilityFilter('SEWAGE')"
+                                            class="btn btn-sm btn-ghost justify-start gap-3"
+                                            data-util="SEWAGE"
+                                        >
+                                            <i
+                                                data-lucide="waves"
+                                                class="w-4 h-4 text-emerald-500"
+                                            ></i>
+                                            Sewage
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-0 sm:p-2">
+                        <div class="scrollable-table-wrapper">
+                            <table class="table w-full text-gray-800">
+                                <thead>
+                                    <tr
+                                        class="text-[10px] uppercase font-black tracking-widest"
+                                    >
+                                        <th
+                                            class="sort-header"
+                                            onclick="handleSort('name')"
+                                        >
+                                            Name
+                                            <i
+                                                data-lucide="arrow-up-down"
+                                                class="sort-icon"
+                                                id="sort-name"
+                                            ></i>
+                                        </th>
+                                        <th
+                                            class="hidden md:table-cell sort-header"
+                                            onclick="handleSort('provider')"
+                                        >
+                                            Provider
+                                            <i
+                                                data-lucide="arrow-up-down"
+                                                class="sort-icon"
+                                                id="sort-provider"
+                                            ></i>
+                                        </th>
+                                        <th
+                                            class="sort-header"
+                                            onclick="handleSort('utility')"
+                                        >
+                                            Type
+                                            <i
+                                                data-lucide="arrow-up-down"
+                                                class="sort-icon"
+                                                id="sort-utility"
+                                            ></i>
+                                        </th>
+                                        <th
+                                            class="hidden sm:table-cell text-center"
+                                        >
+                                            Charges
+                                        </th>
+                                        <th class="text-center">Users</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tariffTableBody"></tbody>
+                            </table>
+                            <div
+                                id="noResults"
+                                class="hidden text-center py-20 bg-gray-50/50"
+                            >
+                                <p
+                                    class="text-gray-400 font-bold italic uppercase text-xs tracking-widest"
+                                >
+                                    No matching tariffs found
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Tariff Form Modal (iframe) -->
+        <dialog id="newTariffModal" class="modal">
+            <div class="modal-box p-0 overflow-hidden border border-gray-200 shadow-2xl w-11/12 max-w-5xl h-[90vh] relative rounded-xl">
+                <form method="dialog" class="absolute top-3 right-3 z-10">
+                    <button class="btn btn-sm btn-circle btn-ghost bg-white/80 hover:bg-white shadow text-gray-600">✕</button>
+                </form>
+                <iframe src="new_tariff_form.html" class="w-full h-full border-0 block"></iframe>
+            </div>
+            <form method="dialog" class="modal-backdrop"><button>close</button></form>
+        </dialog>
+
+        <!-- Tariff Edit Modal -->
+        <dialog id="tariffEditModal" class="modal">
+            <div
+                class="modal-box bg-white p-0 overflow-hidden border border-gray-200 shadow-2xl max-w-xl"
+            >
+                <div class="header-bg p-6 flex justify-between items-center">
+                    <h3
+                        class="font-bold text-lg accent-text"
+                        id="tariffModalTitle"
+                    >
+                        Edit Tariff
+                    </h3>
+                    <form method="dialog">
+                        <button
+                            class="btn btn-sm btn-circle btn-ghost text-white"
+                        >
+                            ✕
+                        </button>
+                    </form>
+                </div>
+                <div class="p-6">
+                    <form id="tariffForm" class="space-y-4">
+                        <div class="form-control">
+                            <label class="label"
+                                ><span
+                                    class="label-text font-bold text-gray-600"
+                                    >Tariff Name</span
+                                ></label
+                            >
+                            <input
+                                type="text"
+                                id="editName"
+                                class="input input-bordered w-full"
+                                required
+                            />
+                        </div>
+                        <div class="form-control">
+                            <label class="label"
+                                ><span
+                                    class="label-text font-bold text-gray-600"
+                                    >Provider</span
+                                ></label
+                            >
+                            <input
+                                type="text"
+                                id="editProvider"
+                                class="input input-bordered w-full"
+                                required
+                            />
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-control">
+                                <label class="label"
+                                    ><span
+                                        class="label-text font-bold text-gray-600"
+                                        >Utility Type</span
+                                    ></label
+                                >
+                                <select
+                                    id="editUtility"
+                                    class="select select-bordered w-full"
+                                >
+                                    <option value="ELECTRICITY">
+                                        Electricity
+                                    </option>
+                                    <option value="WATER">Water</option>
+                                    <option value="GAS">Gas</option>
+                                    <option value="SEWAGE">Sewage</option>
+                                </select>
+                            </div>
+                            <div
+                                class="form-control flex flex-row items-center gap-2 pt-8"
+                            >
+                                <input
+                                    type="checkbox"
+                                    id="editPublic"
+                                    class="checkbox checkbox-warning"
+                                />
+                                <span class="label-text font-bold text-gray-600"
+                                    >Public Access</span
+                                >
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="bg-gray-100 p-4 border-t flex justify-end gap-3">
+                    <form method="dialog">
+                        <button
+                            class="btn btn-ghost btn-sm text-gray-500 font-bold uppercase text-[10px]"
+                        >
+                            Cancel
+                        </button>
+                    </form>
+                    <button
+                        onclick="saveTariff()"
+                        class="btn btn-accent-brand btn-sm px-8 uppercase text-[10px]"
+                    >
+                        Save Tariff
+                    </button>
+                </div>
+            </div>
+            <form method="dialog" class="modal-backdrop">
+                <button>close</button>
+            </form>
+        </dialog>
+
+        <!-- RESTORED User Management Modal (Lines 615-702 Pattern) -->
+        <dialog id="userModal" class="modal">
+            <div
+                class="modal-box bg-white p-0 overflow-hidden border border-gray-200 shadow-2xl"
+            >
+                <div class="header-bg p-6 flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-lg accent-text">
+                            Manage Tariff Access
+                        </h3>
+                        <p
+                            class="text-xs text-white opacity-80"
+                            id="userModalTariffInfo"
+                        ></p>
+                    </div>
+                    <form method="dialog">
+                        <button
+                            class="btn btn-sm btn-circle btn-ghost text-white"
+                        >
+                            ✕
+                        </button>
+                    </form>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div
+                            class="flex flex-col h-full border rounded-xl overflow-hidden bg-gray-50"
+                        >
+                            <div
+                                class="p-3 bg-gray-100 border-b flex justify-between items-center"
+                            >
+                                <span
+                                    class="text-xs font-bold text-gray-600 uppercase"
+                                    >Existing Users</span
+                                >
+                                <span
+                                    id="existingCount"
+                                    class="badge badge-sm badge-neutral"
+                                    >0</span
+                                >
+                            </div>
+                            <div
+                                id="existingUserList"
+                                class="user-list-container p-2 space-y-2"
+                            ></div>
+                        </div>
+                        <div
+                            class="flex flex-col h-full border rounded-xl overflow-hidden bg-gray-50"
+                        >
+                            <div
+                                class="p-3 bg-gray-100 border-b flex justify-between items-center"
+                            >
+                                <span
+                                    class="text-xs font-bold text-gray-600 uppercase"
+                                    >Available Users</span
+                                >
+                                <span
+                                    id="availableCount"
+                                    class="badge badge-sm badge-outline"
+                                    >0</span
+                                >
+                            </div>
+                            <div
+                                id="availableUserList"
+                                class="user-list-container p-2 space-y-2"
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-100 p-4 border-t flex justify-end gap-3">
+                    <form method="dialog">
+                        <button
+                            class="btn btn-ghost btn-sm text-gray-500 font-bold uppercase text-[10px]"
+                        >
+                            Cancel
+                        </button>
+                    </form>
+                    <button
+                        onclick="saveUserAssignments()"
+                        class="btn btn-accent-brand btn-sm px-8 uppercase text-[10px]"
+                    >
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+            <form method="dialog" class="modal-backdrop">
+                <button>close</button>
+            </form>
+        </dialog>
+
+        <dialog id="ratesModal" class="modal">
+            <div
+                class="modal-box bg-white p-0 overflow-hidden border border-gray-200 shadow-2xl max-w-2xl"
+            >
+                <div class="header-bg p-4 flex justify-between items-center">
+                    <h3
+                        class="font-black text-xl accent-text uppercase tracking-tight"
+                    >
+                        Rate Breakdown
+                    </h3>
+                    <form method="dialog">
+                        <button
+                            class="btn btn-sm btn-circle btn-ghost text-white"
+                        >
+                            ✕
+                        </button>
+                    </form>
+                </div>
+                <div class="p-4 md:p-6 overflow-x-auto">
+                    <table class="table table-compact w-full text-xs">
+                        <thead>
+                            <tr
+                                class="bg-gray-50 uppercase text-[10px] font-black text-gray-400"
+                            >
+                                <th>Tier Description</th>
+                                <th class="text-center">Range</th>
+                                <th class="text-right">Rate (ZAR)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ratesModalBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <form method="dialog" class="modal-backdrop">
+                <button>close</button>
+            </form>
+        </dialog>
+
+        <script>
+            const allUsers = [
+                {
+                    id: 101,
+                    name: "Sarah Jenkins",
+                    email: "s.jenkins@utility.com",
+                },
+                {
+                    id: 102,
+                    name: "Mark Thompson",
+                    email: "m.thompson@municipal.gov",
+                },
+                {
+                    id: 103,
+                    name: "Elena Rodriguez",
+                    email: "e.rodriguez@energygrid.net",
+                },
+                { id: 104, name: "David Chen", email: "d.chen@citywater.org" },
+                { id: 105, name: "Lisa Wong", email: "l.wong@privateinfra.co" },
+                {
+                    id: 106,
+                    name: "James Wilson",
+                    email: "j.wilson@utility.com",
+                },
+            ];
+
+            const mockTariffs = Array.from({ length: 30 }, (_, i) => {
+                const utils = ["ELECTRICITY", "WATER", "GAS", "SEWAGE"];
+                const util = utils[i % 4];
+                return {
+                    id: i + 1,
+                    name: `${util.charAt(0) + util.slice(1).toLowerCase()} Plan ${i + 1}`,
+                    provider: i % 2 === 0 ? "City Power Ltd" : "Aqua Global",
+                    utility: util,
+                    isPublic: i % 3 === 0,
+                    chargesCount: (i % 8) + 12,
+                    assignedUsers:
+                        i === 0 ? [{ userId: 101, role: "Administrator" }] : [],
+                    charges: Array.from({ length: (i % 8) + 12 }, (_, j) => ({
+                        id: j + 1,
+                        name:
+                            j === 0
+                                ? "Basic Service"
+                                : `Charge Component ${j + 1}`,
+                        index: j + 1,
+                        frequency: "Monthly",
+                        season: "High",
+                        tou: "Peak",
+                        isBlock: j % 2 === 0 ? "Yes" : "No",
+                        rateTable: [
+                            {
+                                desc: "Standard",
+                                lower: 0,
+                                upper: 100,
+                                val: "1.50",
+                            },
+                            {
+                                desc: "High Use",
+                                lower: 101,
+                                upper: 500,
+                                val: "2.10",
+                            },
+                        ],
+                    })),
+                };
+            });
+
+            let activeTariffId = null;
+            let expandedId = null;
+            let sortConfig = { key: "name", direction: "asc" };
+            let currentUtilityFilter = "ALL";
+
+            function handleSort(key) {
+                if (sortConfig.key === key) {
+                    sortConfig.direction =
+                        sortConfig.direction === "asc" ? "desc" : "asc";
+                } else {
+                    sortConfig.key = key;
+                    sortConfig.direction = "asc";
+                }
+                renderTable();
+            }
+
+            function setUtilityFilter(value) {
+                currentUtilityFilter = value;
+                document.getElementById("activeFilterLabel").textContent =
+                    value === "ALL"
+                        ? "All"
+                        : value.charAt(0) + value.slice(1).toLowerCase();
+                const buttons = document.querySelectorAll(
+                    "#utilityFilterOptions button",
+                );
+                buttons.forEach((btn) => {
+                    if (btn.getAttribute("data-util") === value) {
+                        btn.classList.add("filter-btn-active");
+                        btn.classList.remove("btn-ghost");
+                    } else {
+                        btn.classList.remove("filter-btn-active");
+                        btn.classList.add("btn-ghost");
+                    }
+                });
+                const dropdown = document.activeElement;
+                if (dropdown) dropdown.blur();
+                applyFilters();
+            }
+
+            function updateSortIcons() {
+                const keys = ["name", "provider", "utility"];
+                keys.forEach((k) => {
+                    const el = document.getElementById(`sort-${k}`);
+                    if (!el) return;
+                    if (sortConfig.key === k) {
+                        el.classList.add("sort-active");
+                        el.setAttribute(
+                            "data-lucide",
+                            sortConfig.direction === "asc"
+                                ? "arrow-up"
+                                : "arrow-down",
+                        );
+                    } else {
+                        el.classList.remove("sort-active");
+                        el.setAttribute("data-lucide", "arrow-up-down");
+                    }
+                });
+                lucide.createIcons();
+            }
+
+            function renderTable() {
+                const tbody = document.getElementById("tariffTableBody");
+                const searchTerm = document
+                    .getElementById("searchInput")
+                    .value.toLowerCase();
+                const publicOnly =
+                    document.getElementById("publicOnlyCheckbox").checked;
+
+                let filtered = mockTariffs.filter((t) => {
+                    const matchesSearch =
+                        t.name.toLowerCase().includes(searchTerm) ||
+                        t.provider.toLowerCase().includes(searchTerm);
+                    const matchesPublic = !publicOnly || t.isPublic;
+                    const matchesUtility =
+                        currentUtilityFilter === "ALL" ||
+                        t.utility === currentUtilityFilter;
+                    return matchesSearch && matchesPublic && matchesUtility;
+                });
+
+                filtered.sort((a, b) => {
+                    let valA = a[sortConfig.key].toLowerCase();
+                    let valB = b[sortConfig.key].toLowerCase();
+                    if (valA < valB)
+                        return sortConfig.direction === "asc" ? -1 : 1;
+                    if (valA > valB)
+                        return sortConfig.direction === "asc" ? 1 : -1;
+                    return 0;
+                });
+
+                tbody.innerHTML = "";
+                filtered.forEach((item) => {
+                    const row = document.createElement("tr");
+                    row.className =
+                        "hover:bg-gray-50 border-b border-gray-100 transition-colors group";
+                    row.innerHTML = `
+                        <td class="font-semibold text-xs md:text-sm">
+                            <div class="tooltip tooltip-right" data-tip="edit">
+                                <span onclick="openTariffModal(${item.id})" class="tariff-link">${item.name}</span>
+                            </div>
+                        </td>
+                        <td class="hidden md:table-cell text-gray-500">${item.provider}</td>
+                        <td><span class="badge badge-sm border font-bold ${getUtilClass(item.utility)}">${item.utility}</span></td>
+                        <td class="hidden sm:table-cell text-center">
+                            <span onclick="toggleCharges(${item.id})" class="charges-badge px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 font-black text-xs border border-gray-200">
+                                ${item.chargesCount}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <button class="btn btn-ghost btn-xs text-gray-400 hover:text-indigo-600 relative" onclick="openUserModal(${item.id})">
+                                <i data-lucide="users" class="w-4 h-4 md:w-5 md:h-5"></i>
+                                ${item.assignedUsers.length > 0 ? `<span class="absolute -top-1.5 -right-1.5 bg-brand-accent text-[8px] text-white rounded-full w-4 h-4 flex items-center justify-center font-black ring-2 ring-white">${item.assignedUsers.length}</span>` : ""}
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+
+                    if (expandedId === item.id) {
+                        const expandRow = document.createElement("tr");
+                        expandRow.className = "expanded-row";
+                        expandRow.innerHTML = `
+                            <td colspan="5" class="p-4 bg-gray-50/30">
+                                <div class="inner-table-scroll">
+                                    <table class="table table-xs w-full bg-white">
+                                        <thead>
+                                            <tr>
+                                                <th class="inner-th">Charge</th>
+                                                <th class="inner-th">Freq</th>
+                                                <th class="inner-th">Season</th>
+                                                <th class="inner-th">Block</th>
+                                                <th class="text-center inner-th">Rates</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${item.charges
+                                                .map(
+                                                    (c) => `
+                                                <tr class="hover:bg-gray-50">
+                                                    <td class="font-medium text-gray-700">${c.name}</td>
+                                                    <td class="text-gray-500">${c.frequency}</td>
+                                                    <td><span class="badge badge-ghost badge-xs text-[9px]">${c.season}</span></td>
+                                                    <td class="text-gray-500">${c.isBlock}</td>
+                                                    <td class="text-center">
+                                                        <button onclick="showRates(${item.id}, ${c.id})" class="btn btn-ghost btn-xs text-indigo-500">
+                                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            `,
+                                                )
+                                                .join("")}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </td>
+                        `;
+                        tbody.appendChild(expandRow);
+                    }
+                });
+
+                document
+                    .getElementById("noResults")
+                    .classList.toggle("hidden", filtered.length > 0);
+                updateStats();
+                updateSortIcons();
+            }
+
+            function openTariffModal(id = null) {
+                if (!id) {
+                    document.getElementById("newTariffModal").showModal();
+                    return;
+                }
+                activeTariffId = id;
+                const modal = document.getElementById("tariffEditModal");
+                const title = document.getElementById("tariffModalTitle");
+                const t = mockTariffs.find((item) => item.id === id);
+                title.textContent = "Edit Tariff";
+                document.getElementById("editName").value = t.name;
+                document.getElementById("editProvider").value = t.provider;
+                document.getElementById("editUtility").value = t.utility;
+                document.getElementById("editPublic").checked = t.isPublic;
+                modal.showModal();
+            }
+
+            function saveTariff() {
+                const name = document.getElementById("editName").value;
+                const provider = document.getElementById("editProvider").value;
+                const utility = document.getElementById("editUtility").value;
+                const isPublic = document.getElementById("editPublic").checked;
+                if (!name || !provider) return;
+                if (activeTariffId) {
+                    const idx = mockTariffs.findIndex(
+                        (t) => t.id === activeTariffId,
+                    );
+                    mockTariffs[idx] = {
+                        ...mockTariffs[idx],
+                        name,
+                        provider,
+                        utility,
+                        isPublic,
+                    };
+                } else {
+                    mockTariffs.unshift({
+                        id: Date.now(),
+                        name,
+                        provider,
+                        utility,
+                        isPublic,
+                        chargesCount: 0,
+                        assignedUsers: [],
+                        charges: [],
+                    });
+                }
+                renderTable();
+                document.getElementById("tariffEditModal").close();
+            }
+
+            function toggleCharges(id) {
+                expandedId = expandedId === id ? null : id;
+                renderTable();
+            }
+
+            function showRates(tariffId, chargeId) {
+                const tariff = mockTariffs.find((t) => t.id === tariffId);
+                const charge = tariff.charges.find((c) => c.id === chargeId);
+                const modalBody = document.getElementById("ratesModalBody");
+                modalBody.innerHTML = charge.rateTable
+                    .map(
+                        (r) => `
+                    <tr>
+                        <td class="font-medium">${r.desc}</td>
+                        <td class="text-center">${r.lower} → ${r.upper === Infinity ? "∞" : r.upper}</td>
+                        <td class="text-right font-mono text-indigo-600 font-bold">${r.val}</td>
+                    </tr>
+                `,
+                    )
+                    .join("");
+                document.getElementById("ratesModal").showModal();
+            }
+
+            function getUtilClass(u) {
+                if (u === "ELECTRICITY")
+                    return "bg-amber-100 text-amber-700 border-amber-200";
+                if (u === "WATER")
+                    return "bg-blue-100 text-blue-700 border-blue-200";
+                if (u === "GAS")
+                    return "bg-orange-100 text-orange-700 border-orange-200";
+                if (u === "SEWAGE")
+                    return "bg-emerald-100 text-emerald-700 border-emerald-200";
+                return "bg-gray-100 text-gray-700 border-gray-200";
+            }
+
+            /* RESTORED Logic for User Lists */
+            function openUserModal(id) {
+                activeTariffId = id;
+                const tariff = mockTariffs.find((t) => t.id === id);
+                document.getElementById("userModalTariffInfo").textContent =
+                    `${tariff.name} (${tariff.provider})`;
+                renderUserLists();
+                document.getElementById("userModal").showModal();
+            }
+
+            function moveUser(userId, action, role = null) {
+                const tariff = mockTariffs.find((t) => t.id === activeTariffId);
+                if (action === "add") {
+                    tariff.assignedUsers.push({ userId, role });
+                } else {
+                    tariff.assignedUsers = tariff.assignedUsers.filter(
+                        (u) => u.userId !== userId,
+                    );
+                }
+                renderUserLists();
+                renderTable();
+            }
+
+            function renderUserLists() {
+                const tariff = mockTariffs.find((t) => t.id === activeTariffId);
+                const assignedIds = tariff.assignedUsers.map((u) => u.userId);
+                const existingList =
+                    document.getElementById("existingUserList");
+                const availableList =
+                    document.getElementById("availableUserList");
+
+                existingList.innerHTML = tariff.assignedUsers
+                    .map((assigned) => {
+                        const user = allUsers.find(
+                            (u) => u.id === assigned.userId,
+                        );
+                        return `
+                    <div class="bg-white p-3 rounded-lg border shadow-sm flex justify-between items-center group">
+                        <div>
+                            <div class="text-sm font-bold text-gray-800">${user.name}</div>
+                            <span class="role-badge ${assigned.role === "Administrator" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}">${assigned.role}</span>
+                        </div>
+                        <button onclick="moveUser(${user.id}, 'remove')" class="btn btn-circle btn-xs btn-ghost text-red-400"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
+                    </div>`;
+                    })
+                    .join("");
+
+                availableList.innerHTML = allUsers
+                    .filter((u) => !assignedIds.includes(u.id))
+                    .map(
+                        (user) => `
+                    <div class="bg-white p-3 rounded-lg border shadow-sm flex justify-between items-center group">
+                        <div><div class="text-sm font-bold text-gray-800">${user.name}</div></div>
+                        <div class="flex gap-1 invisible group-hover:visible">
+                            <button onclick="moveUser(${user.id}, 'add', 'Data Capturer')" class="btn btn-xs btn-outline btn-primary text-[9px] h-auto py-1">Capturer</button>
+                            <button onclick="moveUser(${user.id}, 'add', 'Administrator')" class="btn btn-xs btn-outline btn-secondary text-[9px] h-auto py-1">Admin</button>
+                        </div>
+                    </div>`,
+                    )
+                    .join("");
+
+                document.getElementById("existingCount").textContent =
+                    tariff.assignedUsers.length;
+                document.getElementById("availableCount").textContent =
+                    allUsers.length - tariff.assignedUsers.length;
+                lucide.createIcons();
+            }
+
+            function saveUserAssignments() {
+                document.getElementById("userModal").close();
+            }
+
+            function updateStats() {
+                document.getElementById("stat-total").textContent =
+                    mockTariffs.length;
+                document.getElementById("stat-electricity").textContent =
+                    mockTariffs.filter(
+                        (t) => t.utility === "ELECTRICITY",
+                    ).length;
+                document.getElementById("stat-water").textContent =
+                    mockTariffs.filter((t) => t.utility === "WATER").length;
+                document.getElementById("stat-gas").textContent =
+                    mockTariffs.filter((t) => t.utility === "GAS").length;
+                document.getElementById("stat-sewage").textContent =
+                    mockTariffs.filter((t) => t.utility === "SEWAGE").length;
+            }
+
+            function applyFilters() {
+                renderTable();
+            }
+            window.onload = renderTable;
+        </script>
+    </body>
+</html>

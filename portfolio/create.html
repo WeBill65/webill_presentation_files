@@ -1,0 +1,1236 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Building & Unit Upload Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC3AGylrPTngIOZYGbu6gUyjscUh5yqvN4&libraries=places"></script>
+        <style>
+            :root {
+                --brand-bg: #404068;
+                --brand-text: #faa919;
+                --brand-hover: #4e4e7e;
+            }
+
+            .brand-bg {
+                background-color: var(--brand-bg);
+            }
+
+            .brand-text {
+                color: var(--brand-text);
+            }
+
+            .spreadsheet-input,
+            .spreadsheet-select {
+                width: 100%;
+                padding: 0.4rem;
+                background: transparent;
+                border: none;
+                outline: none;
+                font-size: 0.75rem;
+                appearance: none;
+            }
+            .spreadsheet-input:focus,
+            .spreadsheet-select:focus {
+                background-color: #eff6ff;
+                box-shadow: inset 0 0 0 2px #3b82f6;
+            }
+            .spreadsheet-select:disabled,
+            .spreadsheet-input:disabled {
+                background-color: #f8fafc;
+                cursor: not-allowed;
+                color: #cbd5e1;
+            }
+            .table-container {
+                overflow-x: auto;
+                border-radius: 0.375rem;
+                border: 1px solid #e2e8f0;
+                background: white;
+                margin-top: 0.5rem;
+            }
+            table {
+                border-collapse: collapse;
+                min-width: 1200px;
+                width: 100%;
+            }
+            th {
+                background-color: #f8fafc;
+                color: #64748b;
+                font-weight: 600;
+                text-align: left;
+                padding: 0.5rem;
+                border-bottom: 1px solid #e2e8f0;
+                border-right: 1px solid #e2e8f0;
+                font-size: 0.65rem;
+                text-transform: uppercase;
+                letter-spacing: 0.025em;
+            }
+            td {
+                border-bottom: 1px solid #e2e8f0;
+                border-right: 1px solid #e2e8f0;
+                padding: 0;
+                vertical-align: top;
+            }
+            .required-header::after {
+                content: " *";
+                color: #ef4444;
+            }
+
+            /* Meter Nested Row Styles */
+            .meter-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr 80px 30px;
+                border-bottom: 1px solid #f1f5f9;
+                align-items: center;
+            }
+            .meter-row:last-child {
+                border-bottom: none;
+            }
+            .add-meter-btn {
+                font-size: 9px;
+                font-weight: 800;
+                color: #3b82f6;
+                padding: 4px 8px;
+                width: 100%;
+                text-align: left;
+                background: #f8fafc;
+                border-top: 1px solid #f1f5f9;
+                transition: all 0.2s;
+            }
+            .add-meter-btn:hover {
+                background: #eff6ff;
+                color: #1d4ed8;
+            }
+
+            .child-container {
+                position: relative;
+                padding-left: 2rem;
+                margin-top: 1rem;
+            }
+            .child-container::before {
+                content: "";
+                position: absolute;
+                left: 1rem;
+                top: -1rem;
+                bottom: 1.5rem;
+                width: 2px;
+                background-color: #cbd5e1;
+            }
+            .site-node {
+                position: relative;
+                margin-bottom: 1.5rem;
+            }
+            .site-node::before {
+                content: "";
+                position: absolute;
+                left: -1rem;
+                top: 1.5rem;
+                width: 1rem;
+                height: 2px;
+                background-color: #cbd5e1;
+            }
+            .site-card {
+                background: white;
+                border: 1px solid #e2e8f0;
+                border-radius: 0.75rem;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+                transition: all 0.2s ease;
+            }
+
+            .node-content {
+                max-height: 10000px;
+                overflow: hidden;
+                transition:
+                    max-height 0.3s ease-in-out,
+                    opacity 0.2s ease;
+                opacity: 1;
+            }
+            .node-collapsed > .node-content {
+                max-height: 0;
+                opacity: 0;
+                margin-top: 0 !important;
+            }
+            .toggle-icon {
+                transition: transform 0.2s ease;
+            }
+            .node-collapsed .toggle-icon {
+                transform: rotate(-90deg);
+            }
+
+            /* Table Collapsibility */
+            .table-section-content {
+                max-height: 10000px;
+                overflow: hidden;
+                transition: max-height 0.3s ease-in-out;
+            }
+            .table-collapsed .table-section-content {
+                max-height: 0;
+                margin-bottom: 0 !important;
+            }
+            .table-toggle-icon {
+                transition: transform 0.2s ease;
+            }
+            .table-collapsed .table-toggle-icon {
+                transform: rotate(-90deg);
+            }
+
+            .coords-badge {
+                display: inline-flex;
+                align-items: center;
+                padding: 2px 8px;
+                background: #f1f5f9;
+                border-radius: 9999px;
+                font-size: 11px;
+                color: #64748b;
+                font-family: monospace;
+                border: 1px solid #e2e8f0;
+                cursor: pointer;
+            }
+
+            .btn-brand {
+                background-color: var(--brand-bg);
+                color: var(--brand-text);
+                border: 1px solid #52527a;
+            }
+
+            /* Tree View Styles */
+            .tree-view ul {
+                padding-left: 1.25rem;
+                border-left: 1px solid #e2e8f0;
+                margin-left: 0.75rem;
+                list-style: none;
+            }
+            .tree-view li {
+                position: relative;
+                padding: 0.15rem 0;
+            }
+            .tree-view li::before {
+                content: "";
+                position: absolute;
+                left: -1.25rem;
+                top: 0.75rem;
+                width: 1rem;
+                height: 1px;
+                background-color: #e2e8f0;
+            }
+            .tree-node-collapsed > ul {
+                display: none;
+            }
+            .tree-toggle-btn {
+                cursor: pointer;
+                transition: transform 0.2s ease;
+            }
+            .tree-node-collapsed .tree-toggle-btn {
+                transform: rotate(-90deg);
+            }
+
+            .json-pre {
+                font-family:
+                    "ui-monospace", "SFMono-Regular", "Menlo", "Monaco",
+                    "Consolas", monospace;
+                font-size: 0.75rem;
+                white-space: pre-wrap;
+                word-break: break-all;
+                background: #1e293b;
+                color: #e2e8f0;
+                padding: 1.5rem;
+                border-radius: 0.5rem;
+                max-height: 60vh;
+                overflow-y: auto;
+            }
+
+            .custom-scrollbar::-webkit-scrollbar {
+                width: 8px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 4px;
+            }
+
+            .area-badge {
+                background: #f0fdf4;
+                color: #166534;
+                border: 1px solid #bcf0da;
+                padding: 2px 8px;
+                border-radius: 4px;
+                font-weight: 700;
+                font-size: 11px;
+            }
+
+            .table-area-summary {
+                background: #eff6ff;
+                color: #1e40af;
+                border: 1px solid #bfdbfe;
+                padding: 1px 6px;
+                border-radius: 4px;
+                font-size: 10px;
+                font-weight: 700;
+            }
+
+            .utility-prompt {
+                font-size: 10px;
+                color: #cbd5e1;
+                pointer-events: none;
+            }
+        </style>
+    </head>
+    <body
+        class="bg-slate-50 min-h-screen text-slate-900 font-sans pb-20"
+        data-theme="light"
+    >
+        <div class="max-w-7xl mx-auto mt-4 w-full px-4 md:px-0">
+            <div
+                class="brand-bg w-full shadow-lg rounded-t-2xl overflow-hidden"
+            >
+                <div class="px-4 md:px-8 py-6">
+                    <header class="flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-4">
+                            <a
+                                href="create_search_list.html"
+                                onclick="sessionStorage.setItem('portfolioTab','create')"
+                                class="flex items-center gap-2 text-white/70 hover:text-[#faa919] transition-colors text-sm font-bold uppercase tracking-widest"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+                                </svg>
+                                Back
+                            </a>
+                            <div>
+                                <h1
+                                    class="text-3xl font-bold tracking-tight brand-text"
+                                >
+                                    Property Hierarchy
+                                </h1>
+                                <p class="text-slate-300 opacity-90 text-sm">
+                                    Manage multi-meter units and property
+                                    structures.
+                                </p>
+                            </div>
+                        </div>
+                    </header>
+                </div>
+            </div>
+
+            <div
+                class="bg-white border-x border-b border-slate-200 px-4 md:px-8 py-3 flex flex-col sm:flex-row items-center justify-between shadow-sm gap-4 sm:gap-0"
+            >
+                <div class="flex items-center gap-6">
+                    <div
+                        class="flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-100"
+                    >
+                        <span
+                            class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"
+                        ></span>
+                        <span
+                            class="text-[10px] font-bold uppercase tracking-wider"
+                            >Editor Active</span
+                        >
+                    </div>
+                    <button
+                        onclick="openPreviewModal()"
+                        class="group flex items-center gap-2 text-slate-500 font-bold text-xs uppercase tracking-wider h-full hover:text-[#404068]"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                            />
+                        </svg>
+                        View Structure
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button
+                        onclick="handleSave()"
+                        class="h-9 px-4 rounded-lg font-bold text-xs flex items-center gap-2 btn-brand shadow-sm hover:opacity-90"
+                    >
+                        Save Draft
+                    </button>
+                    <button
+                        onclick="finalizeUpload()"
+                        class="h-9 px-6 rounded-lg font-bold shadow-md text-xs flex items-center gap-2 btn-brand hover:opacity-90"
+                    >
+                        Submit Data
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <main
+            class="max-w-7xl mx-auto px-4 md:px-0 w-full flex flex-col gap-6 mt-6"
+        >
+            <section id="app" class="w-full">
+                <div
+                    class="bg-white p-4 md:p-8 rounded-2xl shadow-sm border border-slate-200"
+                >
+                    <h2
+                        class="text-lg font-bold text-[#404068] mb-6 flex items-center gap-2"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"
+                            />
+                        </svg>
+                        Hierarchy Configuration
+                    </h2>
+
+                    <div
+                        id="hierarchy-root"
+                        class="site-node-wrapper"
+                        data-site-id="root"
+                    >
+                        <div
+                            class="site-card p-5 mb-4 border-l-4 border-l-[#404068]"
+                        >
+                            <div class="flex flex-col gap-5">
+                                <div
+                                    class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between"
+                                >
+                                    <div
+                                        class="flex items-center gap-3 flex-grow w-full"
+                                    >
+                                        <button
+                                            onclick="
+                                                toggleNode('hierarchy-root')
+                                            "
+                                            class="p-1 hover:bg-slate-100 rounded transition-colors toggle-icon shrink-0"
+                                        >
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                class="h-5 w-5 text-slate-400"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M19 9l-7 7-7-7"
+                                                />
+                                            </svg>
+                                        </button>
+                                        <div
+                                            class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-grow"
+                                        >
+                                            <div>
+                                                <label
+                                                    class="block text-[10px] font-bold text-slate-400 uppercase mb-1"
+                                                    >Site Name *</label
+                                                >
+                                                <input
+                                                    type="text"
+                                                    id="b-name"
+                                                    oninput="
+                                                        onDataChanged('root')
+                                                    "
+                                                    placeholder="Main Site..."
+                                                    class="w-full px-3 py-2 rounded border border-slate-200 focus:ring-2 focus:ring-[#404068] outline-none text-sm font-semibold"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label
+                                                    class="block text-[10px] font-bold text-slate-400 uppercase mb-1"
+                                                    >Organization *</label
+                                                >
+                                                <select
+                                                    id="b-org"
+                                                    onchange="
+                                                        onDataChanged('root')
+                                                    "
+                                                    class="w-full px-3 py-2 rounded border border-slate-200 focus:ring-2 focus:ring-[#404068] outline-none text-sm bg-white"
+                                                >
+                                                    <option value="">
+                                                        - Select Organization -
+                                                    </option>
+                                                    <option value="WeBill">
+                                                        WeBill
+                                                    </option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="flex gap-2 shrink-0 self-end md:self-center"
+                                    >
+                                        <button
+                                            id="add-btn-root"
+                                            disabled
+                                            onclick="addChildSite('root')"
+                                            class="px-3 py-2 bg-slate-100 text-slate-400 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-not-allowed opacity-50"
+                                        >
+                                            + Add Sub-Site
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="pl-8 flex flex-col md:flex-row gap-4 items-end"
+                                >
+                                    <div class="md:w-2/3 w-full">
+                                        <div
+                                            class="flex items-center justify-between mb-1"
+                                        >
+                                            <label
+                                                class="block text-[10px] font-bold text-slate-400 uppercase"
+                                                >Address *</label
+                                            >
+                                            <div
+                                                id="coord-display"
+                                                class="hidden"
+                                            >
+                                                <button class="coords-badge">
+                                                    <span id="lat-val">0</span>,
+                                                    <span id="lng-val">0</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            id="b-address"
+                                            oninput="onDataChanged('root')"
+                                            placeholder="Type to search address..."
+                                            class="w-full px-4 py-2 rounded border border-slate-200 focus:ring-2 focus:ring-[#404068] outline-none text-sm shadow-inner h-[38px]"
+                                        />
+                                    </div>
+                                    <div class="md:w-1/3 w-full">
+                                        <div
+                                            class="flex items-center justify-between mb-1"
+                                        >
+                                            <label
+                                                class="block text-[10px] font-bold text-slate-400 uppercase"
+                                                >Input Area (sqm)</label
+                                            >
+                                            <span class="area-badge"
+                                                >Total Site Area:
+                                                <span id="total-area-root"
+                                                    >0.00</span
+                                                ></span
+                                            >
+                                        </div>
+                                        <input
+                                            type="number"
+                                            id="b-area"
+                                            oninput="onDataChanged('root')"
+                                            placeholder="0.00"
+                                            class="w-full px-3 py-2 rounded border border-slate-200 focus:ring-2 focus:ring-[#404068] outline-none text-sm h-[38px]"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="node-content">
+                                <div
+                                    id="table-section-root"
+                                    class="mt-6 border-t border-slate-100 pt-4"
+                                >
+                                    <div
+                                        class="flex items-center justify-between mb-2"
+                                    >
+                                        <div class="flex items-center gap-3">
+                                            <button
+                                                onclick="toggleTable('root')"
+                                                class="p-1 hover:bg-slate-100 rounded transition-colors table-toggle-icon"
+                                            >
+                                                <svg
+                                                    class="h-4 w-4 text-slate-400"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M19 9l-7 7-7-7"
+                                                    />
+                                                </svg>
+                                            </button>
+                                            <h3
+                                                class="text-xs font-bold text-slate-500 uppercase tracking-wider"
+                                            >
+                                                Units & Tenants
+                                            </h3>
+                                            <span class="table-area-summary"
+                                                >Table Area:
+                                                <span
+                                                    id="unit-area-summary-root"
+                                                    >0.00</span
+                                                >
+                                                sqm</span
+                                            >
+                                        </div>
+                                        <button
+                                            onclick="addUnitRow('root')"
+                                            class="text-[10px] font-bold text-emerald-600 hover:underline"
+                                        >
+                                            + Add Unit
+                                        </button>
+                                    </div>
+                                    <div class="table-section-content">
+                                        <div class="table-container">
+                                            <table id="table-root">
+                                                <thead>
+                                                    <tr>
+                                                        <th
+                                                            class="required-header"
+                                                        >
+                                                            Unit Name
+                                                        </th>
+                                                        <th>Unit Ref</th>
+                                                        <th>Area</th>
+                                                        <th>Tenant</th>
+                                                        <th>Tenant Ref</th>
+                                                        <th class="w-1/3">
+                                                            Meters (No. |
+                                                            Utility | Phase)
+                                                        </th>
+                                                        <th class="w-10"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="units-root"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div
+                                    id="children-of-root"
+                                    class="child-container hidden"
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Preview Modal -->
+        <div
+            id="preview-modal"
+            class="fixed inset-0 z-[300] items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden"
+        >
+            <div
+                class="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh]"
+            >
+                <div
+                    class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0"
+                >
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-[#404068] rounded-lg">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-5 w-5 text-[#faa919]"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                                />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-slate-900">
+                                Structure Preview
+                            </h2>
+                            <p class="text-[10px] text-slate-400 font-medium">
+                                Visualizing hierarchy and units
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onclick="closePreviewModal()"
+                        class="p-2 hover:bg-slate-100 rounded-full text-slate-400"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-6 w-6"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"
+                            />
+                        </svg>
+                    </button>
+                </div>
+
+                <div
+                    class="p-6 overflow-y-auto custom-scrollbar bg-slate-50/50 grow"
+                >
+                    <div
+                        id="tree-view-container"
+                        class="tree-view min-h-[200px]"
+                    ></div>
+                </div>
+
+                <div
+                    class="p-4 bg-white border-t border-slate-100 flex justify-end shrink-0"
+                >
+                    <button
+                        onclick="closePreviewModal()"
+                        class="px-6 py-2 brand-bg brand-text rounded-lg text-sm font-bold shadow hover:opacity-90 transition-all"
+                    >
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div
+            id="json-modal"
+            class="fixed inset-0 z-[400] items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden"
+        >
+            <div
+                class="bg-white rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]"
+            >
+                <div
+                    class="p-4 border-b border-slate-100 flex items-center justify-between"
+                >
+                    <h2 class="font-bold text-slate-900 px-4">
+                        Final Data Payload
+                    </h2>
+                    <button
+                        onclick="closeJsonModal()"
+                        class="p-2 text-slate-400"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-6 w-6"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"
+                            />
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-6 overflow-hidden">
+                    <pre
+                        id="json-display"
+                        class="json-pre custom-scrollbar"
+                    ></pre>
+                </div>
+                <div
+                    class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3"
+                >
+                    <button
+                        onclick="copyJsonToClipboard()"
+                        class="btn btn-ghost btn-sm text-slate-500"
+                    >
+                        Copy JSON
+                    </button>
+                    <button
+                        onclick="confirmSubmit()"
+                        class="btn btn-sm px-8 brand-bg brand-text border-none"
+                    >
+                        Confirm Upload
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div
+            id="toast"
+            class="fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 bg-slate-900 text-white rounded-full shadow-2xl opacity-0 transition-opacity pointer-events-none text-sm font-medium z-[500]"
+        >
+            Success!
+        </div>
+
+        <script>
+            let siteIdCounter = 0;
+            let unitIdCounter = 0;
+            let currentCoords = { lat: null, lng: null };
+
+            function init() {
+                addUnitRow("root");
+                initAutocomplete();
+                onDataChanged("root");
+            }
+
+            function initAutocomplete() {
+                const input = document.getElementById("b-address");
+                if (!window.google) return;
+                const autocomplete = new google.maps.places.Autocomplete(
+                    input,
+                    {
+                        types: ["address"],
+                        fields: ["formatted_address", "geometry"],
+                    },
+                );
+                autocomplete.addListener("place_changed", () => {
+                    const place = autocomplete.getPlace();
+                    if (!place.geometry) return;
+                    currentCoords = {
+                        lat: place.geometry.location.lat(),
+                        lng: place.geometry.location.lng(),
+                    };
+                    document.getElementById("lat-val").textContent =
+                        currentCoords.lat.toFixed(6);
+                    document.getElementById("lng-val").textContent =
+                        currentCoords.lng.toFixed(6);
+                    document
+                        .getElementById("coord-display")
+                        .classList.remove("hidden");
+                    onDataChanged("root");
+                });
+            }
+
+            function onDataChanged(nodeId) {
+                validateParent(nodeId);
+                updateCalculatedAreas();
+                refreshTreeView();
+            }
+
+            function validateParent(nodeId) {
+                let isValid = false;
+                if (nodeId === "root") {
+                    isValid = !!(
+                        document.getElementById("b-name").value.trim() &&
+                        document.getElementById("b-address").value.trim()
+                    );
+                } else {
+                    const nodeEl = document.querySelector(
+                        `[data-site-id="${nodeId}"]`,
+                    );
+                    isValid = !!nodeEl
+                        ?.querySelector(".site-name-input")
+                        ?.value.trim();
+                }
+                const btn = document.getElementById(`add-btn-${nodeId}`);
+                if (btn) {
+                    btn.disabled = !isValid;
+                    btn.classList.toggle("opacity-50", !isValid);
+                    btn.classList.toggle("cursor-not-allowed", !isValid);
+                }
+            }
+
+            function addUnitRow(siteId) {
+                unitIdCounter++;
+                const unitId = `unit-${unitIdCounter}`;
+                const tbody = document.getElementById(`units-${siteId}`);
+                const tr = document.createElement("tr");
+                tr.id = unitId;
+                tr.innerHTML = `
+                    <td><input type="text" class="spreadsheet-input" placeholder="Unit Name" data-field="unitName" oninput="onDataChanged('root')"></td>
+                    <td><input type="text" class="spreadsheet-input" placeholder="Unit Ref" data-field="unitRef"></td>
+                    <td><input type="number" class="spreadsheet-input" placeholder="0.00" data-field="area" oninput="onDataChanged('root')"></td>
+                    <td><input type="text" class="spreadsheet-input" placeholder="Tenant Name" data-field="tenantName" oninput="onDataChanged('root')"></td>
+                    <td><input type="text" class="spreadsheet-input" placeholder="Tenant Ref" data-field="tenantRef"></td>
+                    <td class="p-0">
+                        <div id="meters-${unitId}" class="meter-list"></div>
+                        <button onclick="addMeterRow('${unitId}')" class="add-meter-btn">+ Add Meter</button>
+                    </td>
+                    <td class="text-center">
+                        <button onclick="this.closest('tr').remove(); onDataChanged('root');" class="text-slate-300 hover:text-red-500 p-2">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+                addMeterRow(unitId);
+
+                // If table was collapsed, expand it when adding a row
+                const tableSection = document.getElementById(
+                    `table-section-${siteId}`,
+                );
+                if (
+                    tableSection &&
+                    tableSection.classList.contains("table-collapsed")
+                ) {
+                    toggleTable(siteId);
+                }
+            }
+
+            function addMeterRow(unitId) {
+                const container = document.getElementById(`meters-${unitId}`);
+                const row = document.createElement("div");
+                row.className = "meter-row";
+                row.innerHTML = `
+                    <input type="text" class="spreadsheet-input border-r border-slate-50" placeholder="Meter No" data-meter-field="meterNo" oninput="onDataChanged('root')">
+                    <div class="relative flex items-center border-r border-slate-50">
+                        <select class="spreadsheet-select" data-meter-field="utilityType" onchange="updatePhaseVisibility(this); onDataChanged('root')">
+                            <option value=""></option>
+                            <option value="Electricity">Electricity</option>
+                            <option value="Water">Water</option>
+                            <option value="Gas">Gas</option>
+                        </select>
+                        <span class="absolute left-2 utility-prompt pointer-events-none">Select Type</span>
+                    </div>
+                    <div class="phase-container flex items-center justify-center">
+                        <select class="spreadsheet-select" data-meter-field="phase" style="display:none" onchange="onDataChanged('root')">
+                            <option value="1">1 Ph</option>
+                            <option value="3">3 Ph</option>
+                        </select>
+                        <span class="text-[10px] text-slate-300 phase-placeholder">N/A</span>
+                    </div>
+                    <button onclick="removeMeterRow(this)" class="text-slate-200 hover:text-red-400 flex items-center justify-center">
+                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                `;
+                container.appendChild(row);
+            }
+
+            function removeMeterRow(btn) {
+                btn.closest(".meter-row").remove();
+                onDataChanged("root");
+            }
+
+            function updatePhaseVisibility(select) {
+                const row = select.closest(".meter-row");
+                const phaseSelect = row.querySelector(
+                    '[data-meter-field="phase"]',
+                );
+                const placeholder = row.querySelector(".phase-placeholder");
+                const utilityPrompt = row.querySelector(".utility-prompt");
+
+                if (utilityPrompt) {
+                    utilityPrompt.style.display = select.value
+                        ? "none"
+                        : "block";
+                }
+
+                if (select.value === "Electricity") {
+                    phaseSelect.style.display = "block";
+                    placeholder.style.display = "none";
+                } else {
+                    phaseSelect.style.display = "none";
+                    placeholder.style.display = "block";
+                    phaseSelect.value = "1";
+                }
+            }
+
+            function toggleNode(nodeId) {
+                document
+                    .getElementById(nodeId)
+                    .classList.toggle("node-collapsed");
+            }
+
+            function toggleTable(siteId) {
+                const section = document.getElementById(
+                    `table-section-${siteId}`,
+                );
+                if (section) section.classList.toggle("table-collapsed");
+            }
+
+            function addChildSite(parentId) {
+                siteIdCounter++;
+                const id = `site-${siteIdCounter}`;
+                const container = document.getElementById(
+                    `children-of-${parentId}`,
+                );
+                container.classList.remove("hidden");
+                const div = document.createElement("div");
+                div.id = id;
+                div.dataset.siteId = id;
+                div.className = "site-node site-node-wrapper";
+                div.innerHTML = `
+                    <div class="site-card p-4">
+                        <div class="flex flex-col md:flex-row gap-3 items-center justify-between mb-4">
+                            <div class="flex items-center gap-2 flex-grow w-full">
+                                <button onclick="toggleNode('${id}')" class="p-1 hover:bg-slate-100 rounded transition-colors toggle-icon shrink-0">
+                                    <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </button>
+                                <div class="grid grid-cols-2 gap-4 flex-grow">
+                                    <input type="text" oninput="onDataChanged('${id}')" class="site-name-input w-full px-3 py-1.5 rounded border border-slate-200 text-sm font-medium" placeholder="Sub-Site Name">
+                                    <div class="flex items-center justify-between bg-slate-50 px-3 rounded border border-slate-100">
+                                        <span class="text-[10px] text-slate-400 font-bold uppercase">Total Area</span>
+                                        <span id="total-area-${id}" class="text-xs font-bold text-emerald-600">0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button id="add-btn-${id}" disabled onclick="addChildSite('${id}')" class="px-2 py-1 bg-slate-100 text-slate-400 rounded text-[10px] font-bold uppercase">Sub-Site</button>
+                                <button onclick="this.closest('.site-node').remove(); onDataChanged('root');" class="text-slate-300 hover:text-red-500"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                            </div>
+                        </div>
+                        <div class="node-content">
+                            <div id="table-section-${id}" class="mt-2 pt-2 border-t border-slate-50">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-3">
+                                        <button onclick="toggleTable('${id}')" class="p-1 hover:bg-slate-100 rounded transition-colors table-toggle-icon">
+                                            <svg class="h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                        </button>
+                                        <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Units</h3>
+                                        <span class="table-area-summary">Area: <span id="unit-area-summary-${id}">0.00</span></span>
+                                    </div>
+                                    <button onclick="addUnitRow('${id}')" class="text-[10px] font-bold text-emerald-600">+ Add Unit</button>
+                                </div>
+                                <div class="table-section-content">
+                                    <div class="table-container"><table id="table-${id}"><thead><tr><th>Unit Name</th><th>Unit Ref</th><th>Area</th><th>Tenant</th><th>Tenant Ref</th><th class="w-1/3">Meters</th><th class="w-8"></th></tr></thead><tbody id="units-${id}"></tbody></table></div>
+                                </div>
+                            </div>
+                            <div id="children-of-${id}" class="child-container hidden"></div>
+                        </div>
+                    </div>`;
+                container.appendChild(div);
+                addUnitRow(id);
+                onDataChanged(id);
+            }
+
+            function updateCalculatedAreas() {
+                const calculate = (id) => {
+                    const wrapper = document.querySelector(
+                        `[data-site-id="${id}"]`,
+                    );
+                    let tableTotal = 0;
+                    let childrenTotal = 0;
+
+                    if (!wrapper) return 0;
+
+                    // Sum up rows in this table
+                    wrapper
+                        .querySelectorAll(`#units-${id} tr`)
+                        .forEach((tr) => {
+                            tableTotal += parseFloat(
+                                tr.querySelector('[data-field="area"]').value ||
+                                    0,
+                            );
+                        });
+
+                    // Update the local table summary badge
+                    const tableDisp = document.getElementById(
+                        `unit-area-summary-${id}`,
+                    );
+                    if (tableDisp)
+                        tableDisp.textContent = tableTotal.toLocaleString(
+                            undefined,
+                            { minimumFractionDigits: 2 },
+                        );
+
+                    // Sum up children sites recursively
+                    wrapper
+                        .querySelectorAll(`#children-of-${id} > .site-node`)
+                        .forEach((child) => {
+                            childrenTotal += calculate(child.dataset.siteId);
+                        });
+
+                    const overallTotal = tableTotal + childrenTotal;
+
+                    // Update the overall site total badge
+                    const disp = document.getElementById(`total-area-${id}`);
+                    if (disp)
+                        disp.textContent = overallTotal.toLocaleString(
+                            undefined,
+                            { minimumFractionDigits: 2 },
+                        );
+
+                    return overallTotal;
+                };
+                calculate("root");
+            }
+
+            function getHierarchyData(id = "root") {
+                const wrapper = document.querySelector(
+                    `[data-site-id="${id}"]`,
+                );
+                const isRoot = id === "root";
+                const data = {
+                    siteName:
+                        (isRoot
+                            ? document.getElementById("b-name").value
+                            : wrapper.querySelector(".site-name-input")
+                                  .value) || "Unnamed",
+                    units: Array.from(
+                        wrapper.querySelectorAll(`#units-${id} > tr`),
+                    )
+                        .map((tr) => ({
+                            unitName: tr.querySelector(
+                                '[data-field="unitName"]',
+                            ).value,
+                            unitRef: tr.querySelector('[data-field="unitRef"]')
+                                .value,
+                            area: tr.querySelector('[data-field="area"]').value,
+                            tenant: tr.querySelector(
+                                '[data-field="tenantName"]',
+                            ).value,
+                            tenantRef: tr.querySelector(
+                                '[data-field="tenantRef"]',
+                            ).value,
+                            meters: Array.from(
+                                tr.querySelectorAll(".meter-row"),
+                            )
+                                .map((mr) => ({
+                                    meterNo: mr.querySelector(
+                                        '[data-meter-field="meterNo"]',
+                                    ).value,
+                                    type: mr.querySelector(
+                                        '[data-meter-field="utilityType"]',
+                                    ).value,
+                                    phase:
+                                        mr.querySelector(
+                                            '[data-meter-field="utilityType"]',
+                                        ).value === "Electricity"
+                                            ? mr.querySelector(
+                                                  '[data-meter-field="phase"]',
+                                              ).value
+                                            : null,
+                                }))
+                                .filter((m) => m.meterNo),
+                        }))
+                        .filter((u) => u.unitName),
+                    subSites: Array.from(
+                        wrapper.querySelectorAll(
+                            `#children-of-${id} > .site-node`,
+                        ),
+                    ).map((s) => getHierarchyData(s.dataset.siteId)),
+                };
+                if (isRoot) {
+                    data.org = document.getElementById("b-org").value;
+                    data.address = document.getElementById("b-address").value;
+                    data.coords = currentCoords;
+                }
+                return data;
+            }
+
+            function refreshTreeView() {
+                const data = getHierarchyData();
+                const container = document.getElementById(
+                    "tree-view-container",
+                );
+
+                const buildNode = (node, root = false) => {
+                    const li = document.createElement("li");
+                    const hasChildren =
+                        node.subSites.length > 0 || node.units.length > 0;
+
+                    li.innerHTML = `
+                        <div onclick="this.parentElement.classList.toggle('tree-node-collapsed')" class="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:opacity-90 transition-all ${root ? "bg-[#404068] text-white" : "bg-white border text-slate-700"} text-xs font-bold shadow-sm">
+                            ${
+                                hasChildren
+                                    ? `
+                                <svg class="h-3 w-3 tree-toggle-btn text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            `
+                                    : '<div class="w-3"></div>'
+                            }
+                            <span class="truncate">${node.siteName}</span>
+                            <span class="ml-auto opacity-70 text-[10px] font-normal tracking-tight bg-black/10 px-1.5 py-0.5 rounded">${node.units.length} Units</span>
+                        </div>
+                        <ul class="tree-children">
+                            ${node.units
+                                .map((u) => {
+                                    const tenantStr = u.tenant
+                                        ? ` - ${u.tenant}`
+                                        : "";
+                                    return `
+                                    <li class="text-[10px] py-1 px-4 text-slate-600 border-l border-slate-200 ml-4 relative">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                                            <div>
+                                                <span class="font-bold text-slate-800">${u.unitName}</span>${tenantStr}
+                                                <span class="text-slate-400 italic ml-1">(${u.meters.length} meters)</span>
+                                            </div>
+                                        </div>
+                                    </li>
+                                `;
+                                })
+                                .join("")}
+                        </ul>
+                    `;
+
+                    const ul = li.querySelector(".tree-children");
+                    node.subSites.forEach((s) => ul.appendChild(buildNode(s)));
+                    return li;
+                };
+
+                container.innerHTML = "";
+                const baseUl = document.createElement("ul");
+                baseUl.appendChild(buildNode(data, true));
+                container.appendChild(baseUl);
+            }
+
+            function openPreviewModal() {
+                refreshTreeView();
+                document
+                    .getElementById("preview-modal")
+                    .classList.replace("hidden", "flex");
+            }
+            function closePreviewModal() {
+                document
+                    .getElementById("preview-modal")
+                    .classList.replace("flex", "hidden");
+            }
+            function handleSave() {
+                showToast("Draft Saved!");
+            }
+            function finalizeUpload() {
+                document.getElementById("json-display").textContent =
+                    JSON.stringify(getHierarchyData(), null, 2);
+                document
+                    .getElementById("json-modal")
+                    .classList.replace("hidden", "flex");
+            }
+            function closeJsonModal() {
+                document
+                    .getElementById("json-modal")
+                    .classList.replace("flex", "hidden");
+            }
+            function confirmSubmit() {
+                closeJsonModal();
+                showToast("Data Uploaded Successfully!");
+            }
+            function showToast(m) {
+                const t = document.getElementById("toast");
+                t.textContent = m;
+                t.style.opacity = 1;
+                setTimeout(() => (t.style.opacity = 0), 3000);
+            }
+            function copyJsonToClipboard() {
+                const text =
+                    document.getElementById("json-display").textContent;
+                const dummy = document.createElement("textarea");
+                document.body.appendChild(dummy);
+                dummy.value = text;
+                dummy.select();
+                document.execCommand("copy");
+                document.body.removeChild(dummy);
+                showToast("Copied to clipboard!");
+            }
+            window.onload = init;
+        </script>
+    </body>
+</html>

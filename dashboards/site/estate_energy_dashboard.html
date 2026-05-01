@@ -1,0 +1,1761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estate Energy Cost Analytics Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+    <style>
+        body { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .tab-btn.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+        .spike-active { border-color: #ef4444; background: #fef2f2; }
+        ::-webkit-scrollbar { width:5px; height:5px; }
+        ::-webkit-scrollbar-track { background:#f1f5f9; }
+        ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:3px; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 text-sm leading-relaxed">
+<div class="max-w-[1600px] mx-auto p-3">
+
+    <!-- Header -->
+    <div class="bg-slate-800 rounded-xl px-6 py-4 mb-3 flex justify-between items-center flex-wrap gap-3 sticky top-0 z-50 shadow-lg">
+        <div>
+            <h1 class="text-lg font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent" id="dashTitle">Estate Utility Cost Analytics</h1>
+            <div class="text-[11px] text-slate-400">15 Blocks &middot; 600 Apartments &middot; 20-Minute Interval Metering</div>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+            <span class="bg-amber-400 text-black text-[10px] font-bold px-2 py-0.5 rounded">SAMPLE DATA</span>
+            <div class="flex rounded-lg overflow-hidden border border-slate-600" id="utilityToggle">
+                <button onclick="dashboard.setUtility('combined')" class="util-btn px-3 py-1 text-[11px] font-semibold bg-blue-600 text-white" data-u="combined">Combined</button>
+                <button onclick="dashboard.setUtility('elec')" class="util-btn px-3 py-1 text-[11px] font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600" data-u="elec">Electricity</button>
+                <button onclick="dashboard.setUtility('water')" class="util-btn px-3 py-1 text-[11px] font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600" data-u="water">Water</button>
+            </div>
+            <div class="flex items-center gap-1 text-[12px]" id="breadcrumb">
+                <span class="text-blue-400 cursor-pointer hover:text-blue-300 font-semibold" onclick="dashboard.drillTo('ytd')">YTD</span>
+            </div>
+            <label class="text-[11px] text-slate-400 uppercase tracking-wide ml-2">Block</label>
+            <select id="filterBlock" onchange="dashboard.onFilterChange()" class="px-2 py-1 text-xs rounded-md bg-slate-700 text-slate-200 border border-slate-600">
+                <option value="all">All Blocks</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-5 gap-3 mb-3">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 relative overflow-hidden shadow-sm">
+            <div class="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 to-blue-400"></div>
+            <div class="text-[11px] text-gray-500 uppercase tracking-wide mb-1">Total Estate Cost</div>
+            <div class="text-xl font-bold" id="kpiTotalCost">--</div>
+            <div class="text-[11px] text-gray-400 mt-0.5" id="kpiTotalSub"></div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 relative overflow-hidden shadow-sm">
+            <div class="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-indigo-500 to-indigo-400"></div>
+            <div class="text-[11px] text-gray-500 uppercase tracking-wide mb-1" id="kpiPeriodLabel">Selected Period</div>
+            <div class="text-xl font-bold" id="kpiMonthCost">--</div>
+            <div class="text-[11px] text-gray-400 mt-0.5" id="kpiMonthSub"></div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 relative overflow-hidden shadow-sm">
+            <div class="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-red-500 to-red-400"></div>
+            <div class="text-[11px] text-gray-500 uppercase tracking-wide mb-1">Most Expensive Hour Today</div>
+            <div class="text-xl font-bold" id="kpiExpHour">--</div>
+            <div class="text-[11px] text-gray-400 mt-0.5" id="kpiExpHourSub"></div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 relative overflow-hidden shadow-sm">
+            <div class="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-amber-400"></div>
+            <div class="text-[11px] text-gray-500 uppercase tracking-wide mb-1">Highest Contributing Block</div>
+            <div class="text-xl font-bold" id="kpiTopBlock">--</div>
+            <div class="text-[11px] text-gray-400 mt-0.5" id="kpiTopBlockSub"></div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 relative overflow-hidden shadow-sm">
+            <div class="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-emerald-400"></div>
+            <div class="text-[11px] text-gray-500 uppercase tracking-wide mb-1">Highest Cost / m&sup2;</div>
+            <div class="text-xl font-bold" id="kpiTopAptM2">--</div>
+            <div class="text-[11px] text-gray-400 mt-0.5" id="kpiTopAptM2Sub"></div>
+        </div>
+    </div>
+
+    <!-- Municipal Recovery Analysis -->
+    <div class="grid grid-cols-3 gap-3 mb-3">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm col-span-1">
+            <h3 class="text-[13px] font-semibold mb-3">Recovery Summary <span class="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded ml-1 font-medium" id="recovLabel">YTD</span></h3>
+            <div class="grid grid-cols-2 gap-3 mb-2">
+                <div>
+                    <div class="text-[10px] text-gray-500 uppercase tracking-wide">Blended Supply Cost</div>
+                    <div class="text-lg font-bold text-gray-800" id="recovMunic">--</div>
+                </div>
+                <div>
+                    <div class="text-[10px] text-gray-500 uppercase tracking-wide">Recovered</div>
+                    <div class="text-lg font-bold text-emerald-600" id="recovRecov">--</div>
+                </div>
+                <div>
+                    <div class="text-[10px] text-gray-500 uppercase tracking-wide">Recovery Rate</div>
+                    <div class="text-lg font-bold" id="recovRate">--</div>
+                </div>
+                <div>
+                    <div class="text-[10px] text-gray-500 uppercase tracking-wide">Under-Recovery</div>
+                    <div class="text-lg font-bold text-red-500" id="recovGap">--</div>
+                </div>
+            </div>
+            <div class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Supply Mix</div>
+            <div id="supplyMixBar" class="mb-3"></div>
+            <div class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Monthly Breakdown</div>
+            <div id="recovTableWrap" style="position:relative;">
+                <table class="w-full text-[11px] border-collapse">
+                    <thead style="position:sticky;top:0;z-index:2;background:#fff;"><tr class="text-left text-gray-500 text-[10px] uppercase tracking-wide"><th class="py-1 px-1 border-b border-gray-200">Month</th><th class="py-1 px-1 border-b border-gray-200 text-right">Supply</th><th class="py-1 px-1 border-b border-gray-200 text-right">Recov.</th><th class="py-1 px-1 border-b border-gray-200 text-right">Rate</th></tr></thead>
+                    <tbody id="recovTable"></tbody>
+                    <tfoot id="recovTableFoot" style="position:sticky;bottom:0;z-index:2;background:#fff;"></tfoot>
+                </table>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm col-span-1">
+            <h3 class="text-[13px] font-semibold mb-2">Municipal vs Recovered</h3>
+            <div id="chartRecovBar" style="height:280px"></div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm col-span-1">
+            <h3 class="text-[13px] font-semibold mb-2">Block Recovery Rates</h3>
+            <div id="chartBlockRecov" style="height:280px"></div>
+        </div>
+    </div>
+
+    <!-- Monthly Trend + Daily Trend -->
+    <div class="grid grid-cols-2 gap-3 mb-3">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <h3 class="text-[13px] font-semibold mb-2">Monthly Cost Trend <span class="text-[10px] bg-indigo-500 text-white px-1.5 py-0.5 rounded ml-1 font-medium">YTD</span></h3>
+            <div id="chartMonthlyTrend" style="height:200px"></div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <h3 class="text-[13px] font-semibold mb-2">Daily Cost Trend <span class="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded ml-1 font-medium" id="dailyTrendLabel">Selected Period</span></h3>
+            <div id="chartDailyTrend" style="height:200px"></div>
+        </div>
+    </div>
+
+    <!-- Heatmaps -->
+    <div class="grid grid-cols-2 gap-3 mb-3">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <h3 class="text-[13px] font-semibold mb-2">Hour-of-Day Cost Heatmap <span class="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded ml-1 font-medium" id="hm1Label">By Weekday</span></h3>
+            <div id="heatmap1" class="w-full" style="height:240px"></div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <h3 class="text-[13px] font-semibold mb-2">Block Contribution Heatmap <span class="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded ml-1 font-medium" id="hm2Label">% of Estate</span></h3>
+            <div id="heatmap2" class="w-full" style="height:420px"></div>
+        </div>
+    </div>
+
+    <!-- Drill-downs -->
+    <div class="grid grid-cols-2 gap-3 mb-3">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-[13px] font-semibold">Block Drill-Down <span class="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded ml-1 font-medium" id="blockDrillLabel">YTD</span></h3>
+                <select id="drillBlock" onchange="dashboard.updateBlockDrill()" class="px-2 py-1 text-xs rounded-md bg-gray-50 border border-gray-300"></select>
+            </div>
+            <div class="flex gap-0.5 border-b border-gray-200 mb-3" id="blockTabs">
+                <div class="tab-btn active px-3 py-1.5 text-[11px] text-gray-400 cursor-pointer border-b-2 border-transparent transition" onclick="dashboard.setBlockTab(0,this)">Hourly Trend</div>
+                <div class="tab-btn px-3 py-1.5 text-[11px] text-gray-400 cursor-pointer border-b-2 border-transparent transition" onclick="dashboard.setBlockTab(1,this)">Top 10 Cost</div>
+                <div class="tab-btn px-3 py-1.5 text-[11px] text-gray-400 cursor-pointer border-b-2 border-transparent transition" onclick="dashboard.setBlockTab(2,this)">Top 10 Cost/m&sup2;</div>
+                <div class="tab-btn px-3 py-1.5 text-[11px] text-gray-400 cursor-pointer border-b-2 border-transparent transition" onclick="dashboard.setBlockTab(3,this)">Anomalies</div>
+            </div>
+            <div id="blockTab0"><div id="chartBlockHourly" style="height:220px"></div></div>
+            <div id="blockTab1" class="hidden"><div id="blockTop10Cost"></div></div>
+            <div id="blockTab2" class="hidden"><div id="blockTop10M2"></div></div>
+            <div id="blockTab3" class="hidden"><div id="blockAnomalies" class="max-h-[260px] overflow-y-auto"></div></div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-[13px] font-semibold">Apartment Drill-Down <span class="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded ml-1 font-medium" id="aptDrillLabel">YTD</span></h3>
+                <select id="drillApt" onchange="dashboard.updateAptDrill()" class="px-2 py-1 text-xs rounded-md bg-gray-50 border border-gray-300"></select>
+            </div>
+            <div class="flex gap-0.5 border-b border-gray-200 mb-3" id="aptTabs">
+                <div class="tab-btn active px-3 py-1.5 text-[11px] text-gray-400 cursor-pointer border-b-2 border-transparent transition" onclick="dashboard.setAptTab(0,this)">Daily Trend</div>
+                <div class="tab-btn px-3 py-1.5 text-[11px] text-gray-400 cursor-pointer border-b-2 border-transparent transition" onclick="dashboard.setAptTab(1,this)">Hourly Pattern</div>
+                <div class="tab-btn px-3 py-1.5 text-[11px] text-gray-400 cursor-pointer border-b-2 border-transparent transition" onclick="dashboard.setAptTab(2,this)">Cost/m&sup2; Compare</div>
+            </div>
+            <div id="aptTab0"><div id="chartAptDaily" style="height:220px"></div></div>
+            <div id="aptTab1" class="hidden"><div id="chartAptHourly" style="height:220px"></div></div>
+            <div id="aptTab2" class="hidden"><div id="chartAptM2" style="height:220px"></div></div>
+        </div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="grid grid-cols-3 gap-3 mb-3">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm col-span-1">
+            <h3 class="text-[13px] font-semibold mb-3">Savings Summary <span class="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded ml-1 font-medium" id="recsLabel">YTD</span></h3>
+            <div id="recsKPIs" class="space-y-3">
+                <div>
+                    <div class="text-[11px] text-gray-500 uppercase tracking-wide">Total Potential Savings</div>
+                    <div class="text-2xl font-bold text-emerald-600" id="recsTotalSavings">--</div>
+                    <div class="text-[10px] text-gray-400" id="recsSavingsSub">Annualized estimate</div>
+                </div>
+                <div class="flex gap-4" id="recsSeverityCounts">
+                    <div><span class="inline-block w-2 h-2 rounded-full bg-red-500 mr-1"></span><span class="text-[11px] text-gray-600" id="recsCritical">0 Critical</span></div>
+                    <div><span class="inline-block w-2 h-2 rounded-full bg-amber-400 mr-1"></span><span class="text-[11px] text-gray-600" id="recsMedium">0 Medium</span></div>
+                    <div><span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span><span class="text-[11px] text-gray-600" id="recsLow">0 Low</span></div>
+                </div>
+            </div>
+            <div id="recsDonut" style="height:160px" class="mt-2"></div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm col-span-2">
+            <h3 class="text-[13px] font-semibold mb-3">Priority Actions <span class="text-[10px] text-gray-400 font-normal" id="recsCount"></span></h3>
+            <div class="max-h-[380px] overflow-y-auto" id="recsList"></div>
+        </div>
+    </div>
+
+    <!-- Spike & Anomaly -->
+    <div class="grid grid-cols-2 gap-3 mb-3">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <h3 class="text-[13px] font-semibold mb-3">Spike Analysis <span class="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded ml-1 font-medium">&gt;75th Percentile</span> <span class="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded ml-1 font-medium" id="spikeLabel">YTD</span></h3>
+            <div class="max-h-[340px] overflow-y-auto" id="spikeList"></div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <h3 class="text-[13px] font-semibold mb-3">Anomaly Flags <span class="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded ml-1 font-medium" id="anomalyLabel">YTD</span></h3>
+            <div class="max-h-[340px] overflow-y-auto" id="anomalyList"></div>
+        </div>
+    </div>
+
+    <div class="text-center py-3 text-[10px] text-gray-400">
+        Estate Energy Cost Analytics &middot; Sample Data &middot; Generated <span id="genDate"></span>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// DATA GENERATION - 12 months (Jan-Dec 2025), 365 days
+// Uses typed arrays for apartment-level data for performance
+// ============================================================
+var PRNG = function(seed) { this.s = seed || 42; };
+PRNG.prototype.next = function() { this.s = (this.s * 16807) % 2147483647; return this.s / 2147483647; };
+PRNG.prototype.range = function(a,b) { return a + this.next() * (b - a); };
+PRNG.prototype.int = function(a,b) { return Math.floor(this.range(a, b+1)); };
+
+function generateData() {
+    var rng = new PRNG(12345);
+    var BLOCKS = 15, STORIES = 10, APTS = 4, HOURS = 24, INTERVALS = 3;
+    var NUM_APTS = BLOCKS * STORIES * APTS; // 600
+
+    // Generate dates for Jan 1 - Dec 31, 2025
+    var allDates = [], monthBounds = [];
+    var monthAbbr = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var monthNames = monthAbbr.map(function(m){ return m + ' 2025'; });
+    var NUM_MONTHS = 12;
+    var daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]; // 2025 is not a leap year
+    var totalDays = 0; for(var i=0;i<NUM_MONTHS;i++) totalDays+=daysInMonth[i]; // 365
+    var dayIdx = 0;
+    for (var m = 0; m < NUM_MONTHS; m++) {
+        var start = dayIdx;
+        for (var dd = 0; dd < daysInMonth[m]; dd++) {
+            var dt = new Date(2025, m, dd + 1);
+            allDates.push({
+                date: dt.toISOString().slice(0,10),
+                label: (dd+1) + ' ' + monthAbbr[m],
+                dow: dt.getDay(), // 0=Sun
+                dowName: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dt.getDay()],
+                month: m
+            });
+            dayIdx++;
+        }
+        monthBounds.push({start: start, end: dayIdx});
+    }
+
+    // Apartment metadata
+    var apartments = [];
+    for (var b = 1; b <= BLOCKS; b++) {
+        for (var s = 1; s <= STORIES; s++) {
+            for (var a = 1; a <= APTS; a++) {
+                apartments.push({
+                    id: 'B'+b+'-S'+s+'-A'+a,
+                    block: b, story: s, unit: a,
+                    area: Math.round(rng.range(45, 160)),
+                    // Electricity profiles
+                    eBaseLoad: rng.range(0.3, 1.8),
+                    eEveningFactor: rng.range(1.5, 3.5),
+                    eWeekendFactor: rng.range(0.8, 1.4),
+                    eIsSpiky: rng.next() < 0.05,
+                    eSpDay: rng.int(0, totalDays-1),
+                    eSpHour: rng.int(17, 21),
+                    // Water profiles (kL per 20min)
+                    wBaseLoad: rng.range(0.02, 0.12),
+                    wMorningFactor: rng.range(2.0, 4.0),
+                    wEveningFactor: rng.range(1.8, 3.0),
+                    wWeekendFactor: rng.range(1.1, 1.6),
+                    wIsSpiky: rng.next() < 0.04,
+                    wSpDay: rng.int(0, totalDays-1),
+                    wSpHour: rng.int(6, 9)
+                });
+            }
+        }
+    }
+
+    // Internal tariff functions (estate charges to residents)
+    // Set close to but slightly below CoJ rates to model realistic under-recovery
+    function elecTariff(hour, dow) {
+        var isW = dow === 0 || dow === 6;
+        // Base aligned to CoJ Block 2-3 range (R1.65-2.01/kWh) with TOU variation
+        // Estate recovers ~88-92% of municipal cost
+        var base = 1.55;
+        if (hour >= 7 && hour < 10) base = isW ? 1.70 : 2.10;
+        else if (hour >= 10 && hour < 16) base = isW ? 1.60 : 1.85;
+        else if (hour >= 16 && hour < 21) base = isW ? 1.80 : 2.30;
+        else if (hour >= 21 && hour < 23) base = 1.70;
+        return base * (1 + rng.range(-0.05, 0.05));
+    }
+    function waterTariff(hour, dow) {
+        // Internal water tariff: below CoJ effective rate (which includes sanitation)
+        // CoJ effective ~R150/kL for typical apt usage; estate recovers ~85-90% with simpler rate structure
+        var base = 128.0;
+        if (hour >= 6 && hour < 9) base = 155.0;
+        else if (hour >= 17 && hour < 21) base = 140.0;
+        else if (hour >= 22 || hour < 5) base = 100.0;
+        return base * (1 + rng.range(-0.03, 0.03));
+    }
+
+    // Helper: generate one utility dataset
+    function genUtility(utilType) {
+        var rng2 = new PRNG(utilType === 'elec' ? 12345 : 67890);
+        var sz = NUM_APTS * totalDays * HOURS;
+        var aptC = new Float32Array(sz);
+        var aptU = new Float32Array(sz); // usage (kWh or kL)
+        var aptT = new Float32Array(sz);
+        var eH = []; for (var d=0;d<totalDays;d++) eH[d] = new Float32Array(HOURS);
+        var bH = []; for (var b=0;b<=BLOCKS;b++){bH[b]=[];for(var d=0;d<totalDays;d++)bH[b][d]=new Float32Array(HOURS);}
+
+        for (var d=0;d<totalDays;d++){
+            var dow=allDates[d].dow, isWE=dow===0||dow===6;
+            for(var h=0;h<HOURS;h++){
+                for(var ai=0;ai<NUM_APTS;ai++){
+                    var apt=apartments[ai], hU=0,hC=0,tS=0;
+                    for(var iv=0;iv<INTERVALS;iv++){
+                        var u, t;
+                        if(utilType==='elec'){
+                            u=apt.eBaseLoad;
+                            if(h>=6&&h<9) u*=rng2.range(1.2,1.6);
+                            else if(h>=17&&h<21) u*=apt.eEveningFactor*rng2.range(0.85,1.15);
+                            else if(h>=22||h<6) u*=rng2.range(0.3,0.6);
+                            else u*=rng2.range(0.7,1.1);
+                            if(isWE) u*=apt.eWeekendFactor;
+                            if(apt.eIsSpiky&&d===apt.eSpDay&&h===apt.eSpHour) u*=rng2.range(3.5,6.0);
+                            t=elecTariff(h,dow);
+                        } else {
+                            u=apt.wBaseLoad;
+                            if(h>=6&&h<9) u*=apt.wMorningFactor*rng2.range(0.8,1.2);
+                            else if(h>=17&&h<21) u*=apt.wEveningFactor*rng2.range(0.85,1.15);
+                            else if(h>=22||h<5) u*=rng2.range(0.1,0.3);
+                            else u*=rng2.range(0.4,0.8);
+                            if(isWE) u*=apt.wWeekendFactor;
+                            if(apt.wIsSpiky&&d===apt.wSpDay&&h===apt.wSpHour) u*=rng2.range(4.0,7.0);
+                            t=waterTariff(h,dow);
+                        }
+                        u*=(apt.area/100)*rng2.range(0.85,1.15);
+                        u=Math.max(0.001,u);
+                        tS+=t; hU+=u; hC+=u*t;
+                    }
+                    var idx=ai*totalDays*HOURS+d*HOURS+h;
+                    aptC[idx]=hC; aptU[idx]=hU; aptT[idx]=tS/INTERVALS;
+                    eH[d][h]+=hC; bH[apt.block][d][h]+=hC;
+                }
+            }
+        }
+        var mT=new Array(NUM_MONTHS); for(var mi=0;mi<NUM_MONTHS;mi++) mT[mi]=0;
+        for(var m=0;m<NUM_MONTHS;m++) for(var d=monthBounds[m].start;d<monthBounds[m].end;d++) for(var h=0;h<HOURS;h++) mT[m]+=eH[d][h];
+        var dT=new Float32Array(totalDays);
+        for(var d=0;d<totalDays;d++) for(var h=0;h<HOURS;h++) dT[d]+=eH[d][h];
+        return {aptCost:aptC,aptUsage:aptU,aptTariff:aptT,estateHourly:eH,blockHourly:bH,monthlyTotals:mT,dailyTotals:dT};
+    }
+
+    var elec = genUtility('elec');
+    var water = genUtility('water');
+
+    // Pre-compute combined aggregates
+    var cEH=[]; for(var d=0;d<totalDays;d++){cEH[d]=new Float32Array(HOURS);for(var h=0;h<HOURS;h++)cEH[d][h]=elec.estateHourly[d][h]+water.estateHourly[d][h];}
+    var cBH=[]; for(var b=0;b<=BLOCKS;b++){cBH[b]=[];for(var d=0;d<totalDays;d++){cBH[b][d]=new Float32Array(HOURS);for(var h=0;h<HOURS;h++)cBH[b][d][h]=elec.blockHourly[b][d][h]+water.blockHourly[b][d][h];}}
+    var cMT=new Array(NUM_MONTHS); for(var m=0;m<NUM_MONTHS;m++) cMT[m]=elec.monthlyTotals[m]+water.monthlyTotals[m];
+    var cDT=new Float32Array(totalDays); for(var d=0;d<totalDays;d++) cDT[d]=elec.dailyTotals[d]+water.dailyTotals[d];
+    // Combined apt cost: sum on the fly via helper
+    var combined = {estateHourly:cEH,blockHourly:cBH,monthlyTotals:cMT,dailyTotals:cDT,aptCost:null,aptUsage:null,aptTariff:null};
+
+    // ---- City of Johannesburg Municipal Tariffs ----
+    // Electricity: Inclining Block Tariff (c/kWh → R/kWh)
+    function cojElecCost(monthlyKwh) {
+        var cost = 0;
+        var bands = [{limit:100,rate:1.3941},{limit:400,rate:1.6537},{limit:600,rate:2.0052},{limit:Infinity,rate:2.3886}];
+        var rem = monthlyKwh;
+        var prev = 0;
+        for (var i=0;i<bands.length;i++){
+            var qty = Math.min(rem, bands[i].limit - prev);
+            if (qty <= 0) break;
+            cost += qty * bands[i].rate;
+            rem -= qty;
+            prev = bands[i].limit;
+        }
+        // Fixed charges per account
+        cost += 148.0; // R148/account/month service charge
+        cost += 85.0;  // network demand charge
+        return cost;
+    }
+
+    // Water: Stepped Tariff (R/kL) + sanitation surcharge
+    function cojWaterCost(monthlyKl) {
+        var cost = 0;
+        var bands = [{limit:6,rate:10.38},{limit:10,rate:18.52},{limit:15,rate:28.89},{limit:20,rate:43.81},{limit:30,rate:55.98},{limit:45,rate:73.76},{limit:Infinity,rate:88.46}];
+        var rem = monthlyKl;
+        var prev = 0;
+        for (var i=0;i<bands.length;i++){
+            var qty = Math.min(rem, bands[i].limit - prev);
+            if (qty <= 0) break;
+            cost += qty * bands[i].rate;
+            rem -= qty;
+            prev = bands[i].limit;
+        }
+        // Sanitation surcharge: 100% of water consumption charge (CoJ typical for estates)
+        cost *= 2.0; // water + sanitation
+        // Fixed basic charges per account
+        cost += 87.0; // R87/account/month basic
+        cost += 45.0; // sanitation fixed
+        return cost;
+    }
+
+    // Compute monthly municipal costs per apartment, then aggregate to block/estate
+    // CoJ tariffs applied per apartment (sub-metered) which is standard for sectional title
+    function zeroM(){ var a=new Array(NUM_MONTHS); for(var i=0;i<NUM_MONTHS;i++) a[i]=0; return a; }
+    var municipal = {elec:{monthly:zeroM(),blockMonthly:[]},water:{monthly:zeroM(),blockMonthly:[]}};
+    for (var b=1;b<=BLOCKS;b++){municipal.elec.blockMonthly[b]=zeroM();municipal.water.blockMonthly[b]=zeroM();}
+
+    for (var m=0;m<NUM_MONTHS;m++){
+        var mb=monthBounds[m];
+        // Aggregate usage per apartment per month
+        var aptElecKwh=new Float32Array(NUM_APTS);
+        var aptWaterKl=new Float32Array(NUM_APTS);
+        for(var d=mb.start;d<mb.end;d++) for(var h=0;h<HOURS;h++) for(var ai=0;ai<NUM_APTS;ai++){
+            var idx=ai*totalDays*HOURS+d*HOURS+h;
+            aptElecKwh[ai]+=elec.aptUsage[idx];
+            aptWaterKl[ai]+=water.aptUsage[idx];
+        }
+        // Apply CoJ tariffs per apartment, aggregate to block
+        var totalElecMunic=0, totalWaterMunic=0;
+        for(var ai=0;ai<NUM_APTS;ai++){
+            var eC=cojElecCost(aptElecKwh[ai]);
+            var wC=cojWaterCost(aptWaterKl[ai]);
+            var b2=apartments[ai].block;
+            municipal.elec.blockMonthly[b2][m]+=eC;
+            municipal.water.blockMonthly[b2][m]+=wC;
+            totalElecMunic+=eC;
+            totalWaterMunic+=wC;
+        }
+        municipal.elec.monthly[m]=totalElecMunic;
+        municipal.water.monthly[m]=totalWaterMunic;
+    }
+    // Combined municipal
+    municipal.combined={monthly:zeroM(),blockMonthly:[]};
+    for(var b=1;b<=BLOCKS;b++){municipal.combined.blockMonthly[b]=zeroM();for(var m=0;m<NUM_MONTHS;m++)municipal.combined.blockMonthly[b][m]=municipal.elec.blockMonthly[b][m]+municipal.water.blockMonthly[b][m];}
+    for(var m=0;m<NUM_MONTHS;m++) municipal.combined.monthly[m]=municipal.elec.monthly[m]+municipal.water.monthly[m];
+
+    // Also compute block-level recovered costs per month
+    var recovered = {elec:{blockMonthly:[]},water:{blockMonthly:[]},combined:{blockMonthly:[]}};
+    for(var b=1;b<=BLOCKS;b++){recovered.elec.blockMonthly[b]=zeroM();recovered.water.blockMonthly[b]=zeroM();recovered.combined.blockMonthly[b]=zeroM();}
+    for(var m=0;m<NUM_MONTHS;m++){
+        var mb=monthBounds[m];
+        for(var d=mb.start;d<mb.end;d++) for(var h=0;h<HOURS;h++) for(var ai=0;ai<NUM_APTS;ai++){
+            var idx=ai*totalDays*HOURS+d*HOURS+h;
+            var b2=apartments[ai].block;
+            recovered.elec.blockMonthly[b2][m]+=elec.aptCost[idx];
+            recovered.water.blockMonthly[b2][m]+=water.aptCost[idx];
+            recovered.combined.blockMonthly[b2][m]+=elec.aptCost[idx]+water.aptCost[idx];
+        }
+    }
+
+    // Store block usage per month for recommendations
+    var blockUsage={elec:[],water:[]};
+    for(var b=1;b<=BLOCKS;b++){blockUsage.elec[b]=zeroM();blockUsage.water[b]=zeroM();}
+    for(var m=0;m<NUM_MONTHS;m++){
+        var mb=monthBounds[m];
+        for(var d=mb.start;d<mb.end;d++) for(var h=0;h<HOURS;h++) for(var ai=0;ai<NUM_APTS;ai++){
+            var idx=ai*totalDays*HOURS+d*HOURS+h;
+            blockUsage.elec[apartments[ai].block][m]+=elec.aptUsage[idx];
+            blockUsage.water[apartments[ai].block][m]+=water.aptUsage[idx];
+        }
+    }
+
+    // ---- Supply Mix Configuration ----
+    // Percentage of total consumption from each source (varies by month for solar)
+    // Monthly solar: higher in summer (Oct-Mar), lower in winter (Apr-Sep) for Johannesburg
+    var supplyMix = {
+        elec: {
+            sources: [
+                //                   Jan  Feb  Mar  Apr  May  Jun  Jul  Aug  Sep  Oct  Nov  Dec
+                {name:'Municipal',pct:[0.68,0.66,0.70,0.74,0.78,0.80,0.80,0.78,0.74,0.70,0.68,0.66],rate:0},
+                {name:'Solar PV', pct:[0.24,0.26,0.22,0.18,0.14,0.12,0.12,0.14,0.18,0.22,0.24,0.26],rate:0.15},
+                {name:'Generator',pct:[0.08,0.08,0.08,0.08,0.08,0.08,0.08,0.08,0.08,0.08,0.08,0.08],rate:5.20}
+            ]
+        },
+        water: {
+            sources: [
+                //                   Jan  Feb  Mar  Apr  May  Jun  Jul  Aug  Sep  Oct  Nov  Dec
+                {name:'Municipal',pct:[0.78,0.76,0.80,0.84,0.88,0.90,0.90,0.88,0.84,0.80,0.78,0.76],rate:0},
+                {name:'Borehole', pct:[0.22,0.24,0.20,0.16,0.12,0.10,0.10,0.12,0.16,0.20,0.22,0.24],rate:8.50}
+            ]
+        }
+    };
+
+    // Compute blended supply cost per month
+    // Municipal portion uses actual CoJ cost; alternative sources use flat rate × usage
+    var supply = {elec:{monthly:[],sources:supplyMix.elec.sources},water:{monthly:[],sources:supplyMix.water.sources}};
+
+    for(var m=0;m<NUM_MONTHS;m++){
+        var mb2=monthBounds[m];
+        // Total usage for the month
+        var totalElecUsage=0, totalWaterUsage=0;
+        for(var d=mb2.start;d<mb2.end;d++) for(var h=0;h<HOURS;h++) for(var ai=0;ai<NUM_APTS;ai++){
+            var idx2=ai*totalDays*HOURS+d*HOURS+h;
+            totalElecUsage+=elec.aptUsage[idx2];
+            totalWaterUsage+=water.aptUsage[idx2];
+        }
+
+        // Electricity blended cost
+        var eMunicPct=supplyMix.elec.sources[0].pct[m];
+        var eSolarPct=supplyMix.elec.sources[1].pct[m];
+        var eGenPct=supplyMix.elec.sources[2].pct[m];
+        var eMunicCost=municipal.elec.monthly[m]; // already computed on full usage; scale to municipal portion
+        var eMunicScaled=eMunicCost*eMunicPct; // CoJ only charges for municipal portion
+        var eSolarCost=totalElecUsage*eSolarPct*supplyMix.elec.sources[1].rate;
+        var eGenCost=totalElecUsage*eGenPct*supplyMix.elec.sources[2].rate;
+        supply.elec.monthly.push({total:eMunicScaled+eSolarCost+eGenCost,municipal:eMunicScaled,solar:eSolarCost,generator:eGenCost,
+            usage:totalElecUsage,municUsage:totalElecUsage*eMunicPct,solarUsage:totalElecUsage*eSolarPct,genUsage:totalElecUsage*eGenPct});
+
+        // Water blended cost
+        var wMunicPct=supplyMix.water.sources[0].pct[m];
+        var wBorePct=supplyMix.water.sources[1].pct[m];
+        var wMunicScaled=municipal.water.monthly[m]*wMunicPct;
+        var wBoreCost=totalWaterUsage*wBorePct*supplyMix.water.sources[1].rate;
+        supply.water.monthly.push({total:wMunicScaled+wBoreCost,municipal:wMunicScaled,borehole:wBoreCost,
+            usage:totalWaterUsage,municUsage:totalWaterUsage*wMunicPct,boreUsage:totalWaterUsage*wBorePct});
+    }
+
+    // Combined supply
+    supply.combined={monthly:[]};
+    for(var m=0;m<NUM_MONTHS;m++) supply.combined.monthly.push({total:supply.elec.monthly[m].total+supply.water.monthly[m].total});
+
+    return {
+        apartments: apartments, NUM_APTS: NUM_APTS,
+        elec: elec, water: water, combined: combined,
+        allDates: allDates, monthBounds: monthBounds, monthNames: monthNames, NUM_MONTHS: NUM_MONTHS,
+        BLOCKS: BLOCKS, HOURS: HOURS, totalDays: totalDays,
+        municipal: municipal, recovered: recovered, blockUsage: blockUsage,
+        cojElecCost: cojElecCost, cojWaterCost: cojWaterCost,
+        supply: supply, supplyMix: supplyMix
+    };
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+var Dashboard = function() {
+    this.data = generateData();
+    this.charts = {};
+    this.selectedBlock = 1;
+    this.selectedApt = 0;
+    this.selectedMonth = -1;
+    this.selectedDay = null;
+    this.utility = 'combined'; // 'combined', 'elec', 'water'
+    document.getElementById('genDate').textContent = new Date().toLocaleDateString();
+    this.initFilters();
+    this.renderAll();
+};
+
+Dashboard.prototype.fmt = function(v) { return 'R' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
+Dashboard.prototype.fmtK = function(v) { return v >= 1000000 ? 'R' + (v/1000000).toFixed(2) + 'M' : v >= 1000 ? 'R' + (v/1000).toFixed(1) + 'K' : 'R' + v.toFixed(0); };
+Dashboard.prototype.fmtPct = function(v) { return (v*100).toFixed(1) + '%'; };
+
+// Get current utility dataset (aggregates)
+Dashboard.prototype.getU = function() { return this.data[this.utility]; };
+
+// Get apartment cost for current utility (handles combined = elec + water)
+Dashboard.prototype.aptCost = function(ai, d, h) {
+    var D = this.data, idx = ai * D.totalDays * D.HOURS + d * D.HOURS + h;
+    if (this.utility === 'combined') return D.elec.aptCost[idx] + D.water.aptCost[idx];
+    return this.getU().aptCost[idx];
+};
+Dashboard.prototype.aptUsage = function(ai, d, h) {
+    var D = this.data, idx = ai * D.totalDays * D.HOURS + d * D.HOURS + h;
+    if (this.utility === 'combined') return D.elec.aptUsage[idx] + D.water.aptUsage[idx];
+    return this.getU().aptUsage[idx];
+};
+Dashboard.prototype.aptTariff = function(ai, d, h) {
+    var D = this.data, idx = ai * D.totalDays * D.HOURS + d * D.HOURS + h;
+    if (this.utility === 'combined') return (D.elec.aptTariff[idx] + D.water.aptTariff[idx]) / 2;
+    return this.getU().aptTariff[idx];
+};
+
+Dashboard.prototype.setUtility = function(u) {
+    this.utility = u;
+    var titles = {combined:'Estate Utility Cost Analytics', elec:'Estate Electricity Cost Analytics', water:'Estate Water Cost Analytics'};
+    document.getElementById('dashTitle').textContent = titles[u];
+    // Update toggle buttons
+    document.querySelectorAll('#utilityToggle .util-btn').forEach(function(btn) {
+        if (btn.getAttribute('data-u') === u) { btn.className = 'util-btn px-3 py-1 text-[11px] font-semibold bg-blue-600 text-white'; }
+        else { btn.className = 'util-btn px-3 py-1 text-[11px] font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600'; }
+    });
+    this.renderAll();
+};
+
+// Get filtered day range based on month + day selection
+Dashboard.prototype.getDayRange = function() {
+    var D = this.data;
+    if (this.selectedDay !== null) return {start:this.selectedDay, end:this.selectedDay+1};
+    if (this.selectedMonth === -1) return {start:0, end:D.totalDays};
+    var mb = D.monthBounds[this.selectedMonth];
+    return {start:mb.start, end:mb.end};
+};
+
+// Drill navigation: YTD -> Month -> Day
+Dashboard.prototype.drillTo = function(level, idx) {
+    if (level === 'ytd') {
+        this.selectedMonth = -1;
+        this.selectedDay = null;
+    } else if (level === 'month') {
+        this.selectedMonth = idx;
+        this.selectedDay = null;
+    } else if (level === 'day') {
+        // idx is absolute day index; infer month
+        this.selectedDay = idx;
+        this.selectedMonth = this.data.allDates[idx].month;
+    }
+    this.updateBreadcrumb();
+    this.renderAll();
+};
+
+Dashboard.prototype.updateBreadcrumb = function() {
+    var D = this.data, html = '';
+    // YTD link (always)
+    if (this.selectedMonth === -1 && this.selectedDay === null) {
+        html = '<span class="text-white font-semibold">YTD ('+D.monthNames[0]+'\u2013'+D.monthNames[D.NUM_MONTHS-1]+')</span>';
+    } else {
+        html = '<span class="text-blue-400 cursor-pointer hover:text-blue-300 font-semibold" onclick="dashboard.drillTo(\'ytd\')">YTD</span>';
+    }
+    // Month level
+    if (this.selectedMonth !== -1) {
+        html += '<span class="text-slate-500 mx-1">/</span>';
+        if (this.selectedDay === null) {
+            html += '<span class="text-white font-semibold">' + D.monthNames[this.selectedMonth] + '</span>';
+        } else {
+            html += '<span class="text-blue-400 cursor-pointer hover:text-blue-300 font-semibold" onclick="dashboard.drillTo(\'month\',' + this.selectedMonth + ')">' + D.monthNames[this.selectedMonth] + '</span>';
+        }
+    }
+    // Day level
+    if (this.selectedDay !== null) {
+        html += '<span class="text-slate-500 mx-1">/</span>';
+        html += '<span class="text-white font-semibold">' + D.allDates[this.selectedDay].date + ' (' + D.allDates[this.selectedDay].dowName + ')</span>';
+    }
+    document.getElementById('breadcrumb').innerHTML = html;
+};
+
+Dashboard.prototype.initFilters = function() {
+    var D = this.data;
+    var bs = document.getElementById('filterBlock');
+    for (var b = 1; b <= D.BLOCKS; b++) { var o = document.createElement('option'); o.value=b; o.textContent='Block '+b; bs.appendChild(o); }
+    this.updateBreadcrumb();
+};
+
+Dashboard.prototype.onFilterChange = function() {
+    this.renderKPIs();
+    this.renderHeatmap1();
+    this.renderHeatmap2();
+    this.renderSpikes();
+};
+
+Dashboard.prototype.renderAll = function() {
+    this.renderKPIs();
+    this.renderRecovery();
+    this.renderMonthlyTrend();
+    this.renderDailyTrend();
+    this.renderHeatmap1();
+    this.renderHeatmap2();
+    this.initDrilldowns();
+    this.renderRecommendations();
+    this.renderSpikes();
+    this.renderAnomalies();
+};
+
+// ---- KPIs ----
+Dashboard.prototype.renderKPIs = function() {
+    var D = this.data, U = this.getU(), self = this, range = this.getDayRange();
+    var todayIdx = D.totalDays - 1; // Last day = Mar 31
+
+    // Today cost
+    var todayCost = 0;
+    for (var h = 0; h < D.HOURS; h++) todayCost += U.estateHourly[todayIdx][h];
+
+    // Selected period cost
+    var periodCost = 0;
+    for (var d = range.start; d < range.end; d++) periodCost += U.dailyTotals[d];
+
+    // YTD
+    var ytdCost = 0; for(var mi=0;mi<D.NUM_MONTHS;mi++) ytdCost+=U.monthlyTotals[mi];
+
+    // Current month cost (latest)
+    var curMonthCost = U.monthlyTotals[D.NUM_MONTHS-1];
+
+    document.getElementById('kpiTotalCost').textContent = this.fmtK(ytdCost);
+    document.getElementById('kpiTotalSub').textContent = 'YTD ('+D.monthNames[0]+'\u2013'+D.monthNames[D.NUM_MONTHS-1]+')';
+
+    // Period KPI - shows context based on drill level
+    var pl = document.getElementById('kpiPeriodLabel');
+    if (this.selectedDay !== null) {
+        pl.textContent = 'Day Cost';
+        document.getElementById('kpiMonthCost').textContent = this.fmtK(periodCost);
+        document.getElementById('kpiMonthSub').textContent = D.allDates[this.selectedDay].date + ' (' + D.allDates[this.selectedDay].dowName + ')';
+    } else if (this.selectedMonth !== -1) {
+        pl.textContent = 'Monthly Cost';
+        document.getElementById('kpiMonthCost').textContent = this.fmtK(U.monthlyTotals[this.selectedMonth]);
+        document.getElementById('kpiMonthSub').textContent = D.monthNames[this.selectedMonth];
+    } else {
+        pl.textContent = 'Selected Period';
+        document.getElementById('kpiMonthCost').textContent = this.fmtK(ytdCost);
+        document.getElementById('kpiMonthSub').textContent = 'YTD | Today: ' + this.fmtK(todayCost);
+    }
+
+    // Most expensive hour today
+    var maxH = 0, maxHC = 0;
+    for (var h = 0; h < D.HOURS; h++) { if (U.estateHourly[todayIdx][h] > maxHC) { maxHC = U.estateHourly[todayIdx][h]; maxH = h; } }
+    document.getElementById('kpiExpHour').textContent = String(maxH).padStart(2,'0')+':00';
+    document.getElementById('kpiExpHourSub').textContent = this.fmt(maxHC)+' on '+D.allDates[todayIdx].date;
+
+    // Highest contributing block (within selected period)
+    var bt = new Array(D.BLOCKS+1).fill(0);
+    for (var d = range.start; d < range.end; d++) for (var b = 1; b <= D.BLOCKS; b++) for (var h = 0; h < D.HOURS; h++) bt[b] += U.blockHourly[b][d][h];
+    var topB = 1; for (var b = 2; b <= D.BLOCKS; b++) if (bt[b] > bt[topB]) topB = b;
+    var tot = bt.reduce(function(s,v){return s+v;},0);
+    document.getElementById('kpiTopBlock').textContent = 'Block '+topB;
+    document.getElementById('kpiTopBlockSub').textContent = this.fmtPct(bt[topB]/tot)+' ('+this.fmtK(bt[topB])+')';
+
+    // Highest cost/m²
+    var topI = 0, topV = 0;
+    for (var ai = 0; ai < D.NUM_APTS; ai++) {
+        var c = 0;
+        for (var d = range.start; d < range.end; d++) for (var h = 0; h < D.HOURS; h++) c += self.aptCost(ai,d,h);
+        var cm = c / D.apartments[ai].area;
+        if (cm > topV) { topV = cm; topI = ai; }
+    }
+    document.getElementById('kpiTopAptM2').textContent = D.apartments[topI].id;
+    document.getElementById('kpiTopAptM2Sub').textContent = this.fmt(topV)+'/m\u00B2 ('+D.apartments[topI].area+'m\u00B2)';
+};
+
+// ---- Municipal Recovery Analysis ----
+Dashboard.prototype.renderRecovery = function() {
+    var D=this.data,self=this,u=this.utility;
+    var recov=D[u]||D.combined;
+    var sup=D.supply;
+
+    // Update label
+    if(this.selectedDay!==null) document.getElementById('recovLabel').textContent=D.allDates[this.selectedDay].date;
+    else if(this.selectedMonth!==-1) document.getElementById('recovLabel').textContent=D.monthNames[this.selectedMonth];
+    else document.getElementById('recovLabel').textContent='YTD';
+
+    // Get blended supply cost per month for current utility
+    function getSupplyMonthly(m){
+        if(u==='elec') return sup.elec.monthly[m].total;
+        if(u==='water') return sup.water.monthly[m].total;
+        return sup.combined.monthly[m].total;
+    }
+
+    // Compute totals
+    var totalSupply=0,totalRecov=0;
+    var allMonthIdx=[]; for(var mi=0;mi<D.NUM_MONTHS;mi++) allMonthIdx.push(mi);
+    var months=this.selectedMonth!==-1?[this.selectedMonth]:allMonthIdx;
+    months.forEach(function(m){totalSupply+=getSupplyMonthly(m);totalRecov+=recov.monthlyTotals[m];});
+    var rate=totalSupply>0?(totalRecov/totalSupply)*100:0;
+    var gap=totalSupply-totalRecov;
+
+    document.getElementById('recovMunic').textContent=self.fmtK(totalSupply);
+    document.getElementById('recovRecov').textContent=self.fmtK(totalRecov);
+    var rateEl=document.getElementById('recovRate');
+    rateEl.textContent=rate.toFixed(1)+'%';
+    rateEl.className='text-lg font-bold '+(rate>=95?'text-emerald-600':rate>=85?'text-amber-500':'text-red-500');
+    document.getElementById('recovGap').textContent=gap>0?self.fmtK(gap):'R0';
+
+    // Supply mix bar
+    var mixHtml='';
+    var srcColors={'Municipal':'#6366f1','Solar PV':'#f59e0b','Generator':'#ef4444','Borehole':'#06b6d4'};
+    if(u==='elec'||u==='combined'){
+        var eSrcs=D.supplyMix.elec.sources;
+        var avgPcts=eSrcs.map(function(s){var t=0;months.forEach(function(m){t+=s.pct[m];});return t/months.length;});
+        var eCosts=months.map(function(m){return sup.elec.monthly[m];});
+        var totalE=0;eCosts.forEach(function(c){totalE+=c.total;});
+        mixHtml+='<div class="text-[10px] text-gray-600 mb-1">'+(u==='combined'?'Electricity: ':'')+'</div>';
+        mixHtml+='<div class="flex h-3 rounded-full overflow-hidden mb-1">';
+        eSrcs.forEach(function(s,i){mixHtml+='<div style="width:'+(avgPcts[i]*100).toFixed(1)+'%;background:'+srcColors[s.name]+'" title="'+s.name+': '+(avgPcts[i]*100).toFixed(0)+'%"></div>';});
+        mixHtml+='</div><div class="flex gap-3 flex-wrap mb-2">';
+        eSrcs.forEach(function(s,i){
+            var sCost=0;
+            if(s.name==='Municipal') eCosts.forEach(function(c){sCost+=c.municipal;});
+            else if(s.name==='Solar PV') eCosts.forEach(function(c){sCost+=c.solar;});
+            else eCosts.forEach(function(c){sCost+=c.generator;});
+            mixHtml+='<div class="text-[10px]"><span class="inline-block w-2 h-2 rounded-full mr-1" style="background:'+srcColors[s.name]+'"></span>'+s.name+' '+(avgPcts[i]*100).toFixed(0)+'% ('+self.fmtK(sCost)+')</div>';
+        });
+        mixHtml+='</div>';
+    }
+    if(u==='water'||u==='combined'){
+        var wSrcs=D.supplyMix.water.sources;
+        var wAvgPcts=wSrcs.map(function(s){var t=0;months.forEach(function(m){t+=s.pct[m];});return t/months.length;});
+        var wCosts=months.map(function(m){return sup.water.monthly[m];});
+        var totalW=0;wCosts.forEach(function(c){totalW+=c.total;});
+        mixHtml+='<div class="text-[10px] text-gray-600 mb-1">'+(u==='combined'?'Water: ':'')+'</div>';
+        mixHtml+='<div class="flex h-3 rounded-full overflow-hidden mb-1">';
+        wSrcs.forEach(function(s,i){mixHtml+='<div style="width:'+(wAvgPcts[i]*100).toFixed(1)+'%;background:'+srcColors[s.name]+'" title="'+s.name+': '+(wAvgPcts[i]*100).toFixed(0)+'%"></div>';});
+        mixHtml+='</div><div class="flex gap-3 flex-wrap">';
+        wSrcs.forEach(function(s,i){
+            var sCost=0;
+            if(s.name==='Municipal') wCosts.forEach(function(c){sCost+=c.municipal;});
+            else wCosts.forEach(function(c){sCost+=c.borehole;});
+            mixHtml+='<div class="text-[10px]"><span class="inline-block w-2 h-2 rounded-full mr-1" style="background:'+srcColors[s.name]+'"></span>'+s.name+' '+(wAvgPcts[i]*100).toFixed(0)+'% ('+self.fmtK(sCost)+')</div>';
+        });
+        mixHtml+='</div>';
+    }
+    document.getElementById('supplyMixBar').innerHTML=mixHtml;
+
+    // Monthly table (using blended supply cost) — scrollable body, sticky header/footer
+    var thtml='';
+    var ytdS=0,ytdR=0;
+    for(var m=0;m<D.NUM_MONTHS;m++){
+        var mS=getSupplyMonthly(m),mR=recov.monthlyTotals[m],mRate=mS>0?(mR/mS)*100:0;
+        ytdS+=mS; ytdR+=mR;
+        var rClass=mRate>=95?'text-emerald-600':mRate>=85?'text-amber-500':'text-red-500 font-semibold';
+        var selClass=this.selectedMonth===m?'bg-blue-50':'';
+        thtml+='<tr class="'+selClass+'"><td class="py-1 px-1 border-b border-gray-100">'+D.monthNames[m]+'</td><td class="py-1 px-1 border-b border-gray-100 text-right tabular-nums">'+self.fmtK(mS)+'</td><td class="py-1 px-1 border-b border-gray-100 text-right tabular-nums">'+self.fmtK(mR)+'</td><td class="py-1 px-1 border-b border-gray-100 text-right tabular-nums '+rClass+'">'+mRate.toFixed(1)+'%</td></tr>';
+    }
+    document.getElementById('recovTable').innerHTML=thtml;
+    var ytdRate=ytdS>0?(ytdR/ytdS)*100:0;
+    var ytdClass=ytdRate>=95?'text-emerald-600':ytdRate>=85?'text-amber-500':'text-red-500';
+    document.getElementById('recovTableFoot').innerHTML='<tr class="font-semibold"><td class="py-1 px-1 border-t-2 border-gray-300">YTD</td><td class="py-1 px-1 border-t-2 border-gray-300 text-right tabular-nums">'+self.fmtK(ytdS)+'</td><td class="py-1 px-1 border-t-2 border-gray-300 text-right tabular-nums">'+self.fmtK(ytdR)+'</td><td class="py-1 px-1 border-t-2 border-gray-300 text-right tabular-nums '+ytdClass+'">'+ytdRate.toFixed(1)+'%</td></tr>';
+    // Set max-height for scrollable table area
+    document.getElementById('recovTableWrap').style.maxHeight='220px';
+    document.getElementById('recovTableWrap').style.overflowY='auto';
+
+    // Grouped bar chart: stacked supply sources vs Recovered
+    var supplyData=[];
+    for(var m=0;m<D.NUM_MONTHS;m++) supplyData.push(getSupplyMonthly(m));
+
+    if(this.charts.recovBar) this.charts.recovBar.dispose();
+    var ch1=echarts.init(document.getElementById('chartRecovBar'));
+    var barSeries=[];
+    // Stacked supply source bars
+    if(u==='elec'||u==='combined'){
+        barSeries.push({name:'Municipal (Elec)',type:'bar',stack:'supply',data:sup.elec.monthly.map(function(m){return m.municipal;}),itemStyle:{color:'#6366f1',borderRadius:barSeries.length===0?[4,4,0,0]:[0,0,0,0]},barWidth:'35%'});
+        barSeries.push({name:'Solar PV',type:'bar',stack:'supply',data:sup.elec.monthly.map(function(m){return m.solar;}),itemStyle:{color:'#f59e0b'},barWidth:'35%'});
+        barSeries.push({name:'Generator',type:'bar',stack:'supply',data:sup.elec.monthly.map(function(m){return m.generator;}),itemStyle:{color:'#ef4444'},barWidth:'35%'});
+    }
+    if(u==='water'||u==='combined'){
+        barSeries.push({name:'Municipal (Water)',type:'bar',stack:'supply',data:sup.water.monthly.map(function(m){return m.municipal;}),itemStyle:{color:u==='water'?'#6366f1':'#818cf8'},barWidth:'35%'});
+        barSeries.push({name:'Borehole',type:'bar',stack:'supply',data:sup.water.monthly.map(function(m){return m.borehole;}),itemStyle:{color:'#06b6d4'},barWidth:'35%'});
+    }
+    // Recovered bar
+    var recovArr=[]; for(var mi=0;mi<D.NUM_MONTHS;mi++) recovArr.push(recov.monthlyTotals[mi]);
+    barSeries.push({name:'Recovered',type:'bar',data:recovArr,itemStyle:{color:'#10b981',borderRadius:[4,4,0,0]},barGap:'15%',barWidth:'35%'});
+
+    var legendNames=barSeries.map(function(s){return s.name;});
+    ch1.setOption({
+        tooltip:{trigger:'axis',formatter:function(p){var r='';p.forEach(function(s){if(s.value>0)r+=s.seriesName+': '+self.fmtK(s.value)+'<br/>';});return p[0].name+'<br/>'+r+'<span style="color:#94a3b8;font-size:10px">Click to drill into month</span>';}},
+        legend:{data:legendNames,textStyle:{fontSize:9,color:'#64748b'},top:0,itemWidth:10,itemHeight:10},
+        grid:{left:55,right:15,top:40,bottom:D.NUM_MONTHS>6?50:25},
+        xAxis:{type:'category',data:D.monthNames,axisLabel:{fontSize:D.NUM_MONTHS>6?9:11,color:'#64748b',rotate:D.NUM_MONTHS>6?45:0}},
+        yAxis:{type:'value',axisLabel:{fontSize:9,color:'#64748b',formatter:function(v){return self.fmtK(v);}},splitLine:{lineStyle:{color:'#e5e7eb'}}},
+        dataZoom:D.NUM_MONTHS>6?[{type:'slider',start:Math.max(0,(D.NUM_MONTHS-6)/D.NUM_MONTHS*100),end:100,height:18,bottom:2,textStyle:{fontSize:9}}]:[],
+        series:barSeries
+    });
+    ch1.on('click',function(p){ if(p.dataIndex!==undefined) self.drillTo('month',p.dataIndex); });
+    this.charts.recovBar=ch1;
+
+    // Block recovery rates horizontal bar
+    var blockLabels=[],blockRates=[],blockColors=[];
+    var munic=D.municipal[u];
+    var recovBlk=D.recovered[u];
+    for(var b=1;b<=D.BLOCKS;b++){
+        var bM=0,bR=0;
+        months.forEach(function(m){bM+=munic.blockMonthly[b][m];bR+=recovBlk.blockMonthly[b][m];});
+        var br=bM>0?(bR/bM)*100:0;
+        blockLabels.push('Block '+b);
+        blockRates.push(br);
+        blockColors.push(br>=95?'#10b981':br>=85?'#f59e0b':'#ef4444');
+    }
+
+    if(this.charts.blockRecov) this.charts.blockRecov.dispose();
+    var ch2=echarts.init(document.getElementById('chartBlockRecov'));
+    ch2.setOption({
+        tooltip:{trigger:'axis',formatter:function(p){return p[0].name+'<br/>Recovery: <b>'+p[0].value.toFixed(1)+'%</b><br/><span style="color:#94a3b8;font-size:10px">Click to select block</span>';}},
+        grid:{left:60,right:30,top:10,bottom:25},
+        xAxis:{type:'value',min:0,max:100,axisLabel:{fontSize:9,color:'#64748b',formatter:function(v){return v+'%';}},splitLine:{lineStyle:{color:'#e5e7eb'}}},
+        yAxis:{type:'category',data:blockLabels,axisLabel:{fontSize:9,color:'#64748b'},inverse:true},
+        series:[{type:'bar',data:blockRates.map(function(v,i){return{value:v,itemStyle:{color:blockColors[i]}};}),
+            barWidth:'55%',itemStyle:{borderRadius:[0,4,4,0]},cursor:'pointer',
+            label:{show:true,position:'right',formatter:function(p){return p.value.toFixed(1)+'%';},fontSize:9,color:'#475569'},
+            markLine:{silent:true,symbol:'none',lineStyle:{color:'#3b82f6',type:'dashed',width:1.5},data:[{xAxis:95,label:{show:true,formatter:'95% target',fontSize:9,color:'#3b82f6',position:'insideStartTop'}}]}
+        }]
+    });
+    ch2.on('click',function(p){ var blockNum=p.dataIndex+1; document.getElementById('filterBlock').value=blockNum; self.onFilterChange(); });
+    this.charts.blockRecov=ch2;
+};
+
+// ---- Monthly Trend (clickable) ----
+Dashboard.prototype.renderMonthlyTrend = function() {
+    var D = this.data, U = this.getU(), self = this;
+    if (this.charts.monthly) this.charts.monthly.dispose();
+    var ch = echarts.init(document.getElementById('chartMonthlyTrend'));
+    var selM = this.selectedMonth;
+    var mPalette=['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#6366f1','#ec4899','#14b8a6','#a855f7','#f97316','#84cc16'];
+    var colors = U.monthlyTotals.map(function(v,i) {
+        if (selM === -1) return mPalette[i % mPalette.length];
+        return i === selM ? '#3b82f6' : '#cbd5e1';
+    });
+    ch.setOption({
+        tooltip: { trigger:'axis', formatter:function(p) { return p[0].name+'<br/>'+self.fmtK(p[0].value)+'<br/><span style="color:#94a3b8;font-size:10px">Click to drill into month</span>'; } },
+        grid: { left:60, right:20, top:10, bottom:D.NUM_MONTHS>6?50:30 },
+        xAxis: { type:'category', data:D.monthNames, axisLabel:{fontSize:D.NUM_MONTHS>6?9:11,color:'#64748b',rotate:D.NUM_MONTHS>6?45:0}, axisTick:{show:false} },
+        yAxis: { type:'value', axisLabel:{fontSize:9,color:'#64748b',formatter:function(v){return self.fmtK(v);}}, splitLine:{lineStyle:{color:'#e5e7eb'}} },
+        dataZoom:D.NUM_MONTHS>6?[{type:'slider',start:Math.max(0,(D.NUM_MONTHS-6)/D.NUM_MONTHS*100),end:100,height:18,bottom:2,textStyle:{fontSize:9}}]:[],
+        series: [{
+            type:'bar', data:U.monthlyTotals.map(function(v,i){return {value:v,itemStyle:{color:colors[i]}};}),
+            barWidth:'45%', itemStyle:{borderRadius:[6,6,0,0]}, cursor:'pointer',
+            label:{show:D.NUM_MONTHS<=6, position:'top', formatter:function(p){return self.fmtK(p.value);}, fontSize:10, color:'#475569'}
+        }]
+    });
+    ch.on('click', function(p) { self.drillTo('month', p.dataIndex); });
+    this.charts.monthly = ch;
+};
+
+// ---- Daily Trend (clickable) ----
+Dashboard.prototype.renderDailyTrend = function() {
+    var D = this.data, U = this.getU(), self = this;
+    // For daily chart, always show the month range (not single day)
+    var dailyRange;
+    if (this.selectedMonth === -1) dailyRange = {start:0, end:D.totalDays};
+    else { var mb = D.monthBounds[this.selectedMonth]; dailyRange = {start:mb.start, end:mb.end}; }
+
+    var dates = [], vals = [], dayIndices = [];
+    for (var d = dailyRange.start; d < dailyRange.end; d++) {
+        dates.push(D.allDates[d].label);
+        vals.push(U.dailyTotals[d]);
+        dayIndices.push(d);
+    }
+    var label = this.selectedMonth === -1 ? 'YTD' : D.monthNames[this.selectedMonth];
+    if (this.selectedDay !== null) label += ' \u2014 ' + D.allDates[this.selectedDay].date + ' selected';
+    document.getElementById('dailyTrendLabel').textContent = label;
+
+    // Highlight selected day
+    var selLocal = this.selectedDay !== null ? this.selectedDay - dailyRange.start : -1;
+    var barColors = vals.map(function(v,i) {
+        if (self.selectedDay === null) return '#3b82f6';
+        return i === selLocal ? '#3b82f6' : '#cbd5e1';
+    });
+
+    if (this.charts.daily) this.charts.daily.dispose();
+    var ch = echarts.init(document.getElementById('chartDailyTrend'));
+    ch.setOption({
+        tooltip: { trigger:'axis', formatter:function(p){ return p[0].name+'<br/>'+self.fmtK(p[0].value)+'<br/><span style="color:#94a3b8;font-size:10px">Click to drill into day</span>'; } },
+        grid: { left:55, right:15, top:10, bottom:30 },
+        xAxis: { type:'category', data:dates, axisLabel:{fontSize:8,color:'#64748b',rotate:dates.length>35?45:0} },
+        yAxis: { type:'value', axisLabel:{fontSize:9,color:'#64748b',formatter:function(v){return self.fmtK(v);}}, splitLine:{lineStyle:{color:'#e5e7eb'}} },
+        series: [{
+            type:'bar', data:vals.map(function(v,i){return {value:v,itemStyle:{color:barColors[i]}};}),
+            barMaxWidth:14, itemStyle:{borderRadius:[3,3,0,0]}, cursor:'pointer'
+        }]
+    });
+    ch.on('click', function(p) {
+        var absDay = dayIndices[p.dataIndex];
+        if (self.selectedDay === absDay) {
+            // Clicking same day again -> go back to month level
+            self.drillTo('month', self.selectedMonth);
+        } else {
+            self.drillTo('day', absDay);
+        }
+    });
+    this.charts.daily = ch;
+};
+
+// ---- Heatmap 1: Hour-of-Day ----
+// Single day selected: shows hourly bar chart for that day
+// Multi-day: shows weekday-aggregated heatmap
+Dashboard.prototype.renderHeatmap1 = function() {
+    var D = this.data, U = this.getU(), self = this, range = this.getDayRange();
+    var hours = Array.from({length:24}, function(_,i){ return String(i).padStart(2,'0')+':00'; });
+
+    if (this.charts.hm1) this.charts.hm1.dispose();
+
+    if (this.selectedDay !== null) {
+        // Single day: show hourly bar chart
+        var d = this.selectedDay;
+        var vals = [];
+        for (var h = 0; h < D.HOURS; h++) vals.push(U.estateHourly[d][h]);
+        var maxV = Math.max.apply(null, vals);
+        document.getElementById('hm1Label').textContent = D.allDates[d].date + ' (' + D.allDates[d].dowName + ')';
+
+        var chart = echarts.init(document.getElementById('heatmap1'));
+        chart.setOption({
+            tooltip: { trigger:'axis', formatter:function(p){ return p[0].name+'<br/>'+self.fmt(p[0].value); } },
+            grid: { left:55, right:15, top:10, bottom:30 },
+            xAxis: { type:'category', data:hours, axisLabel:{fontSize:9,color:'#64748b'}, axisTick:{show:false} },
+            yAxis: { type:'value', axisLabel:{fontSize:9,color:'#64748b',formatter:function(v){return self.fmtK(v);}}, splitLine:{lineStyle:{color:'#e5e7eb'}} },
+            series: [{ type:'bar', data:vals.map(function(v){ var t=v/maxV; return {value:v, itemStyle:{color: t>0.7?'#ef4444':t>0.4?'#f59e0b':'#10b981'}}; }),
+                barWidth:'55%', itemStyle:{borderRadius:[3,3,0,0]} }]
+        });
+        this.charts.hm1 = chart;
+    } else {
+        // Multi-day: weekday heatmap
+        document.getElementById('hm1Label').textContent = 'By Weekday (avg)';
+        var dowCost = [];
+        var dowCount = new Array(7).fill(0);
+        for (var i = 0; i < 7; i++) dowCost[i] = new Float32Array(D.HOURS);
+        for (var d = range.start; d < range.end; d++) {
+            var dow = D.allDates[d].dow;
+            dowCount[dow]++;
+            for (var h = 0; h < D.HOURS; h++) dowCost[dow][h] += U.estateHourly[d][h];
+        }
+        for (var i = 0; i < 7; i++) if (dowCount[i] > 0) for (var h = 0; h < D.HOURS; h++) dowCost[i][h] /= dowCount[i];
+
+        var dowOrder = [1,2,3,4,5,6,0];
+        var dowLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+        var hmData = [];
+        for (var yi = 0; yi < 7; yi++) { var dow = dowOrder[yi]; for (var h = 0; h < D.HOURS; h++) hmData.push([h, yi, dowCost[dow][h]]); }
+
+        var chart = echarts.init(document.getElementById('heatmap1'));
+        chart.setOption({
+            tooltip: { formatter: function(p) { return dowLabels[p.data[1]]+' '+hours[p.data[0]]+'<br/><b>'+self.fmt(p.data[2])+'</b> avg'; } },
+            grid: { left:50, right:20, top:10, bottom:30 },
+            xAxis: { type:'category', data:hours, axisLabel:{fontSize:9,color:'#64748b'}, splitArea:{show:false}, axisTick:{show:false} },
+            yAxis: { type:'category', data:dowLabels, axisLabel:{fontSize:10,color:'#64748b'}, axisTick:{show:false} },
+            visualMap: { min:Math.min.apply(null,hmData.map(function(d){return d[2];})), max:Math.max.apply(null,hmData.map(function(d){return d[2];})), show:false,
+                inRange:{color:['#bbdebb','#fde047','#f97316','#dc2626']}
+            },
+            series: [{ type:'heatmap', data:hmData, label:{show:true, formatter:function(p){var v=p.data[2];return v>=1000000?(v/1000000).toFixed(1)+'M':v>=1000?(v/1000).toFixed(1)+'K':v.toFixed(0);}, fontSize:9, color:'#1e293b'}, emphasis:{itemStyle:{shadowBlur:6,shadowColor:'rgba(59,130,246,0.4)'}}, itemStyle:{borderRadius:2,borderWidth:1,borderColor:'#fff'} }]
+        });
+        this.charts.hm1 = chart;
+    }
+};
+
+// ---- Heatmap 2: Block Contribution ----
+Dashboard.prototype.renderHeatmap2 = function() {
+    var D = this.data, U = this.getU(), self = this, range = this.getDayRange();
+    var blockH = [], estH = new Float32Array(D.HOURS);
+    for (var b = 1; b <= D.BLOCKS; b++) {
+        blockH[b] = new Float32Array(D.HOURS);
+        for (var d = range.start; d < range.end; d++) for (var h = 0; h < D.HOURS; h++) { blockH[b][h] += U.blockHourly[b][d][h]; }
+    }
+    for (var d = range.start; d < range.end; d++) for (var h = 0; h < D.HOURS; h++) estH[h] += U.estateHourly[d][h];
+
+    var hmData = [];
+    for (var b = 1; b <= D.BLOCKS; b++) for (var h = 0; h < D.HOURS; h++) {
+        var pct = estH[h] > 0 ? (blockH[b][h] / estH[h]) * 100 : 0;
+        hmData.push([h, b-1, pct]);
+    }
+    var hours = Array.from({length:24}, function(_,i){ return String(i).padStart(2,'0'); });
+    var blocks = Array.from({length:D.BLOCKS}, function(_,i){ return 'Block '+(i+1); });
+
+    // Update label with selected date context
+    if (this.selectedDay !== null) {
+        document.getElementById('hm2Label').textContent = D.allDates[this.selectedDay].date + ' (' + D.allDates[this.selectedDay].dowName + ')';
+    } else if (this.selectedMonth !== -1) {
+        document.getElementById('hm2Label').textContent = D.monthNames[this.selectedMonth] + ' (avg)';
+    } else {
+        document.getElementById('hm2Label').textContent = '% of Estate';
+    }
+
+    if (this.charts.hm2) this.charts.hm2.dispose();
+    var chart = echarts.init(document.getElementById('heatmap2'));
+    chart.setOption({
+        tooltip: { formatter: function(p) { return blocks[p.data[1]]+' H'+hours[p.data[0]]+'<br/><b>'+p.data[2].toFixed(1)+'%</b>'; } },
+        grid: { left:65, right:20, top:10, bottom:30 },
+        xAxis: { type:'category', data:hours, axisLabel:{fontSize:9,color:'#64748b'}, splitArea:{show:false}, axisTick:{show:false} },
+        yAxis: { type:'category', data:blocks, axisLabel:{fontSize:9,color:'#64748b'}, axisTick:{show:false} },
+        visualMap: { min:5, max:10, show:false, inRange:{color:['#dbeafe','#60a5fa','#3b82f6','#ef4444']} },
+        series: [{ type:'heatmap', data:hmData, label:{show:true, formatter:function(p){return p.data[2].toFixed(1);}, fontSize:8, color:'#1e293b'}, emphasis:{itemStyle:{shadowBlur:6,shadowColor:'rgba(59,130,246,0.4)'}}, itemStyle:{borderRadius:2,borderWidth:1,borderColor:'#fff'} }]
+    });
+    chart.on('click', function(p) { if (p.data) { self.selectedBlock = p.data[1]+1; document.getElementById('drillBlock').value = self.selectedBlock; self.updateBlockDrill(); } });
+    this.charts.hm2 = chart;
+};
+
+// ---- Drilldowns ----
+Dashboard.prototype.initDrilldowns = function() {
+    var bs = document.getElementById('drillBlock');
+    if (!bs.options.length || bs.options[0].value === '') {
+        bs.innerHTML = '';
+        for (var b = 1; b <= this.data.BLOCKS; b++) { var o = document.createElement('option'); o.value=b; o.textContent='Block '+b; bs.appendChild(o); }
+    }
+    this.populateAptSelect(this.selectedBlock);
+    this.updateBlockDrill();
+    this.updateAptDrill();
+};
+
+Dashboard.prototype.populateAptSelect = function(block) {
+    var as = document.getElementById('drillApt');
+    as.innerHTML = '';
+    this.data.apartments.forEach(function(apt,i) {
+        if (apt.block === block) { var o = document.createElement('option'); o.value=i; o.textContent=apt.id+' ('+apt.area+'m\u00B2)'; as.appendChild(o); }
+    });
+    this.selectedApt = parseInt(as.value);
+};
+
+Dashboard.prototype.setBlockTab = function(idx, el) {
+    document.querySelectorAll('#blockTabs .tab-btn').forEach(function(t){ t.classList.remove('active'); });
+    el.classList.add('active');
+    for (var i = 0; i < 4; i++) document.getElementById('blockTab'+i).classList.toggle('hidden', i !== idx);
+    if (idx === 0 && this.charts.blockHourly) this.charts.blockHourly.resize();
+};
+
+Dashboard.prototype.setAptTab = function(idx, el) {
+    document.querySelectorAll('#aptTabs .tab-btn').forEach(function(t){ t.classList.remove('active'); });
+    el.classList.add('active');
+    for (var i = 0; i < 3; i++) document.getElementById('aptTab'+i).classList.toggle('hidden', i !== idx);
+    var names = ['aptDaily','aptHourly','aptM2'];
+    if (this.charts[names[idx]]) this.charts[names[idx]].resize();
+};
+
+Dashboard.prototype.selectBlock = function(b) {
+    this.selectedBlock = b; document.getElementById('drillBlock').value = b; this.updateBlockDrill();
+};
+
+Dashboard.prototype.selectApt = function(idx) {
+    this.selectedApt = idx; document.getElementById('drillApt').value = idx; this.updateAptDrill();
+};
+
+Dashboard.prototype.updateBlockDrill = function() {
+    var block = parseInt(document.getElementById('drillBlock').value), self = this;
+    this.selectedBlock = block;
+    this.populateAptSelect(block);
+    var D = this.data, U = this.getU(), range = this.getDayRange(), numDays = range.end - range.start;
+
+    // Update date context label
+    if (this.selectedDay !== null) {
+        document.getElementById('blockDrillLabel').textContent = D.allDates[this.selectedDay].date + ' (' + D.allDates[this.selectedDay].dowName + ')';
+    } else if (this.selectedMonth !== -1) {
+        document.getElementById('blockDrillLabel').textContent = D.monthNames[this.selectedMonth];
+    } else {
+        document.getElementById('blockDrillLabel').textContent = 'YTD ('+D.monthNames[0]+'\u2013'+D.monthNames[D.NUM_MONTHS-1]+')';
+    }
+
+    // Hourly avg
+    var hourlyAvg = new Array(D.HOURS).fill(0);
+    for (var d = range.start; d < range.end; d++) for (var h = 0; h < D.HOURS; h++) hourlyAvg[h] += U.blockHourly[block][d][h] / numDays;
+    var hours = Array.from({length:D.HOURS}, function(_,i){ return String(i).padStart(2,'0')+':00'; });
+
+    if (this.charts.blockHourly) this.charts.blockHourly.dispose();
+    var ch = echarts.init(document.getElementById('chartBlockHourly'));
+    ch.setOption({
+        tooltip:{trigger:'axis',formatter:function(p){return p[0].name+'<br/>'+self.fmt(p[0].value);}},
+        grid:{left:55,right:15,top:10,bottom:25},
+        xAxis:{type:'category',data:hours,axisLabel:{fontSize:9,color:'#64748b'},axisTick:{show:false}},
+        yAxis:{type:'value',axisLabel:{fontSize:9,color:'#64748b',formatter:function(v){return self.fmtK(v);}},splitLine:{lineStyle:{color:'#e5e7eb'}}},
+        series:[{type:'line',data:hourlyAvg,smooth:true,areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(59,130,246,0.25)'},{offset:1,color:'rgba(59,130,246,0.02)'}])},lineStyle:{color:'#3b82f6',width:2},itemStyle:{color:'#3b82f6'},symbol:'circle',symbolSize:5}]
+    });
+    this.charts.blockHourly = ch;
+
+    // Apartment costs for this block in selected period
+    var blockApts = D.apartments.map(function(a,i){return {id:a.id,block:a.block,area:a.area,idx:i};}).filter(function(a){return a.block===block;});
+    var aptCosts = blockApts.map(function(a) {
+        var c = 0;
+        for (var d = range.start; d < range.end; d++) for (var h = 0; h < D.HOURS; h++) c += self.aptCost(a.idx,d,h);
+        return {id:a.id,area:a.area,idx:a.idx,cost:c,costM2:c/a.area};
+    });
+    var blockTotal = aptCosts.reduce(function(s,a){return s+a.cost;},0);
+
+    // Top 10 cost
+    var top10c = aptCosts.slice().sort(function(a,b){return b.cost-a.cost;}).slice(0,10);
+    var html = '<table class="w-full text-[11px] border-collapse"><thead><tr class="text-left text-gray-500 text-[10px] uppercase tracking-wide"><th class="py-1.5 px-2 border-b border-gray-200">Apartment</th><th class="py-1.5 px-2 border-b border-gray-200">Area</th><th class="py-1.5 px-2 border-b border-gray-200 text-right">Total Cost</th><th class="py-1.5 px-2 border-b border-gray-200 text-right">Contrib</th></tr></thead><tbody>';
+    top10c.forEach(function(a){ html += '<tr class="hover:bg-gray-50 cursor-pointer" onclick="dashboard.selectApt('+a.idx+')"><td class="py-1 px-2 border-b border-gray-100">'+a.id+'</td><td class="py-1 px-2 border-b border-gray-100">'+a.area+'m\u00B2</td><td class="py-1 px-2 border-b border-gray-100 text-right tabular-nums">'+self.fmt(a.cost)+'</td><td class="py-1 px-2 border-b border-gray-100 text-right tabular-nums">'+self.fmtPct(a.cost/blockTotal)+'</td></tr>'; });
+    html += '</tbody></table>';
+    document.getElementById('blockTop10Cost').innerHTML = html;
+
+    // Top 10 cost/m²
+    var top10m = aptCosts.slice().sort(function(a,b){return b.costM2-a.costM2;}).slice(0,10);
+    html = '<table class="w-full text-[11px] border-collapse"><thead><tr class="text-left text-gray-500 text-[10px] uppercase tracking-wide"><th class="py-1.5 px-2 border-b border-gray-200">Apartment</th><th class="py-1.5 px-2 border-b border-gray-200">Area</th><th class="py-1.5 px-2 border-b border-gray-200 text-right">Cost/m\u00B2</th><th class="py-1.5 px-2 border-b border-gray-200 text-right">Total</th></tr></thead><tbody>';
+    top10m.forEach(function(a){ html += '<tr class="hover:bg-gray-50 cursor-pointer" onclick="dashboard.selectApt('+a.idx+')"><td class="py-1 px-2 border-b border-gray-100">'+a.id+'</td><td class="py-1 px-2 border-b border-gray-100">'+a.area+'m\u00B2</td><td class="py-1 px-2 border-b border-gray-100 text-right tabular-nums">'+self.fmt(a.costM2)+'</td><td class="py-1 px-2 border-b border-gray-100 text-right tabular-nums">'+self.fmt(a.cost)+'</td></tr>'; });
+    html += '</tbody></table>';
+    document.getElementById('blockTop10M2').innerHTML = html;
+
+    this.renderBlockAnomalies(block);
+    this.updateAptDrill();
+};
+
+Dashboard.prototype.renderBlockAnomalies = function(block) {
+    var D = this.data, self = this, range = this.getDayRange(), numDays = range.end - range.start;
+    var blockApts = D.apartments.map(function(a,i){return {id:a.id,block:a.block,idx:i};}).filter(function(a){return a.block===block;});
+    var alerts = [];
+    blockApts.forEach(function(apt) {
+        var hb = new Array(D.HOURS).fill(0);
+        for (var d=range.start;d<range.end;d++) for (var h=0;h<D.HOURS;h++) hb[h] += self.aptCost(apt.idx,d,h) / numDays;
+        for (var d=range.start;d<range.end;d++) for (var h=0;h<D.HOURS;h++) {
+            var c = self.aptCost(apt.idx,d,h);
+            if (hb[h]>0 && c>hb[h]*3) alerts.push({apt:apt.id,day:D.allDates[d].label,hour:h,cost:c,baseline:hb[h],ratio:c/hb[h],type:'spike'});
+        }
+        var ee=0;
+        for (var d=range.start;d<range.end;d++) {
+            var ev=0,da=0; for (var h=0;h<D.HOURS;h++){var c=self.aptCost(apt.idx,d,h); da+=c; if(h>=17&&h<22)ev+=c;}
+            if(da>0&&ev/da>0.55)ee++;
+        }
+        if(ee>=Math.floor(numDays*0.7)) alerts.push({apt:apt.id,type:'evening',days:ee,total:numDays});
+    });
+    var html='';
+    if(!alerts.length){html='<div class="text-gray-400 text-center py-5">No anomalies detected for this block</div>';}
+    else{
+        alerts.sort(function(a,b){return(b.ratio||0)-(a.ratio||0);});
+        alerts.slice(0,20).forEach(function(a){
+            if(a.type==='spike') html+='<div class="flex items-start gap-2 py-1.5 border-b border-gray-100 text-[11px]"><div class="w-2 h-2 rounded-full bg-red-500 mt-1 shrink-0"></div><div class="text-gray-500"><strong class="text-gray-800">'+a.apt+'</strong> \u2014 '+a.day+' '+String(a.hour).padStart(2,'0')+':00 \u2014 '+self.fmt(a.cost)+' ('+a.ratio.toFixed(1)+'x baseline)</div></div>';
+            else html+='<div class="flex items-start gap-2 py-1.5 border-b border-gray-100 text-[11px]"><div class="w-2 h-2 rounded-full bg-amber-400 mt-1 shrink-0"></div><div class="text-gray-500"><strong class="text-gray-800">'+a.apt+'</strong> \u2014 High evening load ('+a.days+'/'+a.total+' days &gt;55% in 17:00-22:00)</div></div>';
+        });
+    }
+    document.getElementById('blockAnomalies').innerHTML=html;
+};
+
+Dashboard.prototype.updateAptDrill = function() {
+    var aptIdx = parseInt(document.getElementById('drillApt').value), self = this;
+    if (isNaN(aptIdx)) return;
+    this.selectedApt = aptIdx;
+    var D = this.data, apt = D.apartments[aptIdx], range = this.getDayRange();
+
+    // Update date context label
+    if (this.selectedDay !== null) {
+        document.getElementById('aptDrillLabel').textContent = D.allDates[this.selectedDay].date + ' (' + D.allDates[this.selectedDay].dowName + ')';
+    } else if (this.selectedMonth !== -1) {
+        document.getElementById('aptDrillLabel').textContent = D.monthNames[this.selectedMonth];
+    } else {
+        document.getElementById('aptDrillLabel').textContent = 'YTD ('+D.monthNames[0]+'\u2013'+D.monthNames[D.NUM_MONTHS-1]+')';
+    }
+
+    // Daily cost trend
+    var dates=[], vals=[];
+    for (var d=range.start;d<range.end;d++){
+        dates.push(D.allDates[d].label);
+        var c=0; for(var h=0;h<D.HOURS;h++) c+=self.aptCost(aptIdx,d,h);
+        vals.push(c);
+    }
+    if(this.charts.aptDaily) this.charts.aptDaily.dispose();
+    var ch1=echarts.init(document.getElementById('chartAptDaily'));
+    ch1.setOption({
+        tooltip:{trigger:'axis',formatter:function(p){return p[0].name+'<br/>'+self.fmt(p[0].value);}},
+        grid:{left:55,right:15,top:10,bottom:30},
+        xAxis:{type:'category',data:dates,axisLabel:{fontSize:8,color:'#64748b',rotate:dates.length>15?45:0}},
+        yAxis:{type:'value',axisLabel:{fontSize:9,color:'#64748b',formatter:function(v){return 'R'+v.toFixed(0);}},splitLine:{lineStyle:{color:'#e5e7eb'}}},
+        series:[{type:'bar',data:vals,itemStyle:{color:'#3b82f6',borderRadius:[3,3,0,0]},barMaxWidth:12}]
+    });
+    this.charts.aptDaily=ch1;
+
+    // Hourly pattern (avg across selected period)
+    var numDays=range.end-range.start;
+    var hourlyAvg=new Array(D.HOURS).fill(0);
+    for(var d=range.start;d<range.end;d++) for(var h=0;h<D.HOURS;h++) hourlyAvg[h]+=self.aptUsage(aptIdx,d,h)/numDays;
+    var maxKwh=Math.max.apply(null,hourlyAvg);
+    var hours=Array.from({length:D.HOURS},function(_,i){return String(i).padStart(2,'0')+':00';});
+
+    if(this.charts.aptHourly) this.charts.aptHourly.dispose();
+    var ch2=echarts.init(document.getElementById('chartAptHourly'));
+    ch2.setOption({
+        tooltip:{trigger:'axis',formatter:function(p){var unit=self.utility==='water'?'kL':self.utility==='combined'?'units':'kWh';return p[0].name+'<br/>'+p[0].value.toFixed(2)+' '+unit;}},
+        grid:{left:45,right:15,top:10,bottom:25},
+        xAxis:{type:'category',data:hours,axisLabel:{fontSize:8,color:'#64748b',rotate:45}},
+        yAxis:{type:'value',axisLabel:{fontSize:9,color:'#64748b'},splitLine:{lineStyle:{color:'#e5e7eb'}}},
+        series:[{type:'bar',data:hourlyAvg.map(function(v){var t=v/maxKwh;return{value:v,itemStyle:{color:t>0.7?'#ef4444':t>0.4?'#f59e0b':'#10b981'}};}),barWidth:'60%',itemStyle:{borderRadius:[3,3,0,0]}}]
+    });
+    this.charts.aptHourly=ch2;
+
+    // Cost/m² compare
+    var blockApts=D.apartments.map(function(a,i){return{id:a.id,block:a.block,area:a.area,idx:i};}).filter(function(a){return a.block===apt.block;});
+    var aptCm2=[],bavg=0;
+    blockApts.forEach(function(ba){
+        var c=0;for(var d=range.start;d<range.end;d++) for(var h=0;h<D.HOURS;h++) c+=self.aptCost(ba.idx,d,h);
+        var cm=c/ba.area;aptCm2.push({id:ba.id,idx:ba.idx,cm2:cm});bavg+=cm;
+    });
+    bavg/=blockApts.length;
+    aptCm2.sort(function(a,b){return b.cm2-a.cm2;});
+    var top15=aptCm2.slice(0,15);
+
+    if(this.charts.aptM2) this.charts.aptM2.dispose();
+    var ch3=echarts.init(document.getElementById('chartAptM2'));
+    ch3.setOption({
+        tooltip:{trigger:'axis',formatter:function(p){var r='';p.forEach(function(s){r+=s.seriesName+': R'+s.value.toFixed(2)+'/m\u00B2<br/>';});return p[0].name+'<br/>'+r;}},
+        grid:{left:55,right:15,top:20,bottom:25},
+        legend:{data:['Cost/m\u00B2','Block Avg'],textStyle:{fontSize:10,color:'#64748b'},top:0,right:0},
+        xAxis:{type:'category',data:top15.map(function(a){return a.id;}),axisLabel:{fontSize:8,color:'#64748b',rotate:45}},
+        yAxis:{type:'value',axisLabel:{fontSize:9,color:'#64748b',formatter:function(v){return 'R'+v.toFixed(2);}},splitLine:{lineStyle:{color:'#e5e7eb'}}},
+        series:[
+            {name:'Cost/m\u00B2',type:'bar',data:top15.map(function(a){return{value:a.cm2,itemStyle:{color:a.idx===aptIdx?'#3b82f6':'#cbd5e1'}};}),barWidth:'50%',itemStyle:{borderRadius:[3,3,0,0]}},
+            {name:'Block Avg',type:'line',data:top15.map(function(){return bavg;}),lineStyle:{color:'#ef4444',type:'dashed',width:2},symbol:'none',itemStyle:{color:'#ef4444'}}
+        ]
+    });
+    this.charts.aptM2=ch3;
+};
+
+// ---- Spikes ----
+Dashboard.prototype.renderSpikes = function() {
+    var D=this.data,U=this.getU(),self=this;
+    var range=this.getDayRange();
+
+    // Update date label
+    if (this.selectedDay !== null) {
+        document.getElementById('spikeLabel').textContent = D.allDates[this.selectedDay].date;
+    } else if (this.selectedMonth !== -1) {
+        document.getElementById('spikeLabel').textContent = D.monthNames[this.selectedMonth];
+    } else {
+        document.getElementById('spikeLabel').textContent = 'YTD';
+    }
+
+    // Always compute baselines from full YTD
+    var ytdDays=D.totalDays;
+    var hb=new Array(D.HOURS).fill(0);
+    for(var d=0;d<ytdDays;d++) for(var h=0;h<D.HOURS;h++) hb[h]+=U.estateHourly[d][h]/ytdDays;
+
+    // 75th percentile per hour across full YTD
+    var hv=Array.from({length:D.HOURS},function(){return[];});
+    for(var d=0;d<ytdDays;d++) for(var h=0;h<D.HOURS;h++) hv[h].push(U.estateHourly[d][h]);
+    var p75=hv.map(function(a){a.sort(function(x,y){return x-y;}); return a[Math.floor(a.length*0.75)];});
+
+    // Find all spikes across full YTD
+    var allSpikes=[];
+    for(var d=0;d<ytdDays;d++) for(var h=0;h<D.HOURS;h++){
+        if(U.estateHourly[d][h]>p75[h]){
+            var br=[];for(var b=1;b<=D.BLOCKS;b++) br.push({block:b,cost:U.blockHourly[b][d][h]});
+            br.sort(function(a,b){return b.cost-a.cost;});
+            var ar=[];
+            for(var ai=0;ai<D.NUM_APTS;ai++){
+                var c=self.aptCost(ai,d,h);
+                ar.push({id:D.apartments[ai].id,cost:c,costM2:c/D.apartments[ai].area});
+            }
+            ar.sort(function(a,b){return b.cost-a.cost;});
+            var at=0;for(var ai=0;ai<D.NUM_APTS;ai++) at+=self.aptTariff(ai,d,h);
+            at/=D.NUM_APTS;
+            allSpikes.push({dayIdx:d,day:D.allDates[d].label,date:D.allDates[d].date,hour:h,cost:U.estateHourly[d][h],baseline:hb[h],ratio:U.estateHourly[d][h]/hb[h],tariff:at,topBlocks:br.slice(0,5),topAptsM2:ar.slice().sort(function(a,b){return b.costM2-a.costM2;}).slice(0,5)});
+        }
+    }
+
+    // Filter by selected period
+    var spikes=allSpikes.filter(function(sp){ return sp.dayIdx>=range.start && sp.dayIdx<range.end; });
+    spikes.sort(function(a,b){return b.ratio-a.ratio;});
+
+    var html='';
+    if(!spikes.length) html='<div class="text-gray-400 text-center py-5">No spikes detected for this period</div>';
+    spikes.slice(0,50).forEach(function(sp,idx){
+        var mx=sp.topBlocks[0].cost;
+        html+='<div class="border rounded-lg p-3 mb-2 '+(idx<3?'spike-active':'border-gray-200 bg-gray-50')+'">';
+        html+='<div class="flex justify-between items-baseline"><span class="font-bold text-sm text-red-500">'+sp.day+' '+String(sp.hour).padStart(2,'0')+':00</span><span class="text-xs font-semibold text-gray-800">'+self.fmt(sp.cost)+'</span></div>';
+        var tUnit=self.utility==='water'?'kL':self.utility==='combined'?'unit':'kWh';
+        html+='<div class="text-[10px] text-gray-400 mt-0.5">Tariff: R'+sp.tariff.toFixed(4)+'/'+tUnit+' \u00B7 '+sp.ratio.toFixed(2)+'x baseline ('+self.fmt(sp.baseline)+')</div>';
+        html+='<div class="grid grid-cols-2 gap-x-3 gap-y-1 mt-2"><div><div class="text-[9px] text-gray-400 uppercase mb-1">Top Blocks</div>';
+        sp.topBlocks.forEach(function(b){html+='<div class="flex items-center gap-1.5 text-[10px] my-0.5"><span class="text-gray-500 w-14">Block '+b.block+'</span><div class="h-1.5 rounded-full bg-gradient-to-r from-red-400 to-amber-400" style="width:'+Math.round(b.cost/mx*70)+'px"></div><span class="text-gray-700 tabular-nums">'+self.fmt(b.cost)+'</span></div>';});
+        html+='</div><div><div class="text-[9px] text-gray-400 uppercase mb-1">Top Apts (cost/m\u00B2)</div>';
+        sp.topAptsM2.forEach(function(a){html+='<div class="flex items-center gap-1.5 text-[10px] my-0.5"><span class="text-gray-500 w-16">'+a.id+'</span><span class="text-gray-700 tabular-nums">R'+a.costM2.toFixed(3)+'/m\u00B2</span></div>';});
+        html+='</div></div></div>';
+    });
+    document.getElementById('spikeList').innerHTML=html;
+};
+
+// ---- Anomalies ----
+Dashboard.prototype.renderAnomalies = function() {
+    var D=this.data,U=this.getU(),self=this;
+    var range=this.getDayRange();
+    var ytdDays=D.totalDays;
+
+    // Update date label
+    if (this.selectedDay !== null) {
+        document.getElementById('anomalyLabel').textContent = D.allDates[this.selectedDay].date;
+    } else if (this.selectedMonth !== -1) {
+        document.getElementById('anomalyLabel').textContent = D.monthNames[this.selectedMonth];
+    } else {
+        document.getElementById('anomalyLabel').textContent = 'YTD';
+    }
+
+    // Always compute baselines from full YTD
+    var allAlerts=[];
+    for(var ai=0;ai<D.NUM_APTS;ai++){
+        var hb=new Array(D.HOURS).fill(0);
+        for(var d=0;d<ytdDays;d++) for(var h=0;h<D.HOURS;h++) hb[h]+=self.aptCost(ai,d,h)/ytdDays;
+        for(var d=0;d<ytdDays;d++) for(var h=0;h<D.HOURS;h++){
+            var c=self.aptCost(ai,d,h);
+            if(hb[h]>0.01&&c>hb[h]*3) allAlerts.push({type:'spike',sev:'red',apt:D.apartments[ai].id,block:D.apartments[ai].block,dayIdx:d,day:D.allDates[d].label,hour:h,cost:c,baseline:hb[h],ratio:c/hb[h]});
+        }
+    }
+
+    // Evening load - compute from full YTD
+    var eveningAlerts=[];
+    for(var b=1;b<=D.BLOCKS;b++){
+        var he=0,heFiltered=0;
+        for(var d=0;d<ytdDays;d++){
+            var ev=0,da=0;for(var h=0;h<D.HOURS;h++){da+=U.blockHourly[b][d][h];if(h>=17&&h<22)ev+=U.blockHourly[b][d][h];}
+            var isEvening=da>0&&ev/da>0.45;
+            if(isEvening) he++;
+            if(isEvening&&d>=range.start&&d<range.end) heFiltered++;
+        }
+        if(he>=Math.floor(ytdDays*0.7)) eveningAlerts.push({type:'evening',sev:'yellow',block:b,days:heFiltered,total:range.end-range.start});
+    }
+
+    // Filter spike alerts by selected period
+    var filtered=allAlerts.filter(function(a){ return a.dayIdx>=range.start && a.dayIdx<range.end; });
+    filtered.sort(function(a,b){return(b.ratio||0)-(a.ratio||0);});
+
+    var ca=filtered.slice(0,50);
+    var ea=eveningAlerts;
+    var html='';
+    if(ea.length){
+        html+='<div class="text-[10px] text-amber-500 uppercase tracking-wide mb-1.5 font-semibold">Consistently High Evening Load</div>';
+        ea.forEach(function(a){html+='<div class="flex items-start gap-2 py-1.5 border-b border-gray-100 text-[11px]"><div class="w-2 h-2 rounded-full bg-amber-400 mt-1 shrink-0"></div><div class="text-gray-500"><strong class="text-gray-800">Block '+a.block+'</strong> \u2014 High evening load (17:00-22:00 &gt;45%) on '+a.days+'/'+a.total+' days</div></div>';});
+        html+='<div class="h-3"></div>';
+    }
+    if(ca.length){
+        html+='<div class="text-[10px] text-red-500 uppercase tracking-wide mb-1.5 font-semibold">Consumption Spikes (&gt;3x Baseline)</div>';
+        ca.forEach(function(a){html+='<div class="flex items-start gap-2 py-1.5 border-b border-gray-100 text-[11px]"><div class="w-2 h-2 rounded-full bg-red-500 mt-1 shrink-0"></div><div class="text-gray-500"><strong class="text-gray-800">'+a.apt+'</strong> (Block '+a.block+') \u2014 '+a.day+' '+String(a.hour).padStart(2,'0')+':00 \u2014 '+self.fmt(a.cost)+' = <strong class="text-gray-800">'+a.ratio.toFixed(1)+'x</strong> baseline</div></div>';});
+    }
+    if(!html) html='<div class="text-gray-400 text-center py-5">No anomalies detected for this period</div>';
+    document.getElementById('anomalyList').innerHTML=html;
+};
+
+// ---- Recommendations Engine ----
+Dashboard.prototype.computeRecommendations = function() {
+    var D=this.data,self=this,range=this.getDayRange(),numDays=range.end-range.start;
+    var annualFactor=365/numDays;
+    var recs=[];
+
+    // Pre-compute apartment stats in a single pass
+    var aptStats=new Array(D.NUM_APTS);
+    for(var ai=0;ai<D.NUM_APTS;ai++){
+        var total=0,peak=0,wTotal=0,eTotal=0;
+        for(var d=range.start;d<range.end;d++) for(var h=0;h<D.HOURS;h++){
+            var c=self.aptCost(ai,d,h);
+            total+=c;
+            if(h>=17&&h<22) peak+=c;
+            var idx=ai*D.totalDays*D.HOURS+d*D.HOURS+h;
+            wTotal+=D.water.aptCost[idx];
+            eTotal+=D.elec.aptCost[idx];
+        }
+        aptStats[ai]={total:total,peak:peak,water:wTotal,elec:eTotal,area:D.apartments[ai].area,block:D.apartments[ai].block,id:D.apartments[ai].id,idx:ai};
+    }
+
+    // Group by block
+    var blockGroups={};
+    for(var ai=0;ai<D.NUM_APTS;ai++){
+        var b=aptStats[ai].block;
+        if(!blockGroups[b]) blockGroups[b]=[];
+        blockGroups[b].push(aptStats[ai]);
+    }
+
+    // Helper: median
+    function median(arr){var s=arr.slice().sort(function(a,b){return a-b;}); var m=Math.floor(s.length/2); return s.length%2?s[m]:(s[m-1]+s[m])/2;}
+
+    // Type A: Anomaly Resolution - apartments with avg cost > 3x block median
+    var anomalyApts={};
+    for(var b in blockGroups){
+        var grp=blockGroups[b];
+        var costs=grp.map(function(a){return a.total;});
+        var med=median(costs);
+        if(med<=0) continue;
+        grp.forEach(function(a){
+            if(a.total>med*3){
+                var sav=(a.total-med)*annualFactor;
+                anomalyApts[a.idx]={type:'anomaly',ratio:(a.total/med).toFixed(1)};
+                recs.push({type:'Anomaly',severity:'critical',target:a.id,targetType:'apt',block:a.block,aptIdx:a.idx,
+                    finding:a.id+' cost is '+( a.total/med).toFixed(1)+'x the Block '+a.block+' median ('+self.fmtK(med)+' vs '+self.fmtK(a.total)+')',
+                    action:'Investigate metering accuracy; schedule energy audit for this unit',savings:sav});
+            }
+        });
+    }
+
+    // Type B: Load Shifting - apartments with >55% peak cost
+    for(var ai=0;ai<D.NUM_APTS;ai++){
+        var a=aptStats[ai];
+        if(a.total<=0) continue;
+        var pctPeak=a.peak/a.total;
+        if(pctPeak>0.55){
+            var shiftable=a.peak*0.30;
+            var sav=shiftable*0.5*annualFactor;
+            recs.push({type:'Load Shift',severity:'medium',target:a.id,targetType:'apt',block:a.block,aptIdx:ai,
+                finding:a.id+' has '+(pctPeak*100).toFixed(0)+'% of cost during peak hours (17:00\u201322:00)',
+                action:'Shift deferrable loads (laundry, water heating) to off-peak hours (22:00\u201306:00)',savings:sav});
+        }
+    }
+
+    // Type C: Evening Load Concentration - block level
+    var U=this.getU();
+    for(var b=1;b<=D.BLOCKS;b++){
+        var he=0,totalEv=0;
+        for(var d=range.start;d<range.end;d++){
+            var ev=0,da=0;
+            for(var h=0;h<D.HOURS;h++){da+=U.blockHourly[b][d][h];if(h>=17&&h<22)ev+=U.blockHourly[b][d][h];}
+            if(da>0&&ev/da>0.45){he++;totalEv+=ev;}
+        }
+        if(he>=Math.floor(numDays*0.7)){
+            var sav=totalEv*0.15*annualFactor;
+            recs.push({type:'Evening Load',severity:'medium',target:'Block '+b,targetType:'block',block:b,
+                finding:'Block '+b+' shows consistently high evening load on '+he+'/'+numDays+' days (>45% in 17:00\u201322:00)',
+                action:'Install geyser timers; schedule hot water heating for 14:00\u201316:00',savings:sav});
+        }
+    }
+
+    // Type D: Block Outliers - cost/m² above estate avg
+    var estCost=0,estArea=0;
+    for(var ai=0;ai<D.NUM_APTS;ai++){estCost+=aptStats[ai].total;estArea+=aptStats[ai].area;}
+    var estAvgM2=estCost/estArea;
+    for(var b=1;b<=D.BLOCKS;b++){
+        var grp=blockGroups[b];if(!grp)continue;
+        var bCost=0,bArea=0;
+        grp.forEach(function(a){bCost+=a.total;bArea+=a.area;});
+        var bAvgM2=bCost/bArea;
+        if(bAvgM2>estAvgM2*1.25){
+            var sav=(bAvgM2-estAvgM2)*bArea*annualFactor;
+            recs.push({type:'Block Outlier',severity:'medium',target:'Block '+b,targetType:'block',block:b,
+                finding:'Block '+b+' cost/m\u00B2 is '+((bAvgM2/estAvgM2-1)*100).toFixed(0)+'% above estate average ('+self.fmt(bAvgM2)+'/m\u00B2 vs '+self.fmt(estAvgM2)+'/m\u00B2)',
+                action:'Commission building-level energy audit; inspect common area systems',savings:sav});
+        }
+    }
+
+    // Type E: Water-specific (possible leaks)
+    if(self.utility!=='elec'){
+        for(var b in blockGroups){
+            var grp=blockGroups[b];
+            var wCosts=grp.map(function(a){return a.water;});
+            var wAvg=wCosts.reduce(function(s,v){return s+v;},0)/wCosts.length;
+            if(wAvg<=0) continue;
+            grp.forEach(function(a){
+                if(a.water>wAvg*4){
+                    var sav=(a.water-wAvg)*annualFactor;
+                    recs.push({type:'Water Leak',severity:'critical',target:a.id,targetType:'apt',block:a.block,aptIdx:a.idx,
+                        finding:a.id+' water cost is '+(a.water/wAvg).toFixed(1)+'x Block '+a.block+' average \u2014 possible leak',
+                        action:'Inspect for leaks; check toilet cisterns and irrigation systems',savings:sav});
+                }
+            });
+        }
+    }
+
+    // Type F: Compound Problems - flag apartments high in BOTH elec and water
+    if(self.utility==='combined'){
+        for(var b in blockGroups){
+            var grp=blockGroups[b];
+            var eCosts=grp.map(function(a){return a.elec;});
+            var wCosts2=grp.map(function(a){return a.water;});
+            var eMed=median(eCosts),wMed=median(wCosts2);
+            if(eMed<=0||wMed<=0) continue;
+            grp.forEach(function(a){
+                if(a.elec>eMed*3&&a.water>wMed*3){
+                    var sav=((a.elec-eMed)+(a.water-wMed))*annualFactor;
+                    // Remove individual anomaly/water entries for this apt
+                    recs=recs.filter(function(r){return !(r.aptIdx===a.idx&&(r.type==='Anomaly'||r.type==='Water Leak'));});
+                    recs.push({type:'Compound',severity:'critical',target:a.id,targetType:'apt',block:a.block,aptIdx:a.idx,
+                        finding:a.id+' flagged for BOTH high electricity ('+(a.elec/eMed).toFixed(1)+'x) and water ('+(a.water/wMed).toFixed(1)+'x)',
+                        action:'Priority inspection: possible metering fault or major infrastructure issue',savings:sav});
+                }
+            });
+        }
+    }
+
+    // ---- Recovery-related recommendations ----
+    var munic=D.municipal[self.utility];
+    var recovU=D[self.utility]||D.combined;
+    var recovBlk=D.recovered[self.utility];
+    var allMIdx2=[]; for(var mi=0;mi<D.NUM_MONTHS;mi++) allMIdx2.push(mi);
+    var months2=self.selectedMonth!==-1?[self.selectedMonth]:allMIdx2;
+
+    // Tariff Alignment: blocks with recovery <80%
+    for(var b=1;b<=D.BLOCKS;b++){
+        var bM=0,bR=0;
+        months2.forEach(function(m){bM+=munic.blockMonthly[b][m];bR+=recovBlk.blockMonthly[b][m];});
+        var bRate=bM>0?(bR/bM)*100:0;
+        if(bRate<80){
+            var gap2=(bM-bR)*annualFactor;
+            recs.push({type:'Tariff Align',severity:'critical',target:'Block '+b,targetType:'block',block:b,
+                finding:'Block '+b+' recovers only '+bRate.toFixed(1)+'% of municipal cost ('+self.fmtK(bR)+' vs '+self.fmtK(bM)+'). Internal tariffs are below CoJ rates.',
+                action:'Increase internal tariff to match CoJ inclining block structure; review tariff schedule',savings:gap2});
+        } else if(bRate<90){
+            var gap2=(bM-bR)*annualFactor;
+            recs.push({type:'Tariff Align',severity:'medium',target:'Block '+b,targetType:'block',block:b,
+                finding:'Block '+b+' recovery at '+bRate.toFixed(1)+'%. Gap of '+self.fmtK(bM-bR)+' in observed period.',
+                action:'Review internal tariff vs CoJ stepped rates; consider small tariff adjustment',savings:gap2});
+        }
+    }
+
+    // Water Sanitation Gap (if water or combined)
+    if(self.utility!=='elec'){
+        var totalWaterMunic=0,totalWaterRecov=0;
+        months2.forEach(function(m){totalWaterMunic+=D.municipal.water.monthly[m];totalWaterRecov+=D.water.monthlyTotals[m];});
+        var wRate=totalWaterMunic>0?(totalWaterRecov/totalWaterMunic)*100:0;
+        if(wRate<85){
+            var wGap=(totalWaterMunic-totalWaterRecov)*annualFactor;
+            recs.push({type:'Sanitation Gap',severity:'critical',target:'Estate Water',targetType:'estate',
+                finding:'Water recovery at '+wRate.toFixed(1)+'%. CoJ sanitation surcharge (130% of water) likely not fully recovered. Gap: '+self.fmtK(totalWaterMunic-totalWaterRecov)+' in period.',
+                action:'Add sanitation surcharge component to water levy; currently under-recovering by ~'+self.fmtK(wGap)+'/yr',savings:wGap});
+        }
+    }
+
+    // Monthly Under-Recovery Trend (declining recovery)
+    if(self.selectedMonth===-1){
+        for(var m=1;m<D.NUM_MONTHS;m++){
+            var prevRate=munic.monthly[m-1]>0?(recovU.monthlyTotals[m-1]/munic.monthly[m-1])*100:0;
+            var curRate=munic.monthly[m]>0?(recovU.monthlyTotals[m]/munic.monthly[m])*100:0;
+            if(curRate<prevRate-3&&curRate<90){
+                var mGap=(munic.monthly[m]-recovU.monthlyTotals[m])*12;
+                recs.push({type:'Recovery Decline',severity:'medium',target:D.monthNames[m],targetType:'estate',
+                    finding:D.monthNames[m]+' recovery dropped to '+curRate.toFixed(1)+'% from '+prevRate.toFixed(1)+'% in '+D.monthNames[m-1]+'. Higher consumption pushed municipal cost into premium tariff blocks.',
+                    action:'Review consumption patterns; consider demand management to stay in lower CoJ tariff bands',savings:mGap});
+            }
+        }
+    }
+
+    // Fixed Charge Recovery
+    var fixedElec=(148+85)*D.NUM_APTS*months2.length;
+    var fixedWater=(87+45)*D.NUM_APTS*months2.length;
+    var fixedTotal=self.utility==='elec'?fixedElec:self.utility==='water'?fixedWater:fixedElec+fixedWater;
+    if(fixedTotal>0){
+        recs.push({type:'Fixed Charges',severity:'low',target:'Estate',targetType:'estate',
+            finding:'CoJ fixed charges (service, network, basic) total '+self.fmtK(fixedTotal)+' for observed period. These are typically not recovered through consumption-based tariffs.',
+            action:'Add fixed monthly levy component of '+self.fmtK(fixedTotal/months2.length)+'/month split across apartments',savings:fixedTotal*annualFactor});
+    }
+
+    // Line Loss / Common Area (municipal > sum apartments by >5%)
+    var totalMunic2=0,totalRecov2=0;
+    months2.forEach(function(m){totalMunic2+=munic.monthly[m];totalRecov2+=recovU.monthlyTotals[m];});
+    var lossRate=totalMunic2>0?((totalMunic2-totalRecov2)/totalMunic2)*100:0;
+    if(lossRate>15){
+        var lossCost=(totalMunic2-totalRecov2)*0.3*annualFactor;
+        recs.push({type:'Line Loss',severity:'medium',target:'Estate',targetType:'estate',
+            finding:lossRate.toFixed(1)+'% of municipal cost is unaccounted (common areas, distribution losses, meter discrepancies).',
+            action:'Sub-meter common areas (lifts, parking lights, pumps); audit distribution losses; reconcile bulk vs sum-of-sub meters',savings:lossCost});
+    }
+
+    // ---- Supply source recommendations ----
+    var sup=D.supply,mix=D.supplyMix;
+
+    // Solar Offset: solar portion costs much less than municipal — highlight savings
+    if(self.utility!=='water'){
+        var solarSav=0,solarPct=0;
+        months2.forEach(function(m){
+            var se=sup.elec.monthly[m];
+            // What solar portion would cost at municipal rate vs actual solar rate
+            var municRate=se.municUsage>0?se.municipal/se.municUsage:0;
+            var solarAtMunic=se.solarUsage*municRate;
+            solarSav+=solarAtMunic-se.solar;
+            solarPct+=mix.elec.sources[1].pct[m];
+        });
+        solarPct=solarPct/months2.length*100;
+        if(solarSav>0){
+            recs.push({type:'Solar Offset',severity:'low',target:'Estate Solar',targetType:'estate',
+                finding:'Solar PV ('+solarPct.toFixed(0)+'% of supply) saves '+self.fmtK(solarSav)+' vs equivalent municipal cost in observed period. Consider expanding solar capacity.',
+                action:'Evaluate rooftop capacity for additional panels; current '+solarPct.toFixed(0)+'% solar offset could be increased to 30-35%',savings:solarSav*annualFactor*0.5});
+        }
+    }
+
+    // Generator Cost Alert: generator is expensive — flag if significant spend
+    if(self.utility!=='water'){
+        var genTotal=0,genUsage=0;
+        months2.forEach(function(m){genTotal+=sup.elec.monthly[m].generator;genUsage+=sup.elec.monthly[m].genUsage;});
+        if(genTotal>0){
+            var genRate=genUsage>0?genTotal/genUsage:0;
+            var avgMunicRate=0,mCount=0;
+            months2.forEach(function(m){var se=sup.elec.monthly[m];if(se.municUsage>0){avgMunicRate+=se.municipal/se.municUsage;mCount++;}});
+            avgMunicRate=mCount>0?avgMunicRate/mCount:0;
+            var premium=genRate-avgMunicRate;
+            if(premium>0){
+                var potSav=genUsage*premium*annualFactor;
+                recs.push({type:'Generator Cost',severity:genTotal>500000?'critical':'medium',target:'Estate Generator',targetType:'estate',
+                    finding:'Generator supply costs '+self.fmt(genRate)+'/kWh vs municipal '+self.fmt(avgMunicRate)+'/kWh ('+((genRate/avgMunicRate-1)*100).toFixed(0)+'% premium). Total generator spend: '+self.fmtK(genTotal)+' in period.',
+                    action:'Reduce generator dependency through battery storage; shift non-critical loads during outages; negotiate fuel supply contracts',savings:potSav});
+            }
+        }
+    }
+
+    // Borehole Savings: borehole costs less than municipal — highlight savings
+    if(self.utility!=='elec'){
+        var boreSav=0,borePct=0;
+        months2.forEach(function(m){
+            var sw=sup.water.monthly[m];
+            var municRate=sw.municUsage>0?sw.municipal/sw.municUsage:0;
+            var boreAtMunic=sw.boreUsage*municRate;
+            boreSav+=boreAtMunic-sw.borehole;
+            borePct+=mix.water.sources[1].pct[m];
+        });
+        borePct=borePct/months2.length*100;
+        if(boreSav>0){
+            recs.push({type:'Borehole Savings',severity:'low',target:'Estate Borehole',targetType:'estate',
+                finding:'Borehole supply ('+borePct.toFixed(0)+'% of water) saves '+self.fmtK(boreSav)+' vs equivalent municipal cost. Borehole operational cost is significantly below CoJ stepped tariff + sanitation.',
+                action:'Maximize borehole utilization for irrigation and non-potable use; evaluate capacity for increased extraction',savings:boreSav*annualFactor*0.3});
+        }
+    }
+
+    // Supply Optimization: if solar + borehole savings are significant, recommend expanding
+    if(self.utility==='combined'){
+        var totalAltSav=0;
+        months2.forEach(function(m){
+            var se=sup.elec.monthly[m],sw=sup.water.monthly[m];
+            var eRate=se.municUsage>0?se.municipal/se.municUsage:0;
+            var wRate=sw.municUsage>0?sw.municipal/sw.municUsage:0;
+            totalAltSav+=(se.solarUsage*eRate-se.solar)+(sw.boreUsage*wRate-sw.borehole);
+        });
+        if(totalAltSav>0){
+            var expanded=totalAltSav*1.5; // 50% more with expanded capacity
+            recs.push({type:'Supply Optimize',severity:'medium',target:'Estate',targetType:'estate',
+                finding:'Alternative supply sources save '+self.fmtK(totalAltSav)+' in observed period. Expanding solar to 30% and borehole to 25% could increase savings by ~50%.',
+                action:'Commission feasibility study for expanded solar PV and borehole capacity; evaluate battery storage for load-shifting solar generation',savings:expanded*annualFactor*0.3});
+        }
+    }
+
+    // Sort by savings descending
+    recs.sort(function(a,b){return b.savings-a.savings;});
+    return recs;
+};
+
+Dashboard.prototype.renderRecommendations = function() {
+    var D=this.data,self=this,range=this.getDayRange(),numDays=range.end-range.start;
+
+    // Update date label
+    if(this.selectedDay!==null) document.getElementById('recsLabel').textContent=D.allDates[this.selectedDay].date;
+    else if(this.selectedMonth!==-1) document.getElementById('recsLabel').textContent=D.monthNames[this.selectedMonth];
+    else document.getElementById('recsLabel').textContent='YTD';
+
+    var recs=this.computeRecommendations();
+
+    // KPI summary
+    var totalSav=0,crit=0,med=0,low=0;
+    var typeSavings={};
+    recs.forEach(function(r){
+        totalSav+=r.savings;
+        if(r.severity==='critical')crit++;else if(r.severity==='medium')med++;else low++;
+        typeSavings[r.type]=(typeSavings[r.type]||0)+r.savings;
+    });
+
+    document.getElementById('recsTotalSavings').textContent=self.fmtK(totalSav)+'/yr';
+    document.getElementById('recsSavingsSub').textContent='Based on '+numDays+'-day observation window';
+    document.getElementById('recsCritical').textContent=crit+' Critical';
+    document.getElementById('recsMedium').textContent=med+' Medium';
+    document.getElementById('recsLow').textContent=low+' Low';
+    document.getElementById('recsCount').textContent='Showing '+Math.min(recs.length,30)+' of '+recs.length+' recommendations';
+
+    // Donut chart
+    if(this.charts.recsDonut) this.charts.recsDonut.dispose();
+    var donutData=[];
+    var typeColors={'Anomaly':'#ef4444','Load Shift':'#f59e0b','Evening Load':'#8b5cf6','Block Outlier':'#3b82f6','Water Leak':'#06b6d4','Compound':'#dc2626','Tariff Align':'#6366f1','Sanitation Gap':'#0891b2','Recovery Decline':'#d946ef','Fixed Charges':'#65a30d','Line Loss':'#78716c','Solar Offset':'#eab308','Generator Cost':'#b91c1c','Borehole Savings':'#0d9488','Supply Optimize':'#7c3aed'};
+    for(var t in typeSavings) donutData.push({name:t,value:Math.round(typeSavings[t])});
+    if(donutData.length){
+        var dch=echarts.init(document.getElementById('recsDonut'));
+        dch.setOption({
+            tooltip:{trigger:'item',formatter:function(p){return p.name+'<br/>'+self.fmtK(p.value)+'/yr ('+p.percent+'%)';}},
+            legend:{bottom:0,textStyle:{fontSize:9,color:'#64748b'},itemWidth:10,itemHeight:10},
+            series:[{type:'pie',radius:['45%','70%'],center:['50%','42%'],data:donutData.map(function(d){return{name:d.name,value:d.value,itemStyle:{color:typeColors[d.name]||'#94a3b8'}};}),
+                label:{show:false},emphasis:{label:{show:false}}}]
+        });
+        this.charts.recsDonut=dch;
+    }
+
+    // Recommendation cards
+    var sevColors={critical:{border:'border-red-200',bg:'bg-red-50',stripe:'bg-red-500'},medium:{border:'border-amber-200',bg:'bg-amber-50',stripe:'bg-amber-400'},low:{border:'border-green-200',bg:'bg-green-50',stripe:'bg-green-500'}};
+    var html='';
+    if(!recs.length) html='<div class="text-gray-400 text-center py-5">No recommendations for this period</div>';
+    recs.slice(0,30).forEach(function(r){
+        var sc=sevColors[r.severity]||sevColors.low;
+        html+='<div class="border rounded-lg p-3 mb-2 '+sc.border+' '+sc.bg+' flex gap-3">';
+        html+='<div class="w-1 rounded-full '+sc.stripe+' shrink-0"></div>';
+        html+='<div class="flex-1">';
+        html+='<div class="flex justify-between items-baseline gap-2"><span class="font-semibold text-[12px] text-gray-800">'+r.target+'</span><span class="text-emerald-600 font-bold text-[12px] whitespace-nowrap">'+self.fmtK(r.savings)+'/yr</span></div>';
+        html+='<div class="text-[10px] text-gray-400 mt-0.5">'+r.type+(r.severity==='critical'?' \u2022 Critical':r.severity==='medium'?' \u2022 Medium':' \u2022 Low')+'</div>';
+        html+='<div class="text-[11px] text-gray-600 mt-1">'+r.finding+'</div>';
+        html+='<div class="text-[11px] text-blue-600 mt-1 font-medium">\u2192 '+r.action+'</div>';
+        html+='</div></div>';
+    });
+    document.getElementById('recsList').innerHTML=html;
+};
+
+window.addEventListener('resize',function(){Object.keys(dashboard.charts).forEach(function(k){if(dashboard.charts[k]&&dashboard.charts[k].resize)dashboard.charts[k].resize();});});
+
+var dashboard = new Dashboard();
+</script>
+</body>
+</html>

@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Tariff Comparison</title>
+        <!-- Tailwind and DaisyUI -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <!-- ECharts -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+        <!-- PDF Generation Libraries -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+        <style>
+            .chart-container {
+                width: 100%;
+                height: 500px;
+                min-height: 400px;
+            }
+            .custom-header {
+                background-color: #404068;
+                color: #faa919;
+                border-top-left-radius: 1.5rem;
+                border-top-right-radius: 1.5rem;
+            }
+            .header-stat-label {
+                font-size: 0.65rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #faa919;
+                font-weight: 700;
+                margin-bottom: 0.15rem;
+            }
+            .header-stat-value {
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: #ffffff;
+            }
+            .tariff-grid-scroll {
+                max-height: 60vh;
+                overflow-y: auto;
+                padding-right: 8px;
+            }
+            .tariff-result-card {
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                border: 2px solid transparent;
+            }
+            .tariff-result-card:hover {
+                border-color: #404068;
+                background-color: #f8faff;
+            }
+            .tariff-selected {
+                border-color: #404068 !important;
+                background-color: #f0f0f7 !important;
+                box-shadow: 0 4px 12px rgba(64, 64, 104, 0.1);
+            }
+            .modal-header-themed {
+                background-color: #404068;
+                color: #ffffff;
+                margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+                padding: 1.5rem;
+                border-bottom: 4px solid #faa919;
+            }
+            .feature-tag {
+                font-size: 0.65rem;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                gap: 2px;
+            }
+            .data-view-table th {
+                background-color: #f8fafc;
+                color: #475569;
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+        </style>
+    </head>
+    <body class="bg-base-200 min-h-screen pb-12 font-sans">
+        <div class="container mx-auto px-4 py-8">
+            <!-- Header Section -->
+            <div class="flex flex-col gap-0 mb-8 shadow-xl">
+                <div class="custom-header p-6 lg:p-8 flex flex-col gap-8">
+                    <div
+                        class="flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+                    >
+                        <div>
+                            <h1
+                                class="text-2xl lg:text-3xl font-bold flex items-center gap-2"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-8 w-8"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                                    />
+                                </svg>
+                                Tariff Comparison Analysis
+                            </h1>
+                            <p class="text-[#faa919]/80 mt-1 font-medium">
+                                Multi-scenario structural impact and variance
+                                tracking
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span
+                                class="badge badge-warning font-bold px-4 py-3 uppercase tracking-wider"
+                                >Regular Meter</span
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Sub-header Grid -->
+                    <div
+                        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 pt-6 border-t border-white/10"
+                    >
+                        <div class="flex flex-col">
+                            <span class="header-stat-label">Meter Number</span>
+                            <span class="header-stat-value">0412 8837 219</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="header-stat-label">Utility Type</span>
+                            <span
+                                class="header-stat-value flex items-center gap-1.5"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-4 w-4 text-blue-400"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        fill-rule="evenodd"
+                                        d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                                        clip-rule="evenodd"
+                                    />
+                                </svg>
+                                Electrical
+                            </span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="header-stat-label">Provider</span>
+                            <span class="header-stat-value">Eskom</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="header-stat-label"
+                                >Current Tariff</span
+                            >
+                            <span class="header-stat-value">Uniflex</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="header-stat-label">Billing</span>
+                            <span class="header-stat-value">Postpaid</span>
+                        </div>
+                    </div>
+
+                    <!-- Consumption Stats & Analysis Period (Secondary row) -->
+                    <div
+                        class="flex flex-wrap gap-x-12 gap-y-4 pt-4 opacity-90 border-t border-white/5"
+                    >
+                        <div class="flex flex-col">
+                            <span class="header-stat-label"
+                                >Analysis Period</span
+                            >
+                            <span
+                                id="period-range-text"
+                                class="header-stat-value"
+                                >...</span
+                            >
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="header-stat-label">Total Energy</span>
+                            <span id="total-kwh" class="header-stat-value"
+                                >0 kWh</span
+                            >
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="header-stat-label"
+                                >Reactive Power</span
+                            >
+                            <span id="total-kvarh" class="header-stat-value"
+                                >0 kVARh</span
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scenario Selection Bar -->
+                <div
+                    class="card bg-base-100 rounded-t-none border-t-0 border-base-300"
+                >
+                    <div class="card-body p-5">
+                        <div
+                            class="flex flex-col md:flex-row md:items-center justify-between gap-4"
+                        >
+                            <div class="flex items-start gap-4 flex-1">
+                                <div
+                                    class="bg-[#404068] p-2 rounded-lg text-[#faa919] mt-1 shadow-md shrink-0"
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        class="h-5 w-5"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"
+                                        />
+                                        <path
+                                            fill-rule="evenodd"
+                                            d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"
+                                            clip-rule="evenodd"
+                                        />
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <p
+                                        class="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2"
+                                    >
+                                        Active Comparison Scenarios
+                                    </p>
+                                    <div
+                                        id="selected-tariffs-container"
+                                        class="flex flex-wrap gap-2"
+                                    ></div>
+                                </div>
+                            </div>
+                            <button
+                                onclick="tariff_modal.showModal()"
+                                class="btn btn-ghost text-[#404068] hover:bg-[#404068]/5 font-bold flex items-center gap-2"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-5 w-5"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        fill-rule="evenodd"
+                                        d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                                        clip-rule="evenodd"
+                                    />
+                                </svg>
+                                Manage Scenarios
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Card -->
+            <div class="card bg-base-100 shadow-xl overflow-hidden mb-8">
+                <div
+                    class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white"
+                >
+                    <h2 class="font-bold text-slate-700">
+                        Monthly Cost Variance
+                    </h2>
+                    <div class="flex gap-2">
+                        <button
+                            onclick="showDataView()"
+                            class="btn btn-sm btn-ghost text-[#404068] gap-2 border border-slate-200"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                                /></svg
+                            >View Data
+                        </button>
+                        <button
+                            onclick="generatePDF()"
+                            class="btn btn-sm btn-ghost text-[#404068] gap-2 border border-slate-200"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                /></svg
+                            >PDF Report
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6 bg-white relative">
+                    <div id="main-chart" class="chart-container"></div>
+                    <div
+                        id="chart-overlay"
+                        class="absolute inset-0 bg-white/80 flex flex-col items-center justify-center gap-4 z-10 transition-opacity duration-300"
+                    >
+                        <div
+                            class="bg-slate-100 p-4 rounded-full text-slate-400"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-10 w-10"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                                />
+                            </svg>
+                        </div>
+                        <p class="text-slate-500 font-medium">
+                            Select tariffs to compare against current usage
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Section -->
+            <div id="stats-container" class="flex flex-col gap-8">
+                <div
+                    class="border-l-4 border-slate-400 bg-white p-6 shadow-sm rounded-r-xl"
+                >
+                    <h3
+                        class="text-slate-500 text-xs font-bold uppercase tracking-widest mb-4"
+                    >
+                        Baseline: Eskom Uniflex (Current)
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="flex flex-col">
+                            <span
+                                class="text-slate-400 text-[10px] uppercase font-bold"
+                                >Annual Cost</span
+                            ><span
+                                class="text-xl font-bold text-slate-700"
+                                id="base-annual-cost"
+                                >R 0.00</span
+                            >
+                        </div>
+                        <div
+                            class="md:col-span-3 flex items-center text-slate-300 text-sm italic"
+                        >
+                            All comparison scenarios are calculated against this
+                            actual energy consumption.
+                        </div>
+                    </div>
+                </div>
+                <div
+                    id="comparison-stats-grid"
+                    class="grid grid-cols-1 lg:grid-cols-2 gap-6"
+                ></div>
+            </div>
+        </div>
+
+        <!-- TARIFF SELECTION MODAL -->
+        <dialog id="tariff_modal" class="modal modal-bottom sm:modal-middle">
+            <div class="modal-box w-11/12 max-w-4xl p-6">
+                <div class="modal-header-themed">
+                    <div class="flex justify-between items-start">
+                        <div class="flex flex-col gap-1">
+                            <h3
+                                class="font-bold text-2xl flex items-center gap-3"
+                            >
+                                Eskom Electrical Tariffs
+                            </h3>
+                            <p class="text-slate-300 text-sm">
+                                Select the scenarios you wish to include in your
+                                comparison analysis.
+                            </p>
+                        </div>
+                        <form method="dialog">
+                            <button
+                                class="btn btn-sm btn-circle btn-ghost text-white/50 hover:text-white border-none"
+                            >
+                                ✕
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div
+                    id="tariff-list-grid"
+                    class="tariff-grid-scroll grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 mt-4"
+                >
+                    <!-- Dynamic List -->
+                </div>
+
+                <div class="modal-action border-t border-slate-100 pt-6 mt-2">
+                    <form method="dialog">
+                        <button class="btn btn-neutral px-8">Done</button>
+                    </form>
+                </div>
+            </div>
+        </dialog>
+
+        <!-- DATA VIEW MODAL -->
+        <dialog id="data_view_modal" class="modal modal-bottom sm:modal-middle">
+            <div class="modal-box w-11/12 max-w-5xl p-0 overflow-hidden">
+                <div class="modal-header-themed mb-0 rounded-t-lg">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-xl">Comparison Data Grid</h3>
+                        <form method="dialog">
+                            <button
+                                class="btn btn-sm btn-circle btn-ghost text-white/50 hover:text-white border-none"
+                            >
+                                ✕
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="overflow-x-auto max-h-[70vh]">
+                    <table class="table table-zebra w-full data-view-table">
+                        <thead
+                            id="data-table-head"
+                            class="sticky top-0 z-10"
+                        ></thead>
+                        <tbody id="data-table-body"></tbody>
+                    </table>
+                </div>
+                <div
+                    class="p-4 bg-slate-50 flex justify-end gap-2 border-t border-slate-200"
+                >
+                    <form method="dialog">
+                        <button class="btn btn-ghost">Close</button>
+                    </form>
+                </div>
+            </div>
+        </dialog>
+
+        <script>
+            const tariffDatabase = [
+                {
+                    id: 1,
+                    name: "Eskom TOU (Business)",
+                    color: "#3b82f6",
+                    baseMultiplier: 1.15,
+                    features: { tou: true, block: false, seasonal: true },
+                },
+                {
+                    id: 2,
+                    name: "Eskom Uniflex (Standard)",
+                    color: "#8b5cf6",
+                    baseMultiplier: 1.05,
+                    features: { tou: true, block: false, seasonal: true },
+                },
+                {
+                    id: 4,
+                    name: "Eskom Megaflex (Standard)",
+                    color: "#10b981",
+                    baseMultiplier: 0.92,
+                    features: { tou: true, block: false, seasonal: true },
+                },
+                {
+                    id: 8,
+                    name: "Eskom Nightsave Urban",
+                    color: "#f59e0b",
+                    baseMultiplier: 0.88,
+                    features: { tou: false, block: true, seasonal: true },
+                },
+                {
+                    id: 9,
+                    name: "Ruralflex",
+                    color: "#ec4899",
+                    baseMultiplier: 1.25,
+                    features: { tou: true, block: false, seasonal: true },
+                },
+                {
+                    id: 10,
+                    name: "Standard Industrial 3",
+                    color: "#06b6d4",
+                    baseMultiplier: 1.1,
+                    features: { tou: false, block: true, seasonal: false },
+                },
+                {
+                    id: 11,
+                    name: "Homepower 1",
+                    color: "#6366f1",
+                    baseMultiplier: 1.18,
+                    features: { tou: false, block: true, seasonal: false },
+                },
+                {
+                    id: 12,
+                    name: "Businessrate 1",
+                    color: "#14b8a6",
+                    baseMultiplier: 1.12,
+                    features: { tou: false, block: false, seasonal: true },
+                },
+            ];
+
+            let selectedTariffIds = [];
+            let myChart = null;
+
+            const rawData = {
+                // Sorted chronologically for processing (Nov '23 to Oct '25)
+                prev: [
+                    6500, 6300, 6100, 5900, 5500, 5300, 5400, 5800, 6200, 6466,
+                    5511, 5692,
+                ],
+                x_axis_data: [
+                    "Nov '23",
+                    "Dec '23",
+                    "Jan '24",
+                    "Feb '24",
+                    "Mar '24",
+                    "Apr '24",
+                    "May '25",
+                    "Jun '25",
+                    "Jul '25",
+                    "Aug '25",
+                    "Sep '25",
+                    "Oct '25",
+                ],
+                consumption_kwh: 45200,
+                consumption_kvarh: 12400,
+                meter: "0412 8837 219",
+            };
+
+            function formatZAR(num) {
+                return (
+                    "R " +
+                    num.toLocaleString("en-ZA", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                    })
+                );
+            }
+
+            function getFeatureHtml(enabled, label) {
+                const colorClass = enabled
+                    ? "text-emerald-500"
+                    : "text-rose-400";
+                return `<span class="feature-tag ${colorClass}">${enabled ? "✓" : "✕"} ${label}</span>`;
+            }
+
+            function updateUI() {
+                const selectionContainer = document.getElementById(
+                    "selected-tariffs-container",
+                );
+                const comparisonGrid = document.getElementById(
+                    "comparison-stats-grid",
+                );
+                const chartOverlay = document.getElementById("chart-overlay");
+
+                selectionContainer.innerHTML = "";
+                const selected = tariffDatabase.filter((t) =>
+                    selectedTariffIds.includes(t.id),
+                );
+
+                if (selected.length === 0) {
+                    selectionContainer.innerHTML =
+                        '<span class="text-xs text-slate-400 italic">No comparison tariffs active</span>';
+                    chartOverlay.style.opacity = "1";
+                    chartOverlay.classList.remove("pointer-events-none");
+                } else {
+                    chartOverlay.style.opacity = "0";
+                    chartOverlay.classList.add("pointer-events-none");
+                    selected.forEach((t) => {
+                        const b = document.createElement("div");
+                        b.style.backgroundColor = t.color;
+                        b.className =
+                            "px-3 py-1.5 rounded-lg text-xs font-bold text-white flex items-center gap-3 shadow-md";
+                        b.innerHTML = `<span>${t.name}</span><div onclick="toggleTariffSelection(${t.id})" class="cursor-pointer hover:bg-black/10 rounded-full">✕</div>`;
+                        selectionContainer.appendChild(b);
+                    });
+                }
+
+                comparisonGrid.innerHTML = "";
+                const baseTotal = rawData.prev.reduce((a, b) => a + b, 0);
+
+                selected.forEach((t) => {
+                    const scenarioTotal = baseTotal * t.baseMultiplier;
+                    const variance = scenarioTotal - baseTotal;
+                    const card = document.createElement("div");
+                    card.className =
+                        "card bg-white shadow-xl overflow-hidden border-l-8";
+                    card.style.borderLeftColor = t.color;
+                    card.innerHTML = `
+                        <div class="card-body p-6">
+                            <div class="flex justify-between items-start mb-4">
+                                <h3 class="font-bold text-slate-800">${t.name}</h3>
+                                <span class="badge text-white font-bold border-none" style="background-color: ${t.color}">Scenario</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4 border-t pt-4">
+                                <div class="flex flex-col"><span class="text-[9px] uppercase font-bold text-slate-400">Annual Cost</span><span class="text-sm font-bold" style="color: ${t.color}">${formatZAR(scenarioTotal)}</span></div>
+                                <div class="flex flex-col"><span class="text-[9px] uppercase font-bold text-slate-400">Net Variance</span><span class="text-sm font-bold ${variance > 0 ? "text-error" : "text-emerald-500"}">${variance > 0 ? "+" : ""}${formatZAR(variance)}</span></div>
+                                <div class="flex flex-col"><span class="text-[9px] uppercase font-bold text-slate-400">Impact %</span><span class="text-sm font-bold text-slate-600">${((t.baseMultiplier - 1) * 100).toFixed(1)}%</span></div>
+                            </div>
+                        </div>
+                    `;
+                    comparisonGrid.appendChild(card);
+                });
+
+                renderTariffGrid();
+                updateChart();
+            }
+
+            function renderTariffGrid() {
+                const grid = document.getElementById("tariff-list-grid");
+                grid.innerHTML = "";
+                tariffDatabase.forEach((tariff) => {
+                    const isSelected = selectedTariffIds.includes(tariff.id);
+                    const card = document.createElement("div");
+                    card.className = `tariff-result-card border rounded-2xl p-4 cursor-pointer flex flex-col gap-3 transition-all ${isSelected ? "tariff-selected border-[#404068]" : "bg-base-100 border-slate-100"}`;
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div class="flex flex-col gap-2">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-2.5 h-2.5 rounded-full" style="background-color: ${tariff.color}"></div>
+                                    <span class="font-bold text-slate-800 text-sm">${tariff.name}</span>
+                                </div>
+                                <div class="flex gap-2.5">
+                                    ${getFeatureHtml(tariff.features.tou, "TOU")}
+                                    ${getFeatureHtml(tariff.features.block, "Block")}
+                                    ${getFeatureHtml(tariff.features.seasonal, "Seasonal")}
+                                </div>
+                            </div>
+                            <div class="h-6 w-6 flex items-center justify-center rounded-full ${isSelected ? "bg-[#404068] text-[#faa919]" : "bg-slate-100 text-slate-300"}">
+                                ${isSelected ? "✓" : "+"}
+                            </div>
+                        </div>
+                    `;
+                    card.onclick = () => toggleTariffSelection(tariff.id);
+                    grid.appendChild(card);
+                });
+            }
+
+            function toggleTariffSelection(id) {
+                const index = selectedTariffIds.indexOf(id);
+                if (index > -1) selectedTariffIds.splice(index, 1);
+                else selectedTariffIds.push(id);
+                updateUI();
+            }
+
+            function updateChart() {
+                if (!myChart) return;
+
+                const xAxisData = rawData.x_axis_data;
+                const series = [
+                    {
+                        name: "Current (Baseline)",
+                        type: "bar",
+                        data: rawData.prev,
+                        itemStyle: { color: "#94a3b8", opacity: 0.5 },
+                        barMaxWidth: 20,
+                    },
+                ];
+
+                selectedTariffIds.forEach((id) => {
+                    const t = tariffDatabase.find((x) => x.id === id);
+                    if (t) {
+                        series.push({
+                            name: t.name,
+                            type: "bar",
+                            data: rawData.prev.map((v) => v * t.baseMultiplier),
+                            itemStyle: { color: t.color },
+                            barMaxWidth: 20,
+                        });
+                    }
+                });
+
+                myChart.setOption(
+                    {
+                        xAxis: { data: xAxisData },
+                        legend: { data: series.map((s) => s.name) },
+                        series: series,
+                    },
+                    { notMerge: false },
+                );
+            }
+
+            function generatePDF() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF("p", "mm", "a4");
+                const selected = tariffDatabase.filter((t) =>
+                    selectedTariffIds.includes(t.id),
+                );
+                const baseTotal = rawData.prev.reduce((a, b) => a + b, 0);
+
+                doc.setFillColor(64, 64, 104);
+                doc.rect(0, 0, 210, 40, "F");
+                doc.setTextColor(250, 169, 25);
+                doc.setFontSize(22);
+                doc.setFont("helvetica", "bold");
+                doc.text("Tariff Comparison Analysis", 15, 20);
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(10);
+                doc.setFont("helvetica", "normal");
+                doc.text(
+                    `Meter: ${rawData.meter} | Generated: ${new Date().toLocaleDateString()}`,
+                    15,
+                    30,
+                );
+
+                let yPos = 55;
+                doc.setTextColor(64, 64, 104);
+                doc.setFontSize(14);
+                doc.text("Comparison Summary", 15, yPos);
+                yPos += 10;
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
+                doc.text(
+                    `Current Baseline (Eskom Uniflex): ${formatZAR(baseTotal)}`,
+                    15,
+                    yPos,
+                );
+
+                yPos += 10;
+                selected.forEach((t) => {
+                    const total = baseTotal * t.baseMultiplier;
+                    const varPct = ((t.baseMultiplier - 1) * 100).toFixed(1);
+                    doc.text(
+                        `${t.name}: ${formatZAR(total)} (${varPct > 0 ? "+" : ""}${varPct}%)`,
+                        15,
+                        yPos,
+                    );
+                    yPos += 6;
+                });
+
+                if (myChart && selected.length > 0) {
+                    const img = myChart.getDataURL({
+                        type: "png",
+                        backgroundColor: "#fff",
+                    });
+                    doc.addImage(img, "PNG", 15, yPos + 5, 180, 90);
+                    yPos += 105;
+                } else {
+                    yPos += 15;
+                }
+
+                const headers = [
+                    [
+                        "Month",
+                        "Baseline (R)",
+                        ...selected.map((t) => `${t.name} (R)`),
+                    ],
+                ];
+                const rows = rawData.x_axis_data.map((m, idx) => {
+                    const bVal = rawData.prev[idx];
+                    return [
+                        m,
+                        bVal.toFixed(2),
+                        ...selected.map((t) =>
+                            (bVal * t.baseMultiplier).toFixed(2),
+                        ),
+                    ];
+                });
+
+                doc.autoTable({
+                    head: headers,
+                    body: rows,
+                    startY: yPos,
+                    theme: "grid",
+                    styles: { fontSize: 8 },
+                });
+                doc.save(`Analysis_${rawData.meter.replace(/\s/g, "_")}.pdf`);
+            }
+
+            function showDataView() {
+                const head = document.getElementById("data-table-head");
+                const body = document.getElementById("data-table-body");
+                const selected = tariffDatabase.filter((t) =>
+                    selectedTariffIds.includes(t.id),
+                );
+                const revMonths = rawData.x_axis_data;
+                const revBase = rawData.prev;
+
+                head.innerHTML = `<tr><th>Month</th><th>Baseline</th>${selected.map((t) => `<th>${t.name}</th>`).join("")}</tr>`;
+                let bHtml = revMonths
+                    .map(
+                        (m, i) =>
+                            `<tr><td class="font-bold">${m}</td><td>${formatZAR(revBase[i])}</td>${selected.map((t) => `<td>${formatZAR(revBase[i] * t.baseMultiplier)}</td>`).join("")}</tr>`,
+                    )
+                    .join("");
+
+                const bSum = revBase.reduce((a, b) => a + b, 0);
+                bHtml += `<tr class="bg-slate-100 font-bold"><td>TOTAL</td><td>${formatZAR(bSum)}</td>${selected.map((t) => `<td>${formatZAR(bSum * t.baseMultiplier)}</td>`).join("")}</tr>`;
+                body.innerHTML = bHtml;
+                data_view_modal.showModal();
+            }
+
+            function initDashboard() {
+                const chartDom = document.getElementById("main-chart");
+                myChart = echarts.init(chartDom);
+
+                const xAxisData = rawData.x_axis_data;
+                const initialSeriesData = rawData.prev;
+
+                const option = {
+                    tooltip: { trigger: "axis" },
+                    grid: {
+                        left: "1%",
+                        right: "4%",
+                        bottom: "15%",
+                        top: "5%",
+                        containLabel: true,
+                    },
+                    xAxis: {
+                        type: "category",
+                        data: xAxisData,
+                        axisLabel: { rotate: 30 },
+                    },
+                    yAxis: {
+                        type: "value",
+                        axisLabel: {
+                            formatter: (value) => "R" + value.toLocaleString(),
+                        },
+                    },
+                    legend: {
+                        bottom: 0,
+                        data: ["Current (Baseline)"],
+                    },
+                    series: [
+                        {
+                            name: "Current (Baseline)",
+                            type: "bar",
+                            data: initialSeriesData,
+                            itemStyle: { color: "#94a3b8", opacity: 0.5 },
+                            barMaxWidth: 20,
+                        },
+                    ],
+                };
+
+                myChart.setOption(option);
+
+                // Setup Analysis Period Info
+                const dates = rawData.x_axis_data;
+                const monthCount = dates.length;
+                document.getElementById("period-range-text").innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span>${dates[0]} — ${dates[dates.length - 1]}</span>
+                        <span class="badge badge-outline border-white/20 text-[10px] text-[#faa919]">${monthCount} Months</span>
+                    </div>
+                `;
+
+                document.getElementById("total-kwh").innerText =
+                    `${rawData.consumption_kwh.toLocaleString()} kWh`;
+                document.getElementById("total-kvarh").innerText =
+                    `${rawData.consumption_kvarh.toLocaleString()} kVARh`;
+                document.getElementById("base-annual-cost").innerText =
+                    formatZAR(rawData.prev.reduce((a, b) => a + b, 0));
+
+                updateUI();
+                window.addEventListener("resize", () => myChart.resize());
+            }
+
+            window.onload = initDashboard;
+        </script>
+    </body>
+</html>

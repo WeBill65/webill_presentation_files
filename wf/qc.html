@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>QC Configurations</title>
+        <!-- Tailwind and DaisyUI -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+            /* Custom branding styles */
+            .brand-header {
+                background-color: #404068;
+            }
+            .brand-header-text {
+                color: #faa919;
+            }
+            .qc-column-header {
+                background-color: #404068;
+                color: #ffffff !important;
+            }
+            /* Reverse Branded Button */
+            .btn-reverse-branded {
+                background-color: #faa919;
+                color: #404068;
+                border: none;
+            }
+            .btn-reverse-branded:hover {
+                background-color: #ffc14d;
+                color: #404068;
+            }
+            /* Search bar focus */
+            .search-input:focus {
+                outline: 2px solid #faa919;
+                border-color: #faa919;
+            }
+        </style>
+    </head>
+    <body class="bg-base-200 min-h-screen p-4 md:p-6">
+        <!-- Branded Header Section -->
+        <header
+            class="brand-header shadow-lg mb-8 rounded-t-2xl border-b-4 border-[#faa919] overflow-hidden"
+        >
+            <div
+                class="max-w-6xl mx-auto px-6 py-8 flex flex-col md:flex-row gap-4 justify-between items-center"
+            >
+                <h1 class="text-2xl font-bold brand-header-text">
+                    Quality Control Configurations
+                </h1>
+
+                <div class="flex flex-1 justify-center max-w-md w-full px-4">
+                    <div class="relative w-full">
+                        <span
+                            class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none"
+                        >
+                            <svg
+                                class="w-4 h-4 text-gray-400"
+                                aria-hidden="true"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 20 20"
+                            >
+                                <path
+                                    stroke="currentColor"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
+                                />
+                            </svg>
+                        </span>
+                        <input
+                            type="text"
+                            id="tableSearch"
+                            onkeyup="filterTable()"
+                            class="input input-sm w-full pl-10 search-input"
+                            placeholder="Search by name or organization..."
+                        />
+                    </div>
+                </div>
+
+                <button
+                    onclick="openAddModal()"
+                    class="btn btn-reverse-branded shadow-md"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 4v16m8-8H4"
+                        />
+                    </svg>
+                    Add New QC
+                </button>
+            </div>
+        </header>
+
+        <main class="max-w-6xl mx-auto px-2 pb-12">
+            <div
+                class="overflow-x-auto rounded-xl shadow-xl bg-base-100 border border-base-300"
+            >
+                <table class="table w-full" id="qcTable">
+                    <!-- head -->
+                    <thead>
+                        <tr class="qc-column-header">
+                            <th class="qc-column-header py-4 rounded-none">
+                                Name
+                            </th>
+                            <th class="qc-column-header">Description</th>
+                            <th class="qc-column-header">Organization</th>
+                            <th class="qc-column-header text-center">
+                                Number Schedules
+                            </th>
+                            <th class="qc-column-header text-center">
+                                Number Instructions
+                            </th>
+                            <th class="qc-column-header text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-base-content">
+                        <tr class="hover qc-row">
+                            <td class="font-bold qc-name">
+                                Final Assembly Audit
+                            </td>
+                            <td class="text-sm qc-desc">
+                                Check electrical components before shipping.
+                            </td>
+                            <td class="text-sm qc-org text-base-content/70">
+                                Global Logistics Corp
+                            </td>
+                            <td class="text-center">
+                                <div class="badge badge-ghost qc-schedules">
+                                    12
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <div class="badge badge-ghost qc-instructions">
+                                    45
+                                </div>
+                            </td>
+                            <td class="text-right">
+                                <button
+                                    onclick="openEditModal(this)"
+                                    class="btn btn-ghost btn-circle btn-sm text-gray-400 hover:text-[#404068]"
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        class="h-5 w-5"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                        />
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="hover qc-row">
+                            <td class="font-bold qc-name">
+                                Raw Material Check
+                            </td>
+                            <td class="text-sm qc-desc">
+                                Verify steel purity and surface finish.
+                            </td>
+                            <td class="text-sm qc-org text-base-content/70">
+                                Stark Industries
+                            </td>
+                            <td class="text-center">
+                                <div class="badge badge-ghost qc-schedules">
+                                    5
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <div class="badge badge-ghost qc-instructions">
+                                    20
+                                </div>
+                            </td>
+                            <td class="text-right">
+                                <button
+                                    onclick="openEditModal(this)"
+                                    class="btn btn-ghost btn-circle btn-sm text-gray-400 hover:text-[#404068]"
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        class="h-5 w-5"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                        />
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div
+                id="resultCount"
+                class="mt-4 text-xs text-base-content/60 italic px-2"
+            >
+                Showing 2 Quality Control configurations.
+            </div>
+        </main>
+
+        <!-- DaisyUI Modal -->
+        <dialog id="qc_modal" class="modal modal-bottom sm:modal-middle">
+            <div
+                class="modal-box p-0 max-w-2xl rounded-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            >
+                <!-- Sticky Modal Header -->
+                <div
+                    class="brand-header px-6 py-4 border-b-4 border-[#faa919] flex justify-between items-center sticky top-0 z-10"
+                >
+                    <h3
+                        id="modalTitle"
+                        class="text-lg font-bold brand-header-text"
+                    >
+                        Add QC Configuration
+                    </h3>
+                    <form method="dialog">
+                        <button
+                            class="btn btn-sm btn-circle btn-ghost text-white hover:text-[#faa919]"
+                        >
+                            ✕
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Scrollable Modal Form Body -->
+                <form
+                    id="qcForm"
+                    method="dialog"
+                    onsubmit="handleFormSubmit(event)"
+                    class="flex flex-col flex-1 overflow-hidden bg-base-100"
+                >
+                    <div class="p-6 space-y-6 overflow-y-auto flex-1">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Text Inputs -->
+                            <div class="space-y-4">
+                                <div class="form-control w-full">
+                                    <label class="label">
+                                        <span class="label-text font-bold"
+                                            >Name
+                                            <span class="text-error"
+                                                >*</span
+                                            ></span
+                                        >
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="nameInput"
+                                        placeholder="Enter configuration name"
+                                        required
+                                        class="input input-bordered w-full focus:border-[#404068]"
+                                    />
+                                </div>
+                                <div class="form-control w-full">
+                                    <label class="label">
+                                        <span class="label-text font-bold"
+                                            >Organization</span
+                                        >
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="orgInput"
+                                        placeholder="Enter organization name"
+                                        class="input input-bordered w-full focus:border-[#404068]"
+                                    />
+                                </div>
+                                <div class="form-control w-full">
+                                    <label class="label">
+                                        <span class="label-text font-bold"
+                                            >Description</span
+                                        >
+                                    </label>
+                                    <textarea
+                                        id="descInput"
+                                        placeholder="Brief description..."
+                                        class="textarea textarea-bordered h-20 focus:border-[#404068]"
+                                    ></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Checkboxes using DaisyUI Form Controls -->
+                            <div
+                                class="bg-base-200 p-4 rounded-xl space-y-2 h-fit"
+                            >
+                                <span
+                                    class="text-xs font-bold text-base-content/50 uppercase tracking-widest mb-2 block"
+                                    >Settings</span
+                                >
+                                <div class="form-control">
+                                    <label
+                                        class="label cursor-pointer justify-start gap-4"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            id="autoPassInput"
+                                            class="checkbox checkbox-sm [--chkbg:#404068] [--chkfg:white]"
+                                        />
+                                        <span class="label-text"
+                                            >AutoPass First?</span
+                                        >
+                                    </label>
+                                </div>
+                                <div class="form-control">
+                                    <label
+                                        class="label cursor-pointer justify-start gap-4"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            id="photoReqInput"
+                                            class="checkbox checkbox-sm [--chkbg:#404068] [--chkfg:white]"
+                                        />
+                                        <span class="label-text"
+                                            >Photo Required</span
+                                        >
+                                    </label>
+                                </div>
+                                <div class="form-control">
+                                    <label
+                                        class="label cursor-pointer justify-start gap-4"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            id="verifyMeterInput"
+                                            class="checkbox checkbox-sm [--chkbg:#404068] [--chkfg:white]"
+                                        />
+                                        <span class="label-text"
+                                            >Verify Meter</span
+                                        >
+                                    </label>
+                                </div>
+                                <div class="form-control">
+                                    <label
+                                        class="label cursor-pointer justify-start gap-4"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            id="zeroConsInput"
+                                            class="checkbox checkbox-sm [--chkbg:#404068] [--chkfg:white]"
+                                        />
+                                        <span class="label-text"
+                                            >Zero Consumption?</span
+                                        >
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ranges Section -->
+                        <div class="space-y-4 pt-2">
+                            <div
+                                class="divider text-xs font-bold text-base-content/40 uppercase tracking-widest"
+                            >
+                                Ranges
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="form-control">
+                                    <label class="label"
+                                        ><span class="label-text-alt font-bold"
+                                            >Average</span
+                                        ></label
+                                    >
+                                    <input
+                                        type="number"
+                                        id="avgInput"
+                                        value="0"
+                                        class="input input-bordered input-sm w-full"
+                                    />
+                                </div>
+                                <div class="form-control">
+                                    <label class="label"
+                                        ><span class="label-text-alt font-bold"
+                                            >GPS</span
+                                        ></label
+                                    >
+                                    <input
+                                        type="number"
+                                        id="gpsInput"
+                                        value="0"
+                                        class="input input-bordered input-sm w-full"
+                                    />
+                                </div>
+                                <div class="form-control">
+                                    <label class="label"
+                                        ><span class="label-text-alt font-bold"
+                                            >Photo</span
+                                        ></label
+                                    >
+                                    <input
+                                        type="number"
+                                        id="photoValInput"
+                                        value="0"
+                                        class="input input-bordered input-sm w-full"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sticky Modal Footer -->
+                    <div
+                        class="modal-action border-t p-4 mt-0 bg-base-100 sticky bottom-0 z-10 flex justify-end gap-2"
+                    >
+                        <button
+                            type="button"
+                            onclick="qc_modal.close()"
+                            class="btn btn-ghost btn-sm"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            class="btn btn-reverse-branded btn-sm px-8 shadow-sm"
+                        >
+                            Save Configuration
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </dialog>
+
+        <script>
+            const qcForm = document.getElementById("qcForm");
+            const modalTitle = document.getElementById("modalTitle");
+            const searchInput = document.getElementById("tableSearch");
+
+            function openAddModal() {
+                modalTitle.innerText = "Add QC Configuration";
+                qcForm.reset();
+                qc_modal.showModal();
+            }
+
+            function openEditModal(button) {
+                modalTitle.innerText = "Edit QC Configuration";
+                const row = button.closest("tr");
+
+                // Populate form fields
+                document.getElementById("nameInput").value =
+                    row.querySelector(".qc-name").innerText;
+                document.getElementById("orgInput").value =
+                    row.querySelector(".qc-org").innerText;
+                document.getElementById("descInput").value =
+                    row.querySelector(".qc-desc").innerText;
+
+                qc_modal.showModal();
+            }
+
+            function filterTable() {
+                const filter = searchInput.value.toLowerCase();
+                const rows = document.querySelectorAll(".qc-row");
+                let visibleCount = 0;
+
+                rows.forEach((row) => {
+                    const name = row
+                        .querySelector(".qc-name")
+                        .innerText.toLowerCase();
+                    const org = row
+                        .querySelector(".qc-org")
+                        .innerText.toLowerCase();
+
+                    if (name.includes(filter) || org.includes(filter)) {
+                        row.style.display = "";
+                        visibleCount++;
+                    } else {
+                        row.style.display = "none";
+                    }
+                });
+
+                document.getElementById("resultCount").innerText =
+                    `Showing ${visibleCount} Quality Control configuration${visibleCount !== 1 ? "s" : ""}.`;
+            }
+
+            function handleFormSubmit(event) {
+                // Simplified logic for UI demonstration
+                console.log("Form Submitted");
+            }
+        </script>
+    </body>
+</html>
