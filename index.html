@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Webill — Home</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <style>
+            :root {
+                --brand-bg: #404068;
+                --brand-gold: #faa919;
+            }
+            body {
+                background-color: #f3f4f6;
+                min-height: 100vh;
+            }
+            .nav-card {
+                transition: transform 0.18s ease, box-shadow 0.18s ease;
+            }
+            .nav-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 10px 28px rgba(64, 64, 104, 0.18);
+            }
+            .nav-card:hover .card-icon {
+                background-color: var(--brand-gold);
+                color: var(--brand-bg);
+            }
+            .card-icon {
+                transition: background-color 0.18s ease, color 0.18s ease;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Header -->
+        <header style="background-color:#404068;" class="px-8 py-5 shadow-xl">
+            <div class="max-w-6xl mx-auto flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 rounded-xl" style="background-color:#faa919;">
+                        <i data-lucide="zap" class="w-6 h-6" style="color:#404068;"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-extrabold tracking-tight text-white leading-none">Webill</h1>
+                        <p class="text-[11px] font-medium" style="color:#faa919;">Utility Management Platform</p>
+                    </div>
+                </div>
+                <span class="text-xs font-bold px-3 py-1 rounded-full" style="background-color:#faa919;color:#404068;">DEMO</span>
+            </div>
+        </header>
+
+        <!-- Main -->
+        <main class="max-w-6xl mx-auto px-6 py-10">
+
+            <!-- Control Centre Hero Link -->
+            <a href="portfolio/portfolio_map.html" class="nav-card block bg-[#404068] rounded-2xl p-6 mb-10 shadow-lg no-underline group">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="card-icon w-14 h-14 rounded-2xl flex items-center justify-center" style="background-color:#faa919;">
+                            <i data-lucide="map" class="w-7 h-7" style="color:#404068;"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-widest" style="color:#faa919;">Main Link</p>
+                            <p class="text-xl font-extrabold text-white mt-0.5">Control Centre</p>
+                            <p class="text-xs text-white/60 mt-0.5">Portfolio map &amp; site overview</p>
+                        </div>
+                    </div>
+                    <i data-lucide="arrow-right" class="w-6 h-6 text-white/40 group-hover:text-[#faa919] transition-colors"></i>
+                </div>
+            </a>
+
+            <!-- Section: Core -->
+            <section class="mb-10">
+                <h2 class="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-4">Core</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+
+                    <a href="billing/billing.html" class="nav-card bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3 shadow-sm no-underline">
+                        <div class="card-icon w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:#404068;">
+                            <i data-lucide="file-text" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">Billing</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Utility bill management</p>
+                        </div>
+                    </a>
+
+                    <a href="consumer/consumer_drawer.html" class="nav-card bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3 shadow-sm no-underline">
+                        <div class="card-icon w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:#404068;">
+                            <i data-lucide="users" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">Consumer</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Consumer account drawer</p>
+                        </div>
+                    </a>
+
+                    <a href="portfolio/create_search_list.html" class="nav-card bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3 shadow-sm no-underline">
+                        <div class="card-icon w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:#404068;">
+                            <i data-lucide="building-2" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">Portfolio</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Site & property portfolio</p>
+                        </div>
+                    </a>
+
+                </div>
+            </section>
+
+            <!-- Section: Tariffs -->
+            <section class="mb-10">
+                <h2 class="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-4">Tariffs</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+
+                    <a href="tariff/tariffs.html" class="nav-card bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3 shadow-sm no-underline">
+                        <div class="card-icon w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:#404068;">
+                            <i data-lucide="tag" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">Tariff</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Rate & tariff configuration</p>
+                        </div>
+                    </a>
+
+                    <a href="tariff/season_form.html" class="nav-card bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3 shadow-sm no-underline">
+                        <div class="card-icon w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:#404068;">
+                            <i data-lucide="sun" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">Season</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Seasonal period setup</p>
+                        </div>
+                    </a>
+
+                    <a href="tariff/tou_form.html" class="nav-card bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3 shadow-sm no-underline">
+                        <div class="card-icon w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:#404068;">
+                            <i data-lucide="clock" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">TOU</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Time-of-use configuration</p>
+                        </div>
+                    </a>
+
+                    <a href="tariff/journals.html" class="nav-card bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3 shadow-sm no-underline">
+                        <div class="card-icon w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:#404068;">
+                            <i data-lucide="book-open" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">Journals</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Audit & journal entries</p>
+                        </div>
+                    </a>
+
+                </div>
+            </section>
+
+            <!-- Section: Dashboards -->
+            <section class="mb-10">
+                <h2 class="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-4">Dashboards</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+
+                    <a href="dashboards/meter/meter_dash_panel.html" class="nav-card bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3 shadow-sm no-underline">
+                        <div class="card-icon w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:#404068;">
+                            <i data-lucide="gauge" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">Meter</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Meter analytics dashboard</p>
+                        </div>
+                    </a>
+
+                    <a href="dashboards/common.html" class="nav-card bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3 shadow-sm no-underline">
+                        <div class="card-icon w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:#404068;">
+                            <i data-lucide="layout-grid" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">Common Area</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Shared area consumption</p>
+                        </div>
+                    </a>
+
+                    <a href="dashboards/consumer.html" class="nav-card bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3 shadow-sm no-underline">
+                        <div class="card-icon w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:#404068;">
+                            <i data-lucide="user" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">Consumer</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Consumer usage dashboard</p>
+                        </div>
+                    </a>
+
+                    <a href="dashboards/munix.html" class="nav-card bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3 shadow-sm no-underline">
+                        <div class="card-icon w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:#404068;">
+                            <i data-lucide="activity" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">Munix</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Municipal index view</p>
+                        </div>
+                    </a>
+
+                    <a href="dashboards/site/site_dash_panel.html" class="nav-card bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3 shadow-sm no-underline">
+                        <div class="card-icon w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:#404068;">
+                            <i data-lucide="map-pin" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">Site</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Site-level dashboard</p>
+                        </div>
+                    </a>
+
+                </div>
+            </section>
+
+            <!-- Section: Workflow -->
+            <section class="mb-10">
+                <h2 class="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-4">Workflow</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+
+                    <a href="wf/agent.html" class="nav-card bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3 shadow-sm no-underline">
+                        <div class="card-icon w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:#404068;">
+                            <i data-lucide="user-check" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">Agents</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Agent management</p>
+                        </div>
+                    </a>
+
+                    <a href="wf/qc.html" class="nav-card bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3 shadow-sm no-underline">
+                        <div class="card-icon w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:#404068;">
+                            <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">QC</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Quality control checks</p>
+                        </div>
+                    </a>
+
+                    <a href="wf/schedule.html" class="nav-card bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3 shadow-sm no-underline">
+                        <div class="card-icon w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:#404068;">
+                            <i data-lucide="calendar-clock" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">WF Schedules</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Workflow scheduling</p>
+                        </div>
+                    </a>
+
+                    <a href="wf/pending_instructions.html" class="nav-card bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3 shadow-sm no-underline">
+                        <div class="card-icon w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:#404068;">
+                            <i data-lucide="clipboard-list" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">WF Instructions</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Pending instructions</p>
+                        </div>
+                    </a>
+
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="text-center py-6 text-[11px] text-gray-400">
+            &copy; 2026 Webill &mdash; Utility Management Platform
+        </footer>
+
+        <script>lucide.createIcons();</script>
+    </body>
+</html>
